@@ -12,14 +12,10 @@ define([ "cm/lib/codemirror",
 	 "config",
 	 "preferences",
 
-	 "cm/mode/prolog/prolog-template-hint",
+	 //"../bower_components/codemirror/mode/javascript/javascript",
+	 "../bower_components/codemirror/mode/xml/xml",
+	 //"../bower_components/codemirror/mode/clike/clike",
 
-	 "cm/mode/prolog/prolog",
-	 "cm/mode/prolog/prolog_keys",
-	 "cm/mode/prolog/prolog_query",
-	 "cm/mode/prolog/prolog_server",
-
-	 "cm/addon/edit/matchbrackets",
 	 "cm/addon/comment/continuecomment",
 	 "cm/addon/comment/comment",
 	 "cm/addon/hint/show-hint",
@@ -27,11 +23,7 @@ define([ "cm/lib/codemirror",
 	 "cm/addon/display/placeholder",
 	 "cm/addon/runmode/runmode",
 
-	 "cm/addon/hover/text-hover",
-	 "cm/addon/hover/prolog-hover",
 
-	 "cm/addon/hint/templates-hint",
-	 "cm/addon/hint/show-context-info",
 
          "jquery", "laconic"
        ],
@@ -73,33 +65,11 @@ define([ "cm/lib/codemirror",
 
 	options = $.extend({
 	  role: "source",
-	  placeholder: "Your Prolog program goes here ...",
+	  placeholder: "Your ontology goes here ...",
 	  lineNumbers: true,
-	  mode: "prolog",
-	  theme: "prolog",
-	  matchBrackets: true,
-	  textHover: true,
-	  prologKeys: true,
-	  extraKeys: {
-	    "Ctrl-Space": "autocomplete",
-	    "Alt-/": "autocomplete",
-	  },
-	  hintOptions: {
-	    hint: templateHint.getHints,
-	    completeSingle: false
-	  }
+	  mode: "xml"
 	}, options);
 
-	if ( config.http.locations.cm_highlight ) {
-	  options.prologHighlightServer =
-	  { url:  config.http.locations.cm_highlight,
-	    role: options.role,
-	    enabled: preferences.getVal("semantic-highlighting")
-	  };
-	  if ( options.sourceID )
-	    options.prologHighlightServer.sourceID = options.sourceID;
-	  options.extraKeys["Ctrl-R"] = "refreshHighlight";
-	}
 
 	if ( options.role != "query" )
 	  options.continueComments = "Enter";
@@ -114,16 +84,16 @@ define([ "cm/lib/codemirror",
 			     elem.text());
 	  elem.append(ta);
 	}
-
+  //      CodeMirror.defaults.mode="javascript";
 	data.cm              = CodeMirror.fromTextArea(ta, options);
+	console.log(CodeMirror.defaults);
+	console.log(data.cm.getMode());
+	console.log(data.cm.getOption("mode"));
 	data.cleanGeneration = data.cm.changeGeneration();
 	data.role            = options.role;
 
 	elem.data(pluginName, data);
 	elem.addClass("swish-event-receiver");
-	elem.on("preference", function(ev, pref) {
-	  elem.prologEditor('preference', pref);
-	});
 
 	if ( data.role == "source" ) {
 	  elem.on("source", function(ev, src) {
@@ -131,12 +101,6 @@ define([ "cm/lib/codemirror",
 	  });
 	  elem.on("saveProgram", function(ev, data) {
 	    elem.prologEditor('save');
-	  });
-	  elem.on("source-error", function(ev, error) {
-	    elem.prologEditor('highlightError', error);
-	  });
-	  elem.on("clearMessages", function(ev) {
-	    elem.prologEditor('clearMessages');
 	  });
 	}
       });
@@ -168,9 +132,6 @@ define([ "cm/lib/codemirror",
      getSourceID: function() {
        var cm = this.data(pluginName).cm;
 
-       if ( cm.state.prologHighlightServer ) {
-	 return cm.state.prologHighlightServer.uuid;
-       }
        return null;
      },
 
@@ -210,7 +171,7 @@ define([ "cm/lib/codemirror",
     save: function() {
       var source  = this.prologEditor('getSource');
       var options = this.data(pluginName);
-      var data    = { data: source, type: "pl" };
+      var data    = { data: source, type: "application/xml" };
       var url     = config.http.locations.web_storage;
       var method  = "POST";
 
@@ -248,11 +209,11 @@ define([ "cm/lib/codemirror",
      * the content of the editor.
      */
     print: function(src) {
-      var pre = $.el.pre({class:"cm-s-prolog"});
+      var pre = $.el.pre({class:"cm-s-neo"});
 
       if ( !src ) src = this.prologEditor('getSource');
 
-      CodeMirror.runMode(src, "prolog", pre);
+      CodeMirror.runMode(src, "application/xml", pre);
 
       function printWithIframe(elem) {
 	var iframe = $.el.iframe({src:"about:blank"});
@@ -261,7 +222,7 @@ define([ "cm/lib/codemirror",
 	iframe.contentWindow.print();
       }
 
-      $.ajax({ url: "/swish/js/codemirror/theme/prolog.css",
+      $.ajax({ url: "/swish/bower_components/codemirror/theme/neo.css",
 	       dataType: "text",
 	       success: function(data) {
 		 printWithIframe($.el.div($.el.style(data),
@@ -269,6 +230,7 @@ define([ "cm/lib/codemirror",
 	       },
 	       error: function() {
 		 printWithIframe(pre);
+		 console.log("ciao");
 	       }
              });
 
@@ -302,44 +264,10 @@ define([ "cm/lib/codemirror",
      * @param {Object} error.location contains the location, providing
      * `line` and `ch` attributes.
      */
-    highlightError: function(error) {
-      var data = this.data(pluginName);
-      var msg  = $(error.data).text();
-      var left;
-
-      if ( error.location.ch ) {
-	left = data.cm.charCoords({ line: error.location.line-1,
-				    ch:   error.location.ch
-				  },
-				  "local").left;
-      } else {
-	left = 0;
-      }
-
-      msg = msg.replace(/^.*?:[0-9][0-9]*: /, "");
-      var elem = $.el.span({class:"source-msg error"},
-			   msg,
-			   $("<span>&times;</span>")[0]);
-      $(elem).css("margin-left", left+"px");
-
-      var widget = data.cm.addLineWidget(error.location.line-1, elem);
-
-      $(elem).on("click", function() {
-	widget.clear();
-      });
-      $(elem).data("cm-widget", widget);
-
-      return this;
-    },
 
     /**
      * Remove all inline messages from the editor
      */
-    clearMessages: function() {
-      return this.find(".source-msg").each(function() {
-	$(this).data("cm-widget").clear();
-      });
-    },
 
     /**
      * Extract example queries from text.  By   default,  this looks for
@@ -450,37 +378,5 @@ define([ "cm/lib/codemirror",
  *    ```
  */
 
-function loadStyleExtensions(style, prefix)
-{ var parts=[];
-
-  prefix = prefix || "";
-
-  parts.push("<style>\n");
-  for(var sname in style) {
-    if ( style.hasOwnProperty(sname) ) {
-      var attrs = style[sname];
-
-      parts.push(prefix, sname, "{");
-
-      for(var a in attrs) {
-	if ( attrs.hasOwnProperty(a) ) {
-	  parts.push(a, ":", attrs[a], ";");
-	}
-      }
-
-      parts.push("}\n");
-    }
-  }
-  parts.push("</style>\n");
-
-  $("body").append(parts.join(""));
-}
-
-if ( config.swish.cm_style )
-  loadStyleExtensions(config.swish.cm_style,
-		      ".cm-s-prolog span.cm-");
-if ( config.swish.cm_hover_style )
-  loadStyleExtensions(config.swish.cm_hover_style,
-		      ".CodeMirror-hover-tooltip ");
 
 }); // define
