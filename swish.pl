@@ -102,3 +102,6 @@ pengines:prepare_module(Module, swish, _Options) :-
 :- use_module(swish(lib/render/table), []).
 :- use_module(swish(lib/render/codes), []).
 :- use_module(swish(lib/render/svgtree), []).
+%:- use_module('/home/collab1/zese/ClioPatria/cpack/swish/web/trill/trill.pl').
+:- use_foreign_library(foreign(bddem),install).
+

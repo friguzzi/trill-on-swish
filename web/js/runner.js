@@ -332,8 +332,26 @@ define([ "jquery", "config", "cm/lib/codemirror", "answer", "laconic" ],
 	    application: "swish",
 	    src: "\n\
 \n\
+\n\
+:- dynamic\n\
+        classAssertion/2,\n\
+        propertyAssertion/3,\n\
+        subPropertyOf/2,\n\
+        subClassOf/2,\n\
+        equivalentClasses/1,\n\
+        differentIndividuals/1,\n\
+        sameIndividual/1,\n\
+        intersectionOf/1,\n\
+        unionOf/1,\n\
+        propertyRange/2,\n\
+        propertyDomain/2,\n\
+        p/2,\n\
+        p_x/2.\n\
+\n\
 :- use_module(library(lists),[member/2]).\n\
 :- use_module(library(pengines)).\n\
+:- use_module(library(trill)).\n\
+\n\
 \n\
 :- discontiguous(valid_axiom/1).\n\
 :- discontiguous(axiompred/1).\n\
@@ -2040,7 +2058,7 @@ owl_canonical_parse_3([IRI|Rest]) :-\n\
                owl_parse_annotated_axioms(PredSpec)),\n\
 \n\
         debug(owl_parser_detail,'Commencing parse of unannotated axioms',[]),\n\
-	forall((axiompred(PredSpec),\\+dothislater(PredSpec),\\+omitthis(PredSpec)),\n\
+        forall((axiompred(PredSpec),\\+dothislater(PredSpec),\\+omitthis(PredSpec)),\n\
                owl_parse_nonannotated_axioms(PredSpec)),\n\
         forall((axiompred(PredSpec),dothislater(PredSpec),\\+omitthis(PredSpec)),\n\
                owl_parse_nonannotated_axioms(PredSpec)),!,\n\
@@ -2079,10 +2097,11 @@ owl_parse_annotated_axioms(Pred/Arity) :-\n\
 %                   assert(Mod:Head))).\n\
 	forall(owl_parse_axiom(Head,true,Annotations),\n\
 	       (   assert_axiom(Head),\n\
-                   debug(owl_parser_detail_anns,' parsed: ~w : anns: ~w',[Head,Annotations]),\n\
+	           debug(owl_parser_detail_anns,' parsed: ~w : anns: ~w',[Head,Annotations]),\n\
 		   forall(member(X,Annotations),\n\
 			  forall(aNN(X,AP,AV),\n\
-				 assert_axiom(annotation(Head,AP,AV)))\n\
+				 assert_axiom(annotation(Head,AP,AV))\n\
+		          )\n\
 			 )\n\
 	       )\n\
 	      ),\n\
@@ -2715,7 +2734,8 @@ collect_r_nodes :-\n\
 % otherwise []\n\
 \n\
 valid_axiom_annotation_mode(_Mode,S,P,O,List) :-\n\
-	findall(Node,axiom_r_node(S,P,O,Node),List).\n\
+        expand_ns(P,PE),\n\
+        findall(Node,axiom_r_node(S,PE,O,Node),List).\n\
 \n\
 \n\
 owl_parse_axiom(subClassOf(DX,DY),AnnMode,List) :-\n\
@@ -3024,7 +3044,7 @@ owl_parse_axiom(negativePropertyAssertion(PX,A,B),_,X) :-\n\
 parse_annotation_assertions :-\n\
 	( nb_current(rind,RIND) -> true ; RIND = []),!,\n\
 	forall((aNN(X,AP,AV),findall( aNN(annotation(X,AP,AV),AP1,AV1),\n\
-				      aNN(annotation(X,AP,AV),AP1,AV1),ANN), \\+member(X,RIND)),\n\
+				      aNN(annotation(X,AP,AV),AP1,AV1),ANN), \\+member(X,RIND), \\+name(X,[95, 95, 68, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110|_])),\n\
 	       (   assert_axiom(annotationAssertion(AP,X,AV)),\n\
 		  %  VV 10/3/2010 keep annotation/3\n\
 		  % retract(annotation(X,AP,AV)),\n\
@@ -3131,8 +3151,10 @@ load_owl(String):-\n\
   pengine_property(Self,module(M)),\n\
   open_chars_stream(String,S),\n\
   process_rdf(stream(S), assert_list(M), []),\n\
-  close(S),rdf_2_owl('ont','ont'),\n\
- owl_canonical_parse_3(['ont']).\n\
+  close(S),\n\
+  rdf_2_owl('ont','ont'),\n\
+  owl_canonical_parse_3(['ont']),\n\
+  parse_probabilistic_annotation_assertions.\n\
 \n\
 \n\
 \n\
@@ -3149,6 +3171,14 @@ assert_list([H|T], Source) :-\n\
 	assert(H),\n\
         assert_list(T, Source).\n\
 */\n\
+\n\
+parse_probabilistic_annotation_assertions :-\n\
+	forall(annotation(Ax,'https://sites.google.com/a/unife.it/ml/bundle#probability',literal(type(_Type, PV))),\n\
+	       (assert_axiom(annotationAssertion('https://sites.google.com/a/unife.it/ml/bundle#probability',Ax,literal(PV))))\n\
+	      ),\n\
+	% forall(aNN(X,Y,Z),assert(annotation(X,Y,Z))), VV remove 25/1/11\n\
+	% annotation/3 axioms created already during owl_parse_annotated_axioms/1\n\
+	retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/bundle#probability',_)).\n\
 \n\
 parse:- load_owl('"+
 	    query.source+"')." ,
