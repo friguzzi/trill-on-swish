@@ -15,6 +15,9 @@ define([ "cm/lib/codemirror",
 	 //"../bower_components/codemirror/mode/javascript/javascript",
 	 "../bower_components/codemirror/mode/xml/xml",
 	 //"../bower_components/codemirror/mode/clike/clike",
+	 "form",
+	 "gitty",
+
 
 	 "cm/addon/comment/continuecomment",
 	 "cm/addon/comment/comment",
@@ -27,7 +30,7 @@ define([ "cm/lib/codemirror",
 
          "jquery", "laconic"
        ],
-       function(CodeMirror, config, preferences, templateHint) {
+       function(CodeMirror, config, preferences, form, templateHint, gitty) {
 
 (function($) {
   var pluginName = 'prologEditor';
@@ -79,6 +82,8 @@ define([ "cm/lib/codemirror",
 
 	  if ( file )
 	    data.file = file;
+	  if ( window.swish && window.swish.meta_data )
+	    data.meta = window.swish.meta_data;
 	} else {
 	  ta = $.el.textarea({placeholder:options.placeholder},
 			     elem.text());
@@ -97,10 +102,13 @@ define([ "cm/lib/codemirror",
 
 	if ( data.role == "source" ) {
 	  elem.on("source", function(ev, src) {
-	    elem.prologEditor('setSource', src.data);
+	    elem.prologEditor('setSource', src);
 	  });
 	  elem.on("saveProgram", function(ev, data) {
-	    elem.prologEditor('save');
+	    elem.prologEditor('save', data);
+	  });
+	  elem.on("fileInfo", function() {
+	    elem.prologEditor('info');
 	  });
 	}
       });
@@ -136,10 +144,33 @@ define([ "cm/lib/codemirror",
      },
 
     /**
-     * @param {String} src becomes the new contents of the editor
+     * @param {String|Object} src becomes the new contents of the editor
+     * @param {String} Object.data contains the data in the case that
+     * `src` is an object.
      */
     setSource: function(src) {
-      this.data(pluginName).cm.setValue(src);
+      var options = this.data(pluginName);
+
+      if ( typeof(src) == "string" )
+	src = {data:src};
+
+      this.data(pluginName).cm.setValue(src.data);
+
+      if ( options.role == "source" ) {
+	if ( src.meta ) {
+	  options.file = src.meta.name;
+	  options.meta = src.meta;
+	} else {
+	  options.file = null;
+	  options.meta = null;
+	}
+
+	if ( !src.url )
+	  src.url = config.http.locations.swish;
+
+	updateHistory(src);
+      }
+
       return this;
     },
 
@@ -166,38 +197,166 @@ define([ "cm/lib/codemirror",
     },
 
     /**
-     * Save the current document to the server
+     * Save the current document to the server.  Depending on the
+     * arguments, this function implements several forms of saving:
+     *
+     *   - Without arguments arguments, it implements "Save".
+     *   - With ("as"), it implements "Save as", which opens a
+     *     dialog which calls this method again, but now with
+     *     meta-data in the first argument.
+     *   - With ({...}) it performs the save operation of "Save as"
+     *   - With ({...}, "only-meta-data") it only updates the meta
+     *     data on the server.
+     *
+     * @param {Object} [meta] provides additional meta-information.
+     * Currently defined fields are `author`, `email`,
+     * `title`, `keywords` and `description`. Illegal fields are ignored
+     * by the server.
+     * @param {String} [what] If `"only-meta-data"`, only the meta-data
+     * is updated.
      */
-    save: function() {
-      var source  = this.prologEditor('getSource');
+    save: function(meta, what) {
       var options = this.data(pluginName);
-      var data    = { data: source, type: "application/xml" };
       var url     = config.http.locations.web_storage;
       var method  = "POST";
+      var data;
 
-      if ( options.cm.isClean(options.cleanGeneration) ) {
-	alert("No change");
+      if ( meta == "as" ) {
+	this.prologEditor('saveAs');
 	return this;
       }
 
-      if ( options.file ) {
+      if ( options.file &&
+	   (!meta || !meta.name || meta.name == options.file) ) {
 	url += "/" + encodeURI(options.file);
 	method = "PUT";
       }
 
+      if ( what == "only-meta-data" ) {
+	meta = gitty.reduceMeta(meta, options.meta)
+	if ( $.isEmptyObject(meta) ) {
+	  alert("No change");
+	  return;
+	}
+	data = { update: "meta-data" };
+      } else if ( method == "POST" ) {
+	data = { data: this.prologEditor('getSource'),
+		 type: "pl"
+	       };
+	if ( options.meta ) {			/* rename */
+	  data.previous = options.meta.commit;
+	}
+      } else {
+	if ( !options.cm.isClean(options.cleanGeneration) ) {
+	  data = { data: this.prologEditor('getSource'),
+		   type: "pl"
+		 };
+	} else if ( sameSet(options.meta.tags, meta.tags) ) {
+	  alert("No change");
+	  return;
+	}
+      }
+
+      if ( meta )
+	data.meta = meta;
+
       $.ajax({ url: url,
                dataType: "json",
+	       contentType: "application/json",
 	       type: method,
-	       data: data,
+	       data: JSON.stringify(data),
 	       success: function(reply) {
-		 options.url = reply.url;
-		 options.file = reply.file;
-		 updateHistory(reply);
+		 if ( reply.error ) {
+		   alert(JSON.stringify(reply));
+		 } else {
+		   options.url  = reply.url;
+		   options.file = reply.file;
+		   options.meta = reply.meta;
+		   updateHistory(reply);
+		 }
 	       },
 	       error: function() {
 		 alert("Failed to save document");
 	       }
 	     });
+
+      return this;
+    },
+
+    /**
+     * Provide a Save As dialog
+     */
+    saveAs: function() {
+      var options = this.data(pluginName);
+      var meta    = options.meta||{};
+      var editor  = this;
+      var update  = Boolean(options.file);
+      var fork    = options.meta && meta.symbolic != "HEAD";
+
+      if ( meta.public === undefined )
+	meta.public = true;
+
+      function saveAsBody() {
+	this.append($.el.form({class:"form-horizontal"},
+			      form.fields.fileName(fork ? null: options.file,
+						   meta.public),
+			      form.fields.title(meta.title),
+			      form.fields.author(meta.author),
+			      update ? form.fields.commit_message() : undefined,
+			      form.fields.tags(meta.tags),
+			      form.fields.buttons(
+				{ label: fork   ? "Fork program" :
+					 update ? "Update program" :
+						  "Save program",
+				  action: function(ev,data) {
+					    console.log(data);
+				            editor.prologEditor('save', data);
+					    return false;
+				          }
+				})));
+      }
+
+      form.showDialog({ title: fork   ? "Fork from "+meta.commit.substring(0,7) :
+			       update ? "Save new version" :
+			                "Save program as",
+			body:  saveAsBody
+		      });
+
+      return this;
+    },
+
+    /**
+     * Provide information about the current source in a modal
+     * dialog.
+     */
+    info: function() {
+      var options = this.data(pluginName);
+      var meta = options.meta;
+      var editor = this;
+      var title;
+
+      if ( options.meta ) {
+	title = $().gitty('title', options.meta);
+      } else {
+	title = "Local source";
+      }
+
+      function infoBody() {
+	if ( options.meta ) {
+	  options.editor = editor;		/* circular reference */
+	  this.gitty(options);
+	} else {
+	  this.append($.el.p("The source is not associated with a file. ",
+			     "Use ",
+			     $.el.b("Save ..."),
+			     " to save the source with meta information."
+			    ));
+	}
+      }
+
+      form.showDialog({ title: title,
+			body:  infoBody
+		      });
 
       return this;
     },
@@ -309,7 +468,107 @@ define([ "cm/lib/codemirror",
       }
 
       return exlist;
+    },
+
+    /**
+     * @param {RegExp} re is the regular expression to search for
+     * @param {Object} [options]
+     * @param {number} [options.max] is the max number of hits to return
+     * @returns {Array.object} list of objects holding the matching line
+     * content and line number.
+     */
+    search: function(re, options) {
+      var cm      = this.data(pluginName).cm;
+      var start   = cm.firstLine();
+      var end     = cm.lastLine();
+      var matches = [];
+
+      for(var i=start; i<=end; i++) {
+	var line = cm.getLine(i);
+	if ( line.search(re) >= 0 ) {
+	  matches.push({line:i+1, text:line});
+	  if ( options.max && options.max === matches.length )
+	    return matches;
+	}
+      }
+
+      return matches;
+    },
+
+    /**
+     * Go to a given 1-based line number and optionally highlight the
+     * match(es).
+     *
+     * @param {number} line
+     * @param {Object} [options]
+     * @param {RegExp} [options.regex] If provided, highlight the
+     * matches.
+     * @param {Boolean} [options.showAllMatches] if `true`, show all
+     * matches in the viewport.
+     */
+    gotoLine: function(line, options) {
+      var data = this.data(pluginName);
+      var cm   = data.cm;
+      var ch   = 0;
+      var re;
+
+      function clearSearchMarkers(cm) {
+	if ( cm._searchMarkers !== undefined ) {
+	  for(var i=0; i<cm._searchMarkers.length; i++)
+	    cm._searchMarkers[i].clear();
+	  cm.off("cursorActivity", clearSearchMarkers);
+	}
+	cm._searchMarkers = [];
+      }
+
+      line = line-1;
+      re   = options.regex;
+      clearSearchMarkers(cm);
+      options = options||{};
+
+      if ( re ) {
+	ch = cm.getLine(line).search(re);
+	if ( ch < 0 )
+	  ch = 0;
+      }
+
+      cm.setCursor({line:line,ch:ch});
+      var myHeight = cm.getScrollInfo().clientHeight;
+      var coords = cm.charCoords({line: line, ch: 0}, "local");
+      cm.scrollTo(null, (coords.top + coords.bottom - myHeight) / 2);
+
+      if ( re ) {
+	function markMatches(line, className) {
+	  var match;
+
+	  while( (match=re.exec(cm.getLine(line))) ) {
+	    cm._searchMarkers.push(
+	      cm.markText({line:line,ch:match.index},
+			  {line:line,ch:match.index+match[0].length},
+			  {className:className,
+			   clearOnEnter: true,
+			   clearWhenEmpty: true,
+			   title: "Search match"
+			  }));
+	  }
+	}
+
+	markMatches(line, "CodeMirror-search-match");
+	if ( options.showAllMatches ) {
+	  var vp = cm.getViewport();
+
+	  for(var i=vp.from; i<vp.to; i++) {
+	    if ( i != line ) {
+	      markMatches(i, "CodeMirror-search-alt-match");
+	    }
+	  }
+	}
+
+	if ( cm._searchMarkers.length > 0 )
+	  cm.on("cursorActivity", clearSearchMarkers);
+      }
     }
+
   }; // methods
 
   function updateHistory(reply) {
@@ -319,7 +578,9 @@ define([ "cm/lib/codemirror",
       window.history.pushState({location:reply.url},
 			       "",
 			       reply.url);
-      document.title = "SWISH -- "+reply.file;
+      document.title = "SWISH -- "
+                     + (reply.file ? reply.file
+			           : "SWI-Prolog for SHaring");
     }
   }
 
