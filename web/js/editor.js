@@ -460,7 +460,8 @@ define([ "cm/lib/codemirror",
 	  if ( exl ) {
 	    for(var j=0; j<exl.length; j++) {
 	      var ex = exl[j].replace(/^ *\?-\s*/, "")
-			     .replace(/\s*$/, "");
+			     .replace(/\s*$/, "")
+			     .replace(/\\'/g,"'");
 	      exlist.push(ex);
 	    }
 	  }
@@ -578,7 +579,7 @@ define([ "cm/lib/codemirror",
       window.history.pushState({location:reply.url},
 			       "",
 			       reply.url);
-      document.title = "SWISH -- "
+      document.title = "trill on SWISH -- "
                      + (reply.file ? reply.file
 			           : "SWI-Prolog for SHaring");
     }
