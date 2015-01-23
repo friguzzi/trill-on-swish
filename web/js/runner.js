@@ -3173,12 +3173,12 @@ assert_list([H|T], Source) :-\n\
 */\n\
 \n\
 parse_probabilistic_annotation_assertions :-\n\
-	forall(annotation(Ax,'https://sites.google.com/a/unife.it/ml/bundle#probability',literal(type(_Type, PV))),\n\
-	       (assert_axiom(annotationAssertion('https://sites.google.com/a/unife.it/ml/bundle#probability',Ax,literal(PV))))\n\
+	forall(annotation(Ax,'https://sites.google.com/a/unife.it/ml/disponte#probability',literal(type(_Type, PV))),\n\
+	       (assert_axiom(annotationAssertion('https://sites.google.com/a/unife.it/ml/disponte#probability',Ax,literal(PV))))\n\
 	      ),\n\
 	% forall(aNN(X,Y,Z),assert(annotation(X,Y,Z))), VV remove 25/1/11\n\
 	% annotation/3 axioms created already during owl_parse_annotated_axioms/1\n\
-	retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/bundle#probability',_)).\n\
+	retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).\n\
 \n\
 parse:- load_owl('"+
 	    query.source+"')." ,
