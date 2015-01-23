@@ -579,7 +579,7 @@ define([ "cm/lib/codemirror",
       window.history.pushState({location:reply.url},
 			       "",
 			       reply.url);
-      document.title = "trill on SWISH -- "
+      document.title = "TRILL on SWISH -- "
                      + (reply.file ? reply.file
 			           : "SWI-Prolog for SHaring");
     }

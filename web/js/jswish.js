@@ -294,7 +294,7 @@ preferences.setDefault("semantic-highlighting", false);
    */
   function swishLogo() {
     $(".swish-logo")
-      .append($.el.b($.el.span({style:"color:darkblue"}, "trill "),
+      .append($.el.b($.el.span({style:"color:darkblue"}, "TRILL "),
                      $.el.span({style:"color:maroon"}, "on "),
                      $.el.span({style:"color:darkblue"}, "SWI"),
 		     $.el.span({style:"color:maroon"}, "SH")))

@@ -114,7 +114,7 @@ swish_reply1(Options) :-
 swish_reply1(Options) :-
 	reply_html_page(
 	    swish(main),
-	    [ title('SWISH -- SWI-Prolog for SHaring'),
+	    [ title('TRILL on SWISH -- SWI-Prolog for SHaring'),
 	      link([ rel('shortcut icon'),
 		     href('/icons/favicon.ico')
 		   ]),
