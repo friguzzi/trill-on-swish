@@ -42,6 +42,10 @@
 :- use_module(lib/highlight).
 :- use_module(lib/template_hint, []).
 
+%:- load_files([ library(semweb/rdf_db),
+%		library(semweb/rdf_persistency),
+%		library(semweb/rdf_litindex)
+%             ]).
 
 		 /*******************************
 		 *	       PATHS		*

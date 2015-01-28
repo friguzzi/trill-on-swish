@@ -3,10 +3,10 @@
 <!--
 /** <examples>
 
-?- instanceOf(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',\'http://clarkparsia.com/pronto/cancer_ra.owl#Helen\',L).
-?- prob_instanceOf(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',\'http://clarkparsia.com/pronto/cancer_ra.owl#Helen\',L).
-?- sub_class(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanAged3040\',\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',L).
-?- prob_sub_class(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanAged3040\',\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',L).
+?- instanceOf(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',\'http://clarkparsia.com/pronto/cancer_ra.owl#Helen\',ListExpl).
+?- prob_instanceOf(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',\'http://clarkparsia.com/pronto/cancer_ra.owl#Helen\',Prob).
+?- sub_class(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanAged3040\',\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',ListExpl).
+?- prob_sub_class(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanAged3040\',\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',Prob).
 */
 -->
 

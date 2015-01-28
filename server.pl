@@ -12,7 +12,7 @@
 %    Start the web-server on Port.
 
 server :-
-	server(3050).
+	server(3020).
 server(Port) :-
 	http_server(http_dispatch,
 		    [ port(Port),

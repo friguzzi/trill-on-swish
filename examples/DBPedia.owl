@@ -3,8 +3,8 @@
 <!--
 /** <examples>
 
-?- sub_class(\'http://dbpedia.org/ontology/Village\',\'http://dbpedia.org/ontology/PopulatedPlace\',L).
-?- prob_sub_class(\'http://dbpedia.org/ontology/Village\',\'http://dbpedia.org/ontology/PopulatedPlace\',L).
+?- sub_class(\'http://dbpedia.org/ontology/Village\',\'http://dbpedia.org/ontology/PopulatedPlace\',ListExpl).
+?- prob_sub_class(\'http://dbpedia.org/ontology/Village\',\'http://dbpedia.org/ontology/PopulatedPlace\',Prob).
 */
 -->
 

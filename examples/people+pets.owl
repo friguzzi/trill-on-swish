@@ -3,8 +3,8 @@
 <!--
 /** <examples>
 
-?- instanceOf(\'http://cohse.semanticweb.org/ontologies/people#natureLover\',\'http://cohse.semanticweb.org/ontologies/people#Kevin\',L).
-?- prob_instanceOf(\'http://cohse.semanticweb.org/ontologies/people#natureLover\',\'http://cohse.semanticweb.org/ontologies/people#Kevin\',L).
+?- instanceOf(\'http://cohse.semanticweb.org/ontologies/people#natureLover\',\'http://cohse.semanticweb.org/ontologies/people#Kevin\',ListExpl).
+?- prob_instanceOf(\'http://cohse.semanticweb.org/ontologies/people#natureLover\',\'http://cohse.semanticweb.org/ontologies/people#Kevin\',Prob).
 */
 -->
 

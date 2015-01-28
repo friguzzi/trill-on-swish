@@ -3,10 +3,10 @@
 <!--
 /** <examples>
 
-?- instanceOf(\'http://vicodi.org/ontology#Role\',\'http://vicodi.org/ontology#Anthony-van-Dyck-is-Painter-in-Flanders\',LE).
-?- prob_instanceOf(\'http://vicodi.org/ontology#Role\',\'http://vicodi.org/ontology#Anthony-van-Dyck-is-Painter-in-Flanders\',LE).
-?- sub_class(\'http://vicodi.org/ontology#Painter\',\'http://vicodi.org/ontology#Role\',LE).
-?- prob_sub_class(\'http://vicodi.org/ontology#Painter\',\'http://vicodi.org/ontology#Role\',LE).
+?- instanceOf(\'http://vicodi.org/ontology#Role\',\'http://vicodi.org/ontology#Anthony-van-Dyck-is-Painter-in-Flanders\',ListExpl).
+?- prob_instanceOf(\'http://vicodi.org/ontology#Role\',\'http://vicodi.org/ontology#Anthony-van-Dyck-is-Painter-in-Flanders\',Prob).
+?- sub_class(\'http://vicodi.org/ontology#Painter\',\'http://vicodi.org/ontology#Role\',ListExpl).
+?- prob_sub_class(\'http://vicodi.org/ontology#Painter\',\'http://vicodi.org/ontology#Role\',Prob).
 */
 -->
 
