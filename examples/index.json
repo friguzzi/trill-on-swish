@@ -1,18 +1,10 @@
 // list of examples, represented as a JSON list
 
 [
-{ "file":"kb.pl",		  "title":"Knowledge bases" },
-{ "file":"movies.pl",		  "title":"Movie database" },
-{ "file":"lists.pl",		  "title":"Lists" },
-{ "file":"io.pl",		  "title":"Read and write" },
-{ "file":"database.pl",		  "title":"Assert and retract" },
-{ "file":"grammar.pl",		  "title":"DCG grammar" },
-{ "file":"eliza.pl",		  "title":"Eliza" },
-{ "file":"expert-system.pl",	  "title":"Expert system" },
-{ "file":"houses_puzzle.pl",	  "title":"Einstein's Riddle" },
-{ "file":"queens.pl",		  "title":"Queens (traditional)" },
-{ "file":"clpfd-queens.pl",	  "title":"Queens (clp(fd))" },
-{ "file":"clpfd-sudoku.pl",	  "title":"Sudoku (clp(fd))" },
-{ "file":"knights_and_knaves.pl", "title":"Knights and Knaves (clp(b))" },
-{ "file":"japanese.pl",		  "title":"Japanese source" },
+{ "file":"rdf_queries.pl",		  "title":"General queries" },
+{ "file":"biopax-level3.owl",             "title":"Biopax KB" },
+{ "file":"BRCA.owl",                      "title":"BRCA KB" },
+{ "file":"DBPedia.owl",                   "title":"DBPedia KB" },
+{ "file":"people+pets.owl",               "title":"people+pets KB" },
+{ "file":"vicodi-ontology.owl",           "title":"Vicodi KB" },
 ]

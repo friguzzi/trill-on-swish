@@ -116,7 +116,7 @@ swish_reply1(Options) :-
 	    swish(main),
 	    [ title('TRILL on SWISH -- SWI-Prolog for SHaring'),
 	      link([ rel('shortcut icon'),
-		     href('/icons/favicon.ico')
+		     href('/icons/favicon1.ico')
 		   ]),
 	      link([ rel('apple-touch-icon'),
 		     href('/icons/swish-touch-icon.png')
