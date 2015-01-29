@@ -730,19 +730,19 @@
         <rdfs:subClassOf rdf:resource="http://dbpedia.org/ontology/A73_A0_"/>
     </owl:Class>
     <owl:Axiom>
-        <disponte:probability>0.31</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.31</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Place"/>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/A73_A0_"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.71</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.71</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Place"/>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/PopulatedPlace"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.32</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.32</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Place"/>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/Settlement"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
@@ -864,19 +864,19 @@
         <rdfs:subClassOf rdf:resource="http://dbpedia.org/ontology/A0_144_"/>
     </owl:Class>
     <owl:Axiom>
-        <disponte:probability>0.11</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.11</disponte:probability>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/Place"/>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Settlement"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.81</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.81</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Settlement"/>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/A0_144_"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.41</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.41</disponte:probability>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/PopulatedPlace"/>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Settlement"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
@@ -1046,43 +1046,43 @@
         <rdfs:subClassOf rdf:resource="http://dbpedia.org/ontology/A73_144_"/>
     </owl:Class>
     <owl:Axiom>
-        <disponte:probability>0.23</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.23</disponte:probability>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/PopulatedPlace"/>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Village"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.9</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.9</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Village"/>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/A0_144_"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.32</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.32</disponte:probability>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/Place"/>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Village"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.21</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.21</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Village"/>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/A73_A0_144_"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.3</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.3</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Village"/>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/A73_A0_"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.91</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.91</disponte:probability>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/Settlement"/>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Village"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
     </owl:Axiom>
     <owl:Axiom>
-        <disponte:probability>0.67</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.67</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/Village"/>
         <owl:annotatedTarget rdf:resource="http://dbpedia.org/ontology/A73_144_"/>
         <owl:annotatedProperty rdf:resource="&rdfs;subClassOf"/>
@@ -1149,7 +1149,7 @@
         </owl:equivalentClass>
     </owl:Class>
     <owl:Axiom>
-        <disponte:probability>0.71</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.71</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/A0_144_"/>
         <owl:annotatedProperty rdf:resource="&owl;equivalentClass"/>
         <owl:annotatedTarget>
@@ -1177,7 +1177,7 @@
         </owl:equivalentClass>
     </owl:Class>
     <owl:Axiom>
-        <disponte:probability>0.7</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.7</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/A73_A0_"/>
         <owl:annotatedProperty rdf:resource="&owl;equivalentClass"/>
         <owl:annotatedTarget>
@@ -1206,7 +1206,7 @@
         </owl:equivalentClass>
     </owl:Class>
     <owl:Axiom>
-        <disponte:probability>0.81</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.81</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/A73_A0_144_"/>
         <owl:annotatedProperty rdf:resource="&owl;equivalentClass"/>
         <owl:annotatedTarget>
@@ -1235,7 +1235,7 @@
         </owl:equivalentClass>
     </owl:Class>
     <owl:Axiom>
-        <disponte:probability>0.51</disponte:probability>
+        <disponte:probability rdf:datatype="&xsd;decimal">0.51</disponte:probability>
         <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/A73_144_"/>
         <owl:annotatedProperty rdf:resource="&owl;equivalentClass"/>
         <owl:annotatedTarget>
