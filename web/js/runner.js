@@ -3180,7 +3180,10 @@ parse_probabilistic_annotation_assertions :-\n\
   % annotation/3 axioms created already during owl_parse_annotated_axioms/1\n\
   retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).\n\
 \n\
-parse:- load_owl('"+
+parse:- \n\
+  pengine_self(M),\n\
+  set_prolog_flag(M:unknwon,fail),\n\
+  load_owl('"+
 	    query.source+"')." ,
 	    destroy: false,
 	    format: 'json-html',
