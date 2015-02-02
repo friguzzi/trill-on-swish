@@ -2,7 +2,7 @@
 
 <html>
   <head>
-  <title>SWISH: SWI-Prolog for SHaring</title>
+  <title>TRILL on SWISH</title>
   </head>
 <body>
 <h4>Table of Contents</h4>
@@ -11,22 +11,19 @@
     <li><a href="#help-examples">Embedding examples in the program text</a></li>
     <li><a href="#help-share">Save or share your program</a></li>
     <li><a href="#help-preload">Preload SWISH with data</a></li>
+    <li><a href="#help-rdf-xml">RDF/XML syntax and tools</a></li>
+    <li><a href="#help-trill">TRILL manual</a></li>
   </ul>
 
 <h4 id="help-basics">Basic operation</h4>
 <p>
-Prolog is about running a <i>query</i> against a <i>program</i>. The
-<i>query</i> goes into the bottom-right editor and the <i>program</i>
-into the left editor.  The program can be empty, executing queries
-against the <i>built-in</i> predicates of Prolog.  For example:
-
-<pre style="font-size:80%">
-?- format("Hello world!~n").</pre>
+TRILL is about running a <i>query</i> against a <i>knowledge base</i>. 
+It can handle <i>SHOQ</i> knowledge bases writtend in RDF/XML format.
+The <i>query</i> goes into the bottom-right editor and the <i>program</i>
+into the left editor.  
 
 <p>
-A query can be executed by hitting <code>RETURN</code> if the query
-is complete and the caret is behind the '.' that terminates the query
-or by using the <b>Run!</b> button.  At this moment, the following happens:
+A query can be executed by using the <b>Run!</b> button.  At this moment, the following happens:
 
 <ol>
   <li>The interface creates a <em>runner</em> in the top-right window
@@ -49,8 +46,7 @@ or by using the <b>Run!</b> button.  At this moment, the following happens:
 Note that <b>you do not have to save your program to execute it</b>.  If
 your are not satisfied with the answer to a query, you can simply
 edit the program and use the <b>Run!</b> again.  The new query is
-executed in a completely new environment.  In particular, data that
-you asserted in a previous query is not available in the next.
+executed in a completely new environment.
 
 <h4 id="help-examples">Embedding examples in the program text</h4>
 <p>
@@ -58,11 +54,13 @@ If you include example goals inside comments as shown below,
 they will be used to populate the example menu and make the
 first goal show in the Goal input field.
 </p>
+<p>
+<b>NOTE:</b> if a complex string containing special characters (s.a. &#35;), surround it with escaped single quote (\'). See <a href="#help-trill">TRILL manual</a> section for a list of possible queries.
+</p>
 <pre style="font-size:80%">
 /** &lt;examples&gt;
 
-?- loves(X, mia).
-?- jealous(X, Y).
+?- instanceOf(\'http://my.ontology.org/ontologies/foo#myClass\',\'http://my.ontology.org/ontologies/foo#myIndividual\',ListExpl).
 
 */</pre>
 
@@ -82,39 +80,151 @@ that provides shared editing, chat and voice communication.
 
 <h4 id="help-preload">Preload SWISH with data</h4>
 <p>
-You can make <span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
-start with a loaded program using the URL <code>http://swish.swi-prolog.org/</code> and
+You can make <span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span
+style="color:maroon">SH</span>
+start with a loaded program using the URL <code>http://trill.lamping.unife.it/swish/</code> and
 providing the parameters below.  The URL accepts both `GET` and `POST` requests.
 
   <dl>
   <dt>code<dd>
-  Either the concrete code or a URL from which the code will be downloaded.
-  </dd>
-  <dt>background<dd>
-  As <code>code</code>, but this part of the code will not be visible in
-  the editor.
-  </dd>
-  <dt>examples<dd>
-  As the above described examples comment block.
+  The value can be either the KB or a URL from which the KB is available and downloadable.
   </dd>
   <dt>q<dd>
-  The initial query to load into the query window.  Note that the following
-  characters need to be escaped: '#', '&' and the space.
+  The query to set in the query pane.
   </dd>
   </dl>
 
-<p>The URL below opens <span style="color:darkblue">SWI</span><span style="color:maroon">SH</span> on a file from GitHub with a default query.
+<p>The URL below opens <span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span
+style="color:maroon">SH</span> on a file from GitHub with a default query.
 
-<pre>
-http://swish.swi-prolog.org/?code=https://github.com/SWI-Prolog/swipl-devel/raw/master/demo/likes.pl&amp;q=likes(sam,Food).</pre>
+<pre style="font-size:80%">
+http://trill.lamping.unife.it/swish/?code=https://github.com/friguzzi/trill-on-swish/raw/master/examples/BRCA.</pre>
+
+
+ <h4 id="help-rdf-xml">RDF/XML syntax and tools</h4>
+ <p>RDF/XML knowledge bases consist of a set of possibly annotated axioms.
+ An axiom is a proposition that models an information of the domain. There are several different axioms:
+ <dl>
+  <dt>concept membership axioms<dd>
+  An individual belongs to a certain class.
+  </dd>
+  <dt>role membership axioms<dd>
+  Two individuals are connected through a certain role.
+  </dd>
+  <dt>transitivity axioms<dd>
+  The role is transitive.
+  </dd>
+  <dt>role inclusion axioms<dd>
+  Hierarchy between roles.
+  </dd>
+  <dt>concept inclusion axioms<dd>
+  Hierarchy between concepts.
+  </dd>
+ </dl>
+ 
+ <p>  Consider the following axioms 
+
+ <pre style="font-size:80%">
+classAssertion(Cat,fluffy)
+subClassOf(Cat,Pet)
+propertyAssertion(hasAnimal,kevin,fluffy)
+</pre>
+</p>
+<p>The first axiom states that <i>fluffy</i> is a <i>Cat</i>. The second states that every <i>Cat</i> is also a <i>Pet</i>. The third states that the role <i>hasAnimal</i> links together <i>kevin</i> and <i>fluffy</i>.
+
+<p>RDF (Resource Descritpion Framework) is a standard W3C. See <a href="http://www.w3.org/TR/REC-rdf-syntax/">here</a> the syntax specification.
+RDF is a standard XML-based used for representing knowledge by means of triples.
+A representations of the three axioms seen above is shown below.
+ <pre style="font-size:80%">
+&lt;owl:NamedIndividual rdf:about="fluffy"&gt;
+  &lt;rdf:type rdf:resource="Cat"/&gt;
+&lt;/owl:NamedIndividual&gt;
+
+&lt;owl:Class rdf:about="Cat"&gt;
+  &lt;rdfs:subClassOf rdf:resource="Pet"/&gt;
+&lt;/owl:Class&gt;
+
+&lt;owl:ObjectProperty rdf:about="hasAnimal"/&gt;
+&lt;owl:NamedIndividual rdf:about="kevin"&gt;
+ &lt;hasAnimal rdf:resource="fluffy"/&gt;
+&lt;/owl:NamedIndividual&gt;
+</pre>
+</p>
+
+<p>
+An axiom can be annotated with a probability which defines the degree of belief in the truth of the axiom. See [1] for details.
+</p>
+<p>
+Below, an example of an annotated axiom, following the RDF/XML syntax.
+ <pre style="font-size:80%">
+&lt;owl:Class rdf:about="Cat"&gt;
+ &lt;rdfs:subClassOf rdf:resource="Pet"/&gt;
+&lt;/owl:Class&gt;
+&lt;owl:Axiom&gt;
+ &lt;disponte:probability rdf:datatype="&amp;xsd;decimal"&gt;0.6&lt;/disponte:probability&gt;
+ &lt;owl:annotatedSource rdf:resource="Cat"/&gt;
+ &lt;owl:annotatedTarget rdf:resource="Pet"/&gt;
+ &lt;owl:annotatedProperty rdf:resource="&amp;rdfs;subClassOf"/&gt;
+&lt;/owl:Axiom&gt;
+</pre>
+The annotation must be declared in the knowledge base as follow
+  <pre style="font-size:80%">
+&lt;!DOCTYPE rdf:RDF [
+ ...
+ &lt;!ENTITY disponte "https://sites.google.com/a/unife.it/ml/disponte#" &gt;
+]&gt;
+
+&lt;rdf:RDF
+ ...
+ xmlns:disponte="https://sites.google.com/a/unife.it/ml/disponte#"
+ ...&gt;
+
+ ...
+ &lt;owl:AnnotationProperty rdf:about="&amp;disponte;probability"/&gt;
+ ...
+&lt;/rdf:RDF&gt;
+</pre>
+</p>
+
+<p>There are many editors for developing knowledge bases, some of them are listed 
+<a href="http://www.w3.org/2001/sw/wiki/Category:Editor">here</a>.
+</p>
+
+<h4 id="help-trill">TRILL manual</h4>
+<p>
+TRILL ("Tableau Reasoner for descrIption Logics in Prolog") implements a tableau algorithm in
+Prolog to compute the set of all the explanations of a query. After generating the explanations, TRILL can computes the probability of the query. TRILL can answer   and , and can find explanations both for the  contained in the KB or for the inconsistency of the entire KB. TRILL is implemented in Prolog, so the management of the rules' non-determinism is delegated to this language.
+</p>
+<p>
+The types of query that are available are shown below:
+<dl>
+  <dt><b>instanceOf(Class,Individual),
+instanceOf(Class,Individual,Expl),
+prob instanceOf(Class,Individual,Prob)</b><dd>
+  Concept membership queries.
+  </dd>
+  <dt><b>sub class(Class1,Class2),
+sub class(Class1,Class2,Expl),
+prob sub class(Class1,Class2,Prob)</b>
+  <dd>
+  Subsumption queries.
+  </dd>
+  <dt><b>unsat(ClassExpression),
+unsat(ClassExpression,Expl),
+prob unsat(ClassExpression,Prob)</b><dd>
+  Unsatifiability of a concept.
+  </dd>
+  <dt><b>inconsistent_theory,
+inconsistent_theory(Expl),
+prob inconsistent_theory(Prob)</b><dd>
+  Inconsistency of the knowledge base.
+  </dd>
+  </dl>
+Each query has three versions which respectively test entailment, find an explanation Expl or com pute the probability Prob of the query.
+</p>
 
 </body>
 </html>
-
-
-
-
-
 
 
 

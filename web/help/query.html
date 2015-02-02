@@ -16,13 +16,17 @@ program and select it from the <b>Examples</b> dropup menu. Queries are
 added to the <b>History</b> dropup menu for re-use.
 
 <p>
+<b>NOTE:</b> if a complex string containing special characters (s.a. &#35;), surround it with escaped single quote (\'). See <a href="#help-trill">TRILL manual</a> section for a list of possible queries.
+</p>
+
+<p>
 Example queries embedded in your program must be formatted like this:
 
 <pre class="prolog">
 /** &lt;examples&gt;
 
-?- run.
-?- known(X).
+?- instanceOf(\'http://my.ontology.org/ontologies/foo#myClass\',\'http://my.ontology.org/ontologies/foo#myIndividual\',ListExpl).
+?- axiom(X).
 */
 </pre>
 
