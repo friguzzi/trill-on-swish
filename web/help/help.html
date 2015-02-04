@@ -19,8 +19,16 @@
 <p>
 TRILL is about running a <i>query</i> against a <i>knowledge base</i>. 
 It can handle <i>SHOQ</i> knowledge bases writtend in RDF/XML format.
+TRILL can be installed on SWI Prolog using the commands below
+<pre style="font-size:80%">
+?- pack_install(cplint).
+?- pack_install(trill).
+</pre>
+
+<p>
+TRILL is a tableau reasoner written in Prolog, the queries available are listed in <a href="#help-trill">TRILL manual</a> section.
 The <i>query</i> goes into the bottom-right editor and the <i>program</i>
-into the left editor.  
+into the left editor. 
 
 <p>
 A query can be executed by using the <b>Run!</b> button.  At this moment, the following happens:
@@ -197,7 +205,7 @@ The annotation must be declared in the knowledge base as follow
 <h4 id="help-trill">TRILL manual</h4>
 <p>
 TRILL ("Tableau Reasoner for descrIption Logics in Prolog") implements a tableau algorithm in
-Prolog to compute the set of all the explanations of a query. After generating the explanations, TRILL can computes the probability of the query. TRILL can answer   and , and can find explanations both for the  contained in the KB or for the inconsistency of the entire KB. TRILL is implemented in Prolog, so the management of the rules' non-determinism is delegated to this language.
+Prolog to compute the set of all the explanations of a query. After generating the explanations, TRILL can computes the probability of the query. The management of the tableau rules' non-determinism is delegated to the Prolog language.
 </p>
 <p>
 The types of query that are available are shown below:
