@@ -27,16 +27,16 @@
     the GNU General Public License.
 */
 
-:- module(swish_page,
-	  [ swish_reply/2,			% +Options, +Request
-	    swish_page//1,			% +Options
+:- module(trill_on_swish_page,
+	  [ trill_on_swish_reply/2,			% +Options, +Request
+	    trill_on_swish_page//1,			% +Options
 
-	    swish_navbar//1,			% +Options
-	    swish_content//1,			% +Options
+	    trill_on_swish_navbar//1,			% +Options
+	    trill_on_swish_content//1,			% +Options
 
-	    swish_resources//0,
-	    swish_js//0,
-	    swish_css//0
+	    trill_on_swish_resources//0,
+	    trill_on_swish_js//0,
+	    trill_on_swish_css//0
 	  ]).
 :- use_module(library(http/http_open)).
 :- use_module(library(http/http_dispatch)).
@@ -51,10 +51,10 @@
 :- use_module(library(time)).
 :- use_module(library(option)).
 
-:- use_module(config).
-:- use_module(help).
-:- use_module(form).
-:- use_module(search).
+:- use_module(trill_on_swish_config).
+:- use_module(trill_on_swish_help).
+:- use_module(trill_on_swish_form).
+:- use_module(trill_on_swish_search).
 
 /** <module> Provide the SWISH application as Prolog HTML component
 
@@ -63,15 +63,15 @@ grammer rules. This allows for server-side   generated  pages to include
 swish or parts of swish easily into a page.
 */
 
-http:location(pldoc, swish(pldoc), [priority(100)]).
+http:location(tos_pldoc, trill_on_swish(tos_pldoc), [priority(100)]).
 
-:- http_handler(swish(.), swish_reply([]), [id(swish), prefix, priority(100)]).
+:- http_handler(trill_on_swish(.), trill_on_swish_reply([]), [id(trill_on_swish), prefix, priority(100)]).
 
 :- multifile
-	swish_config:source_alias/1,
-	swish_config:reply_page/1.
+	trill_on_swish_config:trill_on_swish_source_alias/1,
+	trill_on_swish_config:trill_on_swish_reply_page/1.
 
-%%	swish_reply(+Options, +Request)
+%%	trill_on_swish_reply(+Options, +Request)
 %
 %	HTTP handler to reply the  default   SWISH  page.  Processes the
 %	following parameters:
@@ -87,33 +87,33 @@ http:location(pldoc, swish(pldoc), [priority(100)]).
 %	  - q(Query)
 %	  Use Query as the initial query.
 
-swish_reply(_, Request) :-
+trill_on_swish_reply(_, Request) :-
 	serve_resource(Request), !.
-swish_reply(_, Request) :-
-	swish_reply_config(Request), !.
-swish_reply(SwishOptions, Request) :-
+trill_on_swish_reply(_, Request) :-
+	trill_on_swish_reply_config(Request), !.
+trill_on_swish_reply(SwishOptions, Request) :-
 	Params = [ code(_,	 [optional(true)]),
 		   background(_, [optional(true)]),
 		   examples(_,   [optional(true)]),
 		   q(_,          [optional(true)]),
-		   format(_,     [oneof([swish,raw]), default(swish)])
+		   format(_,     [oneof([trill_on_swish,raw]), default(trill_on_swish)])
 		 ],
 	http_parameters(Request, Params),
 	params_options(Params, Options0),
 	merge_options(Options0, SwishOptions, Options1),
 	source_option(Request, Options1, Options2),
-	swish_reply1(Options2).
+	trill_on_swish_reply1(Options2).
 
-swish_reply1(Options) :-
+trill_on_swish_reply1(Options) :-
 	option(code(Code), Options),
 	option(format(raw), Options), !,
 	format('Content-type: text/x-prolog~n~n'),
 	format('~s~n', [Code]).
-swish_reply1(Options) :-
-	swish_config:reply_page(Options), !.
-swish_reply1(Options) :-
+trill_on_swish_reply1(Options) :-
+	trill_on_swish_config:trill_on_swish_reply_page(Options), !.
+trill_on_swish_reply1(Options) :-
 	reply_html_page(
-	    swish(main),
+	    trill_on_swish(main),
 	    [ title('TRILL on SWISH -- SWI-Prolog for SHaring'),
 	      link([ rel('shortcut icon'),
 		     href('/icons/favicon.ico')
@@ -122,7 +122,7 @@ swish_reply1(Options) :-
 		     href('/icons/swish-touch-icon.png')
 		   ])
 	    ],
-	    \swish_page(Options)).
+	    \trill_on_swish_page(Options)).
 
 params_options([], []).
 params_options([H0|T0], [H|T]) :-
@@ -141,7 +141,7 @@ params_options([_|T0], T) :-
 
 source_option(_Request, Options, Options) :-
 	option(code(_), Options),
-	option(format(swish), Options), !.
+	option(format(trill_on_swish), Options), !.
 source_option(Request, Options0, Options) :-
 	option(path_info(Info), Request),
 	Info \== 'index.html', !,	% Backward compatibility
@@ -155,7 +155,7 @@ source_data(Info, Code) :-
 	sub_atom(Info, B, _, A, /),
 	sub_atom(Info, 0, B, _, Alias),
 	sub_atom(Info, _, A, 0, File),
-	catch(swish_config:source_alias(Alias), E,
+	catch(trill_on_swish_config:trill_on_swish_source_alias(Alias), E,
 	      (print_message(warning, E), fail)),
 	Spec =.. [Alias,File],
 	http_safe_file(Spec, []),
@@ -174,47 +174,47 @@ source_data(Info, Code) :-
 
 serve_resource(Request) :-
 	option(path_info(Info), Request),
-	resource_prefix(Prefix),
+	trill_on_swish_resource_prefix(Prefix),
 	sub_atom(Info, 0, _, _, Prefix), !,
-	http_reply_file(swish_web(Info), [], Request).
+	http_reply_file(trill_on_swish_web(Info), [], Request).
 
-resource_prefix('css/').
-resource_prefix('help/').
-resource_prefix('form/').
-resource_prefix('icons/').
-resource_prefix('js/').
-resource_prefix('bower_components/').
+trill_on_swish_resource_prefix('css/').
+trill_on_swish_resource_prefix('help/').
+trill_on_swish_resource_prefix('form/').
+trill_on_swish_resource_prefix('icons/').
+trill_on_swish_resource_prefix('js/').
+trill_on_swish_resource_prefix('bower_components/').
 
-%%	swish_page(+Options)//
+%%	trill_on_swish_page(+Options)//
 %
 %	Generate the entire SWISH default page.
 
-swish_page(Options) -->
-	swish_navbar(Options),
-	swish_content(Options).
+trill_on_swish_page(Options) -->
+	trill_on_swish_navbar(Options),
+	trill_on_swish_content(Options).
 
-%%	swish_navbar(+Options)//
+%%	trill_on_swish_navbar(+Options)//
 %
 %	Generate the swish navigation bar.
 
-swish_navbar(Options) -->
-	swish_resources,
+trill_on_swish_navbar(Options) -->
+	trill_on_swish_resources,
 	html(nav([ class([navbar, 'navbar-default']),
 		   role(navigation)
 		 ],
 		 [ div(class('navbar-header'),
-		       [ \collapsed_button,
+		       [ \swish_collapsed_button,
 			 \swish_logos(Options)
 		       ]),
 		   div([ class([collapse, 'navbar-collapse']),
 			 id(navbar)
 		       ],
 		       [ ul([class([nav, 'navbar-nav'])], []),
-			 \search_form(Options)
+			 \swish_search_form(Options)
 		       ])
 		 ])).
 
-collapsed_button -->
+swish_collapsed_button -->
 	html(button([type(button),
 		     class('navbar-toggle'),
 		     'data-toggle'(collapse),
@@ -227,15 +227,15 @@ collapsed_button -->
 		    ])).
 
 swish_logos(Options) -->
-	pengine_logo(Options),
+	swish_pengine_logo(Options),
 	swish_logo(Options).
 
-pengine_logo(_Options) -->
+swish_pengine_logo(_Options) -->
 	{ http_absolute_location(root(.), HREF, [])
 	},
 	html(a([href(HREF), class('pengine-logo')], &(nbsp))).
 swish_logo(_Options) -->
-	{ http_absolute_location(swish('index.html'), HREF, [])
+	{ http_absolute_location(trill_on_swish('index.html'), HREF, [])
 	},
 	html(a([href(HREF), class('swish-logo')], &(nbsp))).
 
@@ -243,12 +243,12 @@ swish_logo(_Options) -->
 %
 %	Add search box to the navigation bar
 
-search_form(Options) -->
+swish_search_form(Options) -->
 	html(div(class(['col-sm-3', 'col-md-3', 'pull-right']),
-		 \search_box(Options))).
+		 \swish_search_box(Options))).
 
 
-%%	swish_content(+Options)//
+%%	trill_on_swish_content(+Options)//
 %
 %	Generate the SWISH editor, Prolog output  area and query editor.
 %	Options processed:
@@ -256,33 +256,33 @@ search_form(Options) -->
 %	  - source(HREF)
 %	  Load initial source from HREF
 
-swish_content(Options) -->
-	swish_resources,
-	swish_config_hash,
-	html(div([id(content), class([container, swish])],
+trill_on_swish_content(Options) -->
+	trill_on_swish_resources,
+	trill_on_swish_config_hash,
+	html(div([id(content), class([container, trill_on_swish])],
 		 [ div([class([tile, horizontal]), 'data-split'('50%')],
-		       [ div(class('prolog-editor'), \source(Options)),
+		       [ div(class('prolog-editor'), \swish_source(Options)),
 			 div([class([tile, vertical]), 'data-split'('70%')],
 			     [ div(class('prolog-runners'), []),
-			       div(class('prolog-query'), \query(Options))
+			       div(class('prolog-query'), \swish_query(Options))
 			     ])
 		       ]),
-		   \background(Options),
-		   \examples(Options)
+		   \swish_background(Options),
+		   \swish_examples(Options)
 		 ])).
 
 
-%%	swish_config_hash//
+%%	trill_on_swish_config_hash//
 %
 %	Set `window.swish.config_hash` to a  hash   that  represents the
 %	current configuration. This is used by   config.js  to cache the
 %	configuration in the browser's local store.
 
-swish_config_hash -->
-	{ swish_config_hash(Hash) },
+trill_on_swish_config_hash -->
+	{ trill_on_swish_config_hash(Hash) },
 	js_script({|javascript(Hash)||
-		   window.swish = window.swish||{};
-		   window.swish.config_hash = Hash;
+		   window.trill_on_swish = window.trill_on_swish||{};
+		   window.trill_on_swish.trill_on_swish_config_hash = Hash;
 		   |}).
 
 
@@ -298,7 +298,7 @@ swish_config_hash -->
 %	  If present and code(String) is present, also associate the
 %	  editor with the given file.  See storage.pl.
 
-source(Options) -->
+swish_source(Options) -->
 	{ option(code(Spec), Options), !,
 	  download_source(Spec, Source, Options),
 	  (   option(file(File), Options)
@@ -308,11 +308,11 @@ source(Options) -->
 	},
 	source_meta_data(File, Options),
 	html(textarea([ class([source,prolog]),
-			style('display:none')
+			tos_style('display:none')
 		      | Extra
 		      ],
 		      Source)).
-source(_) --> [].
+swish_source(_) --> [].
 
 %%	source_meta_data(+File, +Options)//
 %
@@ -323,40 +323,40 @@ source_meta_data(File, Options) -->
 	  option(meta(Meta), Options)
 	}, !,
 	js_script({|javascript(Meta)||
-		   window.swish = window.swish||{};
-		   window.swish.meta_data = Meta;
+		   window.trill_on_swish = window.trill_on_swish||{};
+		   window.trill_on_swish.meta_data = Meta;
 		   |}).
 source_meta_data(_, _) --> [].
 
-background(Options) -->
+swish_background(Options) -->
 	{ option(background(Spec), Options), !,
 	  download_source(Spec, Source, Options)
 	},
 	html(textarea([ class([source,prolog,background]),
-			style('display:none')
+			tos_style('display:none')
 		      ],
 		      Source)).
-background(_) --> [].
+swish_background(_) --> [].
 
 
-examples(Options) -->
-	{ option(examples(Examples), Options), !
+swish_examples(Options) -->
+	{ option(trill_on_swish_examples(Examples), Options), !
 	},
 	html(textarea([ class([examples,prolog]),
-			style('display:none')
+			tos_style('display:none')
 		      ],
 		      Examples)).
-examples(_) --> [].
+swish_examples(_) --> [].
 
 
-query(Options) -->
+swish_query(Options) -->
 	{ option(q(Query), Options)
 	}, !,
 	html(textarea([ class([query,prolog]),
-			style('display:none')
+			tos_style('display:none')
 		      ],
 		      Query)).
-query(_) --> [].
+swish_query(_) --> [].
 
 
 %%	download_source(+HREF, -Source, Options) is det.
@@ -429,31 +429,31 @@ ssl_verify(_SSL,
 		 *	     RESOURCES		*
 		 *******************************/
 
-%%	swish_resources//
+%%	trill_on_swish_resources//
 %
 %	Include  SWISH  CSS  and   JavaScript.    This   does   not  use
 %	html_require//1  because  we  need  to   include  the  JS  using
 %	RequireJS, which requires a non-standard script element.
 
-swish_resources -->
-	swish_css,
-	swish_js.
+trill_on_swish_resources -->
+	trill_on_swish_css,
+	trill_on_swish_js.
 
-swish_js  --> html_post(head, \include_swish_js).
-swish_css --> html_post(head, \include_swish_css).
+trill_on_swish_js  --> html_post(head, \include_trill_on_swish_js).
+trill_on_swish_css --> html_post(head, \include_trill_on_swish_css).
 
-include_swish_js -->
-	{ swish_resource(js, JS),
-	  swish_resource(rjs, RJS),
-	  http_absolute_location(swish(js/JS), SwishJS, []),
-	  http_absolute_location(swish(RJS),   SwishRJS, [])
+include_trill_on_swish_js -->
+	{ trill_on_swish_resource(js, JS),
+	  trill_on_swish_resource(rjs, RJS),
+	  http_absolute_location(trill_on_swish(js/JS), SwishJS, []),
+	  http_absolute_location(trill_on_swish(RJS),   SwishRJS, [])
 	},
 	rjs_timeout(JS),
 	html(script([ src(SwishRJS),
 		      'data-main'(SwishJS)
 		    ], [])).
 
-rjs_timeout('swish-min') --> !,
+rjs_timeout('trill_on_swish-min') --> !,
 	js_script({|javascript||
 // Override RequireJS timeout, until main file is loaded.
 window.require = { waitSeconds: 0 };
@@ -461,27 +461,27 @@ window.require = { waitSeconds: 0 };
 rjs_timeout(_) --> [].
 
 
-include_swish_css -->
-	{ swish_resource(css, CSS),
-	  http_absolute_location(swish(css/CSS), SwishCSS, [])
+include_trill_on_swish_css -->
+	{ trill_on_swish_resource(css, CSS),
+	  http_absolute_location(trill_on_swish(css/CSS), SwishCSS, [])
 	},
 	html(link([ rel(stylesheet),
 		    href(SwishCSS)
 		  ])).
 
-swish_resource(Type, ID) :-
-	alt(Type, ID, File),
+trill_on_swish_resource(Type, ID) :-
+	trill_on_swish_alt(Type, ID, File),
 	(   File == (-)
 	;   absolute_file_name(File, _P, [file_errors(fail), access(read)])
 	), !.
 
-alt(js,  'swish-min',     swish_web('js/swish-min.js')) :-
+trill_on_swish_alt(js,  'trill_on_swish-min',     trill_on_swish_web('js/trill_on_swish-min.js')) :-
 	\+ debugging(nominified).
-alt(js,  'swish',         swish_web('js/swish.js')).
-alt(css, 'swish-min.css', swish_web('css/swish-min.css')) :-
+trill_on_swish_alt(js,  'trill_on_swish',         trill_on_swish_web('js/trill_on_swish.js')).
+trill_on_swish_alt(css, 'trill_on_swish-min.css', trill_on_swish_web('css/trill_on_swish-min.css')) :-
 	\+ debugging(nominified).
-alt(css, 'swish.css',     swish_web('css/swish.css')).
-alt(rjs, 'js/require.js', swish_web('js/require.js')) :-
+trill_on_swish_alt(css, 'trill_on_swish.css',     trill_on_swish_web('css/trill_on_swish.css')).
+trill_on_swish_alt(rjs, 'js/tos_require.js', trill_on_swish_web('js/tos_require.js')) :-
 	\+ debugging(nominified).
-alt(rjs, 'bower_components/requirejs/require.js', -).
+trill_on_swish_alt(rjs, 'bower_components/requirejs/require.js', -).
 

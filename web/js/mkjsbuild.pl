@@ -7,7 +7,7 @@
 :- initialization main.
 
 main([]) :- !,
-	main(['swish.js', 'build.js.in']).
+	main(['trill_on_swish.js', 'build.js.in']).
 main([Main, Build]) :-
 	config(Main, Config),
 %	format('Got ~s~n', [Config]),

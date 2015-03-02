@@ -27,8 +27,8 @@
     the GNU General Public License.
 */
 
-:- module(swish_search,
-	  [ search_box//1		% +Options
+:- module(trill_on_swish_search,
+	  [ swish_search_box//1		% +Options
 	  ]).
 :- use_module(library(lists)).
 :- use_module(library(http/html_write)).
@@ -36,10 +36,10 @@
 :- use_module(library(http/http_parameters)).
 :- use_module(library(http/http_json)).
 
-:- use_module(config).
+:- use_module(trill_on_swish_config).
 
 :- multifile
-	typeahead/3.			% +Set, +Query, -Match
+	tos_typeahead/3.			% +Set, +Query, -Match
 
 /** <module> SWISH search from the navigation bar
 
@@ -53,15 +53,15 @@ search from the server side. What do we want to search for?
       these?
 */
 
-:- http_handler(swish(typeahead), typeahead, [id(typeahead)]).
-:- http_handler(swish(search),    search,    [id(search)]).
+:- http_handler(trill_on_swish(typeahead), trill_on_swish_typeahead, [id(trill_on_swish_typeahead)]).
+:- http_handler(trill_on_swish(search),    trill_on_swish_search,    [id(trill_on_swish_search)]).
 
 %%	search_box(+Options)//
 %
 %	Render a Bootstrap search box.
 
-search_box(_Options) -->
-	html(form([class('navbar-form'), role(search)],
+swish_search_box(_Options) -->
+	html(tos_form([class('navbar-form'), role(search)],
 		  div(class('input-group'),
 		      [ input([ type(text),
 				class('form-control'),
@@ -77,22 +77,22 @@ search_box(_Options) -->
 		      ]))).
 
 
-%%	typeahead(+Request)
+%%	tos_typeahead(+Request)
 %
 %	Support the search typeahead widget. The  handler returns a JSON
 %	array of matches. Each match is an object that contains at least
 %	a label.
 
-typeahead(Request) :-
+tos_typeahead(Request) :-
 	http_parameters(Request,
 			[ q(Query, [default('')]),
 			  set(Set, [default(predicates)])
 			]),
-	findall(Match, typeahead(Set, Query, Match), Matches),
+	findall(Match, tos_typeahead(Set, Query, Match), Matches),
 	reply_json_dict(Matches).
 
-typeahead(predicates, Query, Template) :-
-	swish_config(templates, Templates),
+tos_typeahead(predicates, Query, Template) :-
+	trill_on_swish_config(templates, Templates),
 	member(Template, Templates),
 	_{name:Name, arity:_} :< Template,
 	sub_atom(Name, 0, _, _, Query).

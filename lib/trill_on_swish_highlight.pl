@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(swish_highlight,
+:- module(trill_on_swish_highlight,
 	  [
 	  ]).
 :- use_module(library(debug)).
@@ -46,13 +46,13 @@
 :- use_module(library(helpidx), [predicate/5]).
 :- endif.
 
-http:location(codemirror, swish(cm), []).
+http:location(tos_codemirror, trill_on_swish(tos_cm), []).
 
-:- http_handler(codemirror(.),      http_404([]),      [id(cm_highlight)]).
-:- http_handler(codemirror(change), codemirror_change, []).
-:- http_handler(codemirror(tokens), codemirror_tokens, []).
-:- http_handler(codemirror(leave),  codemirror_leave,  []).
-:- http_handler(codemirror(info),   token_info,        []).
+:- http_handler(tos_codemirror(.),      http_404([]),      [id(trill_on_swish_cm_highlight)]).
+:- http_handler(tos_codemirror(change), codemirror_change, []).
+:- http_handler(tos_codemirror(tokens), codemirror_tokens, []).
+:- http_handler(tos_codemirror(leave),  codemirror_leave,  []).
+:- http_handler(tos_codemirror(info),   token_info,        []).
 
 /** <module> Highlight token server
 
@@ -154,13 +154,13 @@ insert([H|T], TB, ChPos0, ChPos, Changed) :-
 	->  true
 	;   Changed = true,
 	    string_length(H, Len),
-	    debug(swish(change), 'Insert ~q at ~d', [H, ChPos0]),
+	    debug(trill_on_swish(change), 'Insert ~q at ~d', [H, ChPos0]),
 	    insert_memory_file(TB, ChPos0, H)
 	),
 	ChPos1 is ChPos0+Len,
 	(   T == []
 	->  ChPos2 = ChPos1
-	;   debug(swish(change), 'Adding newline at ~d', [ChPos1]),
+	;   debug(trill_on_swish(change), 'Adding newline at ~d', [ChPos1]),
 	    Changed = true,
 	    insert_memory_file(TB, ChPos1, '\n'),
 	    ChPos2 is ChPos1+1
@@ -292,7 +292,7 @@ xref_state_module(TB, UUID) :-
 	(   module_property(UUID, class(temporary))
 	->  true
 	;   set_module(UUID:class(temporary)),
-	    add_import_module(UUID, swish, start)
+	    add_import_module(UUID, trill_on_swish, start)
 	).
 
 destroy_state_module(UUID) :-
@@ -334,7 +334,7 @@ enriched_tokens(TB, Data, Tokens) :-		% query window
 	collect_tokens(TB, Tokens).
 enriched_tokens(TB, _Data, Tokens) :-
 	memory_file_to_string(TB, Query),
-	prolog_colourise_query(Query, swish, colour_item(TB)),
+	prolog_colourise_query(Query, module(trill_on_swish), colour_item(TB)),
 	collect_tokens(TB, Tokens).
 
 %%	shadow_editor(+Data, -MemoryFile) is det.
@@ -368,7 +368,7 @@ shadow_editor(Data, TB) :-
 	Text = Data.get(text), !,
 	atom_string(UUID, Data.uuid),
 	create_editor(UUID, TB, Data),
-	debug(swish(change), 'Initialising editor to ~q', [Text]),
+	debug(trill_on_swish(change), 'Initialising editor to ~q', [Text]),
 	insert_memory_file(TB, 0, Text).
 shadow_editor(Data, TB) :-
 	_{role:_} :< Data, !,
@@ -465,7 +465,7 @@ json_token(TB, Start, Token) :-
 	debug(color, 'Trapped ~q.', [token(Style, Start0, Len)]),
 	(   atomic_special(Style, Start0, Len, TB, Type, Attrs)
 	->  Start = Start0
-	;   style(Style, Type0, Attrs0)
+	;   tos_style(Style, Type0, Attrs0)
 	->  (   Type0 = StartType-EndType
 	    ->	(   Start = Start0,
 		    Type  = StartType
@@ -504,13 +504,13 @@ json_attribute(text, text(Text), TB, Start, Len) :- !,
 json_attribute(Term, Term, _, _, _).
 
 colour_item(_TB, Style, Start, Len) :-
-	(   style(Style)
+	(   tos_style(Style)
 	->  assertz(token(Style, Start, Len))
 	;   debug(color, 'Ignored ~q.', [token(Style, Start, Len)])
 	).
 
-%%	style(+StyleIn) is semidet.
-%%	style(+StyleIn, -SWISHType:atomOrPair, -Attributes:list)
+%%	tos_style(+StyleIn) is semidet.
+%%	tos_style(+StyleIn, -SWISHType:atomOrPair, -Attributes:list)
 %
 %	Declare    that    we    map    StyleIn    as    generated    by
 %	library(prolog_colour) into a token of type SWISHType, providing
@@ -537,80 +537,80 @@ colour_item(_TB, Style, Start, Len) :-
 %	  ==
 
 :- multifile
-	style/3.
+	tos_style/3.
 
-style(Style) :-
-	style(Style, _, _).
+tos_style(Style) :-
+	tos_style(Style, _, _).
 
-style(neck(Neck),     neck, [ text(Text) ]) :-
+tos_style(neck(Neck),     neck, [ text(Text) ]) :-
 	neck_text(Neck, Text).
-style(head(Class, Head), Type, [ text, arity(Arity) ]) :-
+tos_style(head(Class, Head), Type, [ text, arity(Arity) ]) :-
 	goal_arity(Head, Arity),
 	head_type(Class, Type).
-style(goal(Class, Goal), Type, [ text, arity(Arity) | More ]) :-
+tos_style(goal(Class, Goal), Type, [ text, arity(Arity) | More ]) :-
 	goal_arity(Goal, Arity),
 	goal_type(Class, Type, More).
-style(file_no_depend(Path), file_no_depends,		   [text, path(Path)]).
-style(file(Path),	 file,				   [text, path(Path)]).
-style(nofile,		 nofile,			   [text]).
-style(option_name,	 option_name,			   [text]).
-style(no_option_name,	 no_option_name,		   [text]).
-style(flag_name(_Flag),	 flag_name,			   [text]).
-style(no_flag_name(_Flag), no_flag_name,		   [text]).
-style(fullstop,		 fullstop,			   []).
-style(var,		 var,				   [text]).
-style(singleton,	 singleton,			   [text]).
-style(string,		 string,			   []).
-style(codes,		 codes,				   []).
-style(chars,		 chars,				   []).
-style(atom,		 atom,				   []).
-style(meta(_Spec),	 meta,				   []).
-style(op_type(_Type),	 op_type,			   [text]).
-style(functor,		 functor,			   [text]).
-style(control,		 control,			   [text]).
-style(identifier,	 identifier,			   [text]).
-style(module(_Module),   module,			   [text]).
-style(error,		 error,				   [text]).
-style(type_error(_Expect), error,			   [text]).
-style(syntax_error(_Msg,_Pos), syntax_error,		   []).
-style(predicate_indicator, atom,			   [text]).
-style(predicate_indicator, atom,			   [text]).
-style(arity,		 int,				   []).
-style(int,		 int,				   []).
-style(float,		 float,				   []).
-style(qq(open),		 qq_open,			   []).
-style(qq(sep),		 qq_sep,			   []).
-style(qq(close),	 qq_close,			   []).
-style(qq_type,		 qq_type,			   [text]).
-style(dict_tag,		 tag,				   [text]).
-style(dict_key,		 key,				   [text]).
-style(dict_sep,		 sep,				   []).
-style(func_dot,		 atom,				   [text(.)]).
-style(dict_return_op,	 atom,				   [text(:=)]).
-style(dict_function(F),  dict_function,			   [text(F)]).
-style(empty_list,	 list_open-list_close,		   []).
-style(list,		 list_open-list_close,		   []).
-style(dcg(terminal),	 list_open-list_close,		   []).
-style(dcg(plain),	 brace_term_open-brace_term_close, []).
-style(brace_term,	 brace_term_open-brace_term_close, []).
-style(dict_content,	 dict_open-dict_close,             []).
-style(expanded,		 expanded,			   [text]).
-style(comment_string,	 comment_string,		   []).
+tos_style(file_no_depend(Path), file_no_depends,		   [text, path(Path)]).
+tos_style(file(Path),	 file,				   [text, path(Path)]).
+tos_style(nofile,		 nofile,			   [text]).
+tos_style(option_name,	 option_name,			   [text]).
+tos_style(no_option_name,	 no_option_name,		   [text]).
+tos_style(flag_name(_Flag),	 flag_name,			   [text]).
+tos_style(no_flag_name(_Flag), no_flag_name,		   [text]).
+tos_style(fullstop,		 fullstop,			   []).
+tos_style(var,		 var,				   [text]).
+tos_style(singleton,	 singleton,			   [text]).
+tos_style(string,		 string,			   []).
+tos_style(codes,		 codes,				   []).
+tos_style(chars,		 chars,				   []).
+tos_style(atom,		 atom,				   []).
+tos_style(meta(_Spec),	 meta,				   []).
+tos_style(op_type(_Type),	 op_type,			   [text]).
+tos_style(functor,		 functor,			   [text]).
+tos_style(control,		 control,			   [text]).
+tos_style(identifier,	 identifier,			   [text]).
+tos_style(module(_Module),   module,			   [text]).
+tos_style(error,		 error,				   [text]).
+tos_style(type_error(_Expect), error,			   [text]).
+tos_style(syntax_error(_Msg,_Pos), syntax_error,		   []).
+tos_style(predicate_indicator, atom,			   [text]).
+tos_style(predicate_indicator, atom,			   [text]).
+tos_style(arity,		 int,				   []).
+tos_style(int,		 int,				   []).
+tos_style(float,		 float,				   []).
+tos_style(qq(open),		 qq_open,			   []).
+tos_style(qq(sep),		 qq_sep,			   []).
+tos_style(qq(close),	 qq_close,			   []).
+tos_style(qq_type,		 qq_type,			   [text]).
+tos_style(dict_tag,		 tag,				   [text]).
+tos_style(dict_key,		 key,				   [text]).
+tos_style(dict_sep,		 sep,				   []).
+tos_style(func_dot,		 atom,				   [text(.)]).
+tos_style(dict_return_op,	 atom,				   [text(:=)]).
+tos_style(dict_function(F),  dict_function,			   [text(F)]).
+tos_style(empty_list,	 list_open-list_close,		   []).
+tos_style(list,		 list_open-list_close,		   []).
+tos_style(dcg(terminal),	 list_open-list_close,		   []).
+tos_style(dcg(plain),	 brace_term_open-brace_term_close, []).
+tos_style(brace_term,	 brace_term_open-brace_term_close, []).
+tos_style(dict_content,	 dict_open-dict_close,             []).
+tos_style(expanded,		 expanded,			   [text]).
+tos_style(comment_string,	 comment_string,		   []).
 					% from library(http/html_write)
-style(html(_Element),	 html,				   []).
-style(entity(_Element),	 entity,			   []).
-style(html_attribute(_), html_attribute,		   []).
-style(sgml_attr_function,sgml_attr_function,		   []).
-style(http_location_for_id(_), http_location_for_id,       []).
-style(http_no_location_for_id(_), http_no_location_for_id, []).
+tos_style(html(_Element),	 html,				   []).
+tos_style(entity(_Element),	 entity,			   []).
+tos_style(html_attribute(_), html_attribute,		   []).
+tos_style(sgml_attr_function,sgml_attr_function,		   []).
+tos_style(http_location_for_id(_), http_location_for_id,       []).
+tos_style(http_no_location_for_id(_), http_no_location_for_id, []).
 					% XPCE support
-style(method(send),	 xpce_method,			   [text]).
-style(method(get),	 xpce_method,			   [text]).
-style(class(built_in,_Name),	  xpce_class_built_in,	   [text]).
-style(class(library(File),_Name), xpce_class_lib,	   [text, file(File)]).
-style(class(user(File),_Name),	  xpce_class_user,	   [text, file(File)]).
-style(class(user,_Name),	  xpce_class_user,	   [text]).
-style(class(undefined,_Name),	  xpce_class_undef,	   [text]).
+tos_style(method(send),	 xpce_method,			   [text]).
+tos_style(method(get),	 xpce_method,			   [text]).
+tos_style(class(built_in,_Name),	  xpce_class_built_in,	   [text]).
+tos_style(class(library(File),_Name), xpce_class_lib,	   [text, file(File)]).
+tos_style(class(user(File),_Name),	  xpce_class_user,	   [text, file(File)]).
+tos_style(class(user,_Name),	  xpce_class_user,	   [text]).
+tos_style(class(undefined,_Name),	  xpce_class_undef,	   [text]).
 
 neck_text(clause,       (:-)).
 neck_text(grammar_rule, (-->)).
@@ -666,10 +666,10 @@ goal_arity(Goal, Arity) :-
 		 *******************************/
 
 :- multifile
-	swish_config:config/2,
-	css/3.				% ?Context, ?Selector, -Attributes
+	trill_on_swish_config:tos_config/2,
+	tos_css/3.				% ?Context, ?Selector, -Attributes
 
-%%	swish_config:config(-Name, -Styles) is nondet.
+%%	trill_on_swish_config:tos_config(-Name, -Styles) is nondet.
 %
 %	Provides the object `config.swish.style`,  a   JSON  object that
 %	maps   style   properties   of    user-defined   extensions   of
@@ -678,12 +678,12 @@ goal_arity(Goal, Arity) :-
 %
 %	@tbd	Provide summary information
 
-swish_config:config(cm_style, Styles) :-
+trill_on_swish_config:tos_config(cm_style, Styles) :-
 	findall(Name-Style, highlight_style(Name, Style), Pairs),
 	keysort(Pairs, Sorted),
 	remove_duplicate_styles(Sorted, Unique),
 	dict_pairs(Styles, json, Unique).
-swish_config:config(cm_hover_style, Styles) :-
+trill_on_swish_config:tos_config(cm_hover_style, Styles) :-
 	findall(Sel-Attrs, css_dict(hover, Sel, Attrs), Pairs),
 	dict_pairs(Styles, json, Pairs).
 
@@ -698,7 +698,7 @@ remove_same(K, [K-_|T0], T) :- !,
 remove_same(_, Rest, Rest).
 
 highlight_style(StyleName, Style) :-
-	style(Term, StyleName, _),
+	tos_style(Term, StyleName, _),
 	atom(StyleName),
 	(   prolog_colour:style(Term, Attrs0)
         ->  maplist(css_style, Attrs0, Attrs),
@@ -718,7 +718,7 @@ css_style(colour(Name), color(RGB)) :-
 	format(atom(RGB), '#~|~`0t~16r~2+~`0t~16r~2+~`0t~16r~2+', [R,G,B]).
 css_style(Style, Style).
 
-%%	css(?Context, ?Selector, -Style) is nondet.
+%%	tos_css(?Context, ?Selector, -Style) is nondet.
 %
 %	Multifile hook to define additional style to apply in a specific
 %	context.  Currently defined contexts are:
@@ -730,7 +730,7 @@ css_style(Style, Style).
 %	@arg Style is a list of Name(Value) terms.
 
 css_dict(Context, Selector, Style) :-
-	css(Context, Selector, Attrs0),
+	tos_css(Context, Selector, Attrs0),
 	maplist(css_style, Attrs0, Attrs),
 	dict_create(Style, json, Attrs).
 

@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(swish_authenticate,
+:- module(trill_on_swish_authenticate,
 	  [ swish_add_user/3		% +User, +Passwd, +Fields
 	  ]).
 :- use_module(library(pengines), []).
@@ -58,7 +58,7 @@ through pengine_user/1.
 password_file(File) :-
 	password_file_cache(File), !.
 password_file(File) :-
-	absolute_file_name(swish(passwd), File, [access(read)]),
+	absolute_file_name(trill_on_swish(passwd), File, [access(read)]),
 	asserta(password_file_cache(File)).
 
 pengines:authentication_hook(Request, _Application, User) :-
@@ -80,7 +80,7 @@ swish_add_user(User, Passwd, Fields) :-
 
 	Entry = passwd(User, Hash, Fields),
 
-	absolute_file_name(swish(passwd), File,
+	absolute_file_name(trill_on_swish(passwd), File,
 			   [access(write)]),
 	(   exists_file(File)
 	->  http_read_passwd_file(File, Data)

@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(swish_template_hint,
+:- module(trill_on_swish_template_hint,
 	  [ visible_predicate/3,	% ?PI, +Module, +Options
 	    predicate_template/2,	% +PI, -TemplateDict
 	    visible_predicate_templates/3 %  +Module, +Options, -Templates
@@ -49,7 +49,7 @@
 :- use_module(library(filesex)).
 :- use_module(library(error)).
 
-:- use_module(render).
+:- use_module(trill_on_swish_render).
 
 /** <module> Generate template hints for CondeMirror
 
@@ -73,7 +73,7 @@ SWISH editor.
 visible_predicate_templates(Module, Templates, Options) :-
 	cached_templates(Module, Options, Templates), !.
 visible_predicate_templates(Module, Templates, Options) :-
-	with_mutex(swish_template_hint,
+	with_mutex(trill_on_swish_template_hint,
 		   visible_predicate_templates_sync(Module, Templates, Options)).
 
 visible_predicate_templates_sync(Module, Templates, Options) :-
@@ -119,8 +119,8 @@ visible_predicate(PI, Module, Options) :-
 
 no_template(use_module/1).
 no_template(use_module/2).
-no_template(use_rendering/1).
-no_template(use_rendering/2).
+no_template(trill_on_swish_use_rendering/1).
+no_template(trill_on_swish_use_rendering/2).
 
 %%	visible_from(+Spec, -PI, +Module, +Options) is nondet.
 %
@@ -329,18 +329,18 @@ m_same_name_arity(H1, H2) :-
 %
 %	Create a template for the SWISH rendering modules.
 
-rendering_template([ json{displayText:  "use_rendering(+Renderer).",
+rendering_template([ json{displayText:  "trill_on_swish_use_rendering(+Renderer).",
 			  type:         "directive",
-			  template:     "use_rendering(${Renderer}).",
+			  template:     "trill_on_swish_use_rendering(${Renderer}).",
 			  varTemplates: json{'Renderer': Template}},
-		     json{displayText:  "use_rendering(+Renderer, +Options).",
+		     json{displayText:  "trill_on_swish_use_rendering(+Renderer, +Options).",
 			  type:         "directive",
-			  template:     "use_rendering(${Renderer}).",
+			  template:     "trill_on_swish_use_rendering(${Renderer}).",
 			  varTemplates: json{'Renderer': Template}}
 		   ]) :-
 	findall(json{displayText: Comment,
 		     text: Name},
-		current_renderer(Name, Comment),
+		trill_on_swish_current_renderer(Name, Comment),
 		Template).
 
 
@@ -371,7 +371,7 @@ library_template(json{displayText:  "use_module(library(...))",
 library_template(Alias, SubDir, Values) :-
 	library_template_cache(Alias, SubDir, Values), !.
 library_template(Alias, SubDir, Values) :-
-	with_mutex(swish_template_hint,
+	with_mutex(trill_on_swish_template_hint,
 		   (   library_template_cache(Alias, SubDir, Values)
 		   ->  true
 		   ;   library_template_no_cache(Alias, SubDir, Values),
@@ -518,7 +518,7 @@ imported_from(Module, FromModule) :-
 		 *******************************/
 
 swish_templates(Template) :-
-	setof(From, visible_lib(swish, From), FromList),
+	setof(From, visible_lib(trill_on_swish, From), FromList),
 	swish_templates(Template, [from(FromList)]).
 
 swish_templates(Template, Options) :-
@@ -526,7 +526,7 @@ swish_templates(Template, Options) :-
 swish_templates(Template, _Options) :-
 	rendering_template(Template).
 swish_templates(Templates, Options) :-
-	visible_predicate_templates(swish, Templates, Options).
+	visible_predicate_templates(trill_on_swish, Templates, Options).
 
 %%	visible_lib(+Module, -Lib) is nondet.
 %
@@ -582,11 +582,11 @@ visible_lib(library(when)).
 		 *	    SWISH CONFIG	*
 		 *******************************/
 
-%%	swish_config:config(-Name, -Styles) is det.
+%%	trill_on_swish_config:tos_config(-Name, -Styles) is det.
 %
 %	Provides the object `config.swish.templates`, a JSON object that
 %	provides the templates for hinting in CodeMirror.
 
-swish_config:config(templates, Templates) :-
+trill_on_swish_config:tos_config(templates, Templates) :-
 	findall(Templ, swish_templates(Templ), Templates0),
 	flatten(Templates0, Templates).

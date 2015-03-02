@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(swish_form, []).
+:- module(trill_on_swish_form, []).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_server_files)).
 
@@ -36,8 +36,8 @@
 This module serves forms for SWISH.
 */
 
-:- http_handler(swish(form), serve_files_in_directory(swish_form),
-		[id(form),prefix]).
+:- http_handler(trill_on_swish(tos_form), serve_files_in_directory(tos_form),
+		[id(trill_on_swish_form),prefix]).
 
-user:file_search_path(swish_form, swish(web/form)).
+user:file_search_path(tos_form, trill_on_swish(web/form)).
 

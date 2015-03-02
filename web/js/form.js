@@ -66,7 +66,7 @@ define([ "jquery", "laconic", "tagmanager" ], function($) {
     },
 
     showDialog: function(data) {
-      $(".swish-event-receiver").trigger("dialog", data);
+      $(".trill_on_swish-event-receiver").trigger("dialog", data);
     },
 
     /**
@@ -75,7 +75,7 @@ define([ "jquery", "laconic", "tagmanager" ], function($) {
      * @param {any} [data] is the associated data
      */
     formBroadcast: function(event, data) {
-      $(".swish-event-receiver").trigger(event, data);
+      $(".trill_on_swish-event-receiver").trigger(event, data);
     },
 
     fields: {

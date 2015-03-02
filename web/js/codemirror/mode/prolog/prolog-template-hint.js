@@ -12,7 +12,7 @@
 })(function(CodeMirror, TemplatesHint, $, config) {
   "use strict";
 
-  var templates = config.swish.templates || [];
+  var templates = config.trill_on_swish.templates || [];
 
   function PrologHint(options) {
     var hint = this;

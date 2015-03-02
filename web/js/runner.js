@@ -9,7 +9,7 @@
  * @requires editor
  */
 
-define([ "jquery", "config", "cm/lib/codemirror", "answer", "laconic" ],
+define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
        function($, config, CodeMirror) {
 
 		 /*******************************
@@ -192,7 +192,7 @@ define([ "jquery", "config", "cm/lib/codemirror", "answer", "laconic" ],
 		      65:      'stopOrAbort',	/* a */
 		      27:      'stopOrAbort',	/* Esc */
 		      46:      'close',		/* Del */
-		      112:     'help'		/* F1 */
+		      112:     'trill_on_swish_help'		/* F1 */
                     };
 
   /** @lends $.fn.prologRunner */
@@ -329,7 +329,7 @@ define([ "jquery", "config", "cm/lib/codemirror", "answer", "laconic" ],
 	  data.prolog = new Pengine({
 	    server: config.http.locations.pengines,
 	    runner: elem,
-	    application: "swish",
+	    application: "trill_on_swish",
 	    src: "\n\
 \n\
 \n\
@@ -3363,8 +3363,8 @@ parse:- \n\
     /**
      * Provide help on running a query
      */
-     help: function() {
-       $(".swish-event-receiver").trigger("help", {file:"runner.html"});
+     trill_on_swish_help: function() {
+       $(".trill_on_swish-event-receiver").trigger("trill_on_swish_help", {file:"runner.html"});
      },
 
     /**
@@ -3572,7 +3572,7 @@ parse:- \n\
     this.data = this.data.replace(new RegExp("'[-0-9a-f]{36}':", 'g'), "")
     if ( this.location ) {
       this.data = this.data.replace(/pengine:\/\/[-0-9a-f]*\//, "");
-      $(".swish-event-receiver").trigger("source-error", this);
+      $(".trill_on_swish-event-receiver").trigger("source-error", this);
     }
 
     elem.prologRunner('outputHTML', this.data);

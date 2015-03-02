@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(swish_app,
+:- module(trill_on_swish_app,
 	  [
 	  ]).
 :- use_module(library(pengines)).
@@ -51,31 +51,31 @@
 		 *	       PATHS		*
 		 *******************************/
 
-user:file_search_path(swish_web, swish(web)).
-user:file_search_path(js,        swish_web(js)).
-user:file_search_path(css,       swish_web(css)).
-user:file_search_path(icons,     swish_web(icons)).
+user:file_search_path(trill_on_swish_web, trill_on_swish(web)).
+user:file_search_path(js,        trill_on_swish_web(js)).
+user:file_search_path(css,       trill_on_swish_web(css)).
+user:file_search_path(icons,     trill_on_swish_web(icons)).
 
 set_swish_path :-
-	absolute_file_name(swish('swish.pl'), _,
+	absolute_file_name(trill_on_swish('trill_on_swish.pl'), _,
 			   [file_errors(fail), access(read)]), !.
 set_swish_path :-
 	prolog_load_context(directory, Dir),
-	asserta(user:file_search_path(swish, Dir)).
+	asserta(user:file_search_path(trill_on_swish, Dir)).
 
 :- set_swish_path.
 
-http:location(swish, root(.), [priority(-100)]).
+http:location(trill_on_swish, root(.), [priority(-100)]).
 
 		 /*******************************
 		 *	      CONFIG		*
 		 *******************************/
 
 :- multifile
-	swish_config:config/2,
-	swish_config:source_alias/1.
+	trill_on_swish_config:config/2,
+	trill_on_swish_config:source_alias/1.
 
-swish_config:config(show_beware, true).
+trill_on_swish_config:config(show_beware, true).
 
 
                  /*******************************
@@ -85,10 +85,10 @@ swish_config:config(show_beware, true).
 :- multifile
 	pengines:prepare_module/3.
 
-:- pengine_application(swish).
-:- use_module(swish:lib/render).
-:- use_module(swish:library(pengines_io)).
-pengines:prepare_module(Module, swish, _Options) :-
+:- pengine_application(trill_on_swish).
+:- use_module(trill_on_swish:lib/render).
+:- use_module(trill_on_swish:library(pengines_io)).
+pengines:prepare_module(Module, trill_on_swish, _Options) :-
 	pengines_io:pengine_bind_io_to_html(Module).
 
 % Libraries that are nice to have in SWISH, but cannot be loaded
@@ -100,11 +100,11 @@ pengines:prepare_module(Module, swish, _Options) :-
 
 % load rendering modules
 
-:- use_module(swish(lib/render/sudoku), []).
-:- use_module(swish(lib/render/chess), []).
-:- use_module(swish(lib/render/table), []).
-:- use_module(swish(lib/render/codes), []).
-:- use_module(swish(lib/render/svgtree), []).
-%:- use_module('/home/collab1/zese/ClioPatria/cpack/swish/web/trill/trill.pl').
+:- use_module(trill_on_swish(lib/render/sudoku), []).
+:- use_module(trill_on_swish(lib/render/chess), []).
+:- use_module(trill_on_swish(lib/render/table), []).
+:- use_module(trill_on_swish(lib/render/codes), []).
+:- use_module(trill_on_swish(lib/render/svgtree), []).
+%:- use_module('/home/collab1/zese/ClioPatria/cpack/trill_on_swish/web/trill/trill.pl').
 :- use_foreign_library(foreign(bddem),install).
 

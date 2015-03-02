@@ -8,7 +8,7 @@
  * @requires codemirror
  */
 
-define([ "cm/lib/codemirror",
+define([ "tos_cm/lib/codemirror",
 	 "config",
 	 "preferences",
 
@@ -19,12 +19,12 @@ define([ "cm/lib/codemirror",
 	 "gitty",
 
 
-	 "cm/addon/comment/continuecomment",
-	 "cm/addon/comment/comment",
-	 "cm/addon/hint/show-hint",
-	 "cm/addon/hint/anyword-hint",
-	 "cm/addon/display/placeholder",
-	 "cm/addon/runmode/runmode",
+	 "tos_cm/addon/comment/continuecomment",
+	 "tos_cm/addon/comment/comment",
+	 "tos_cm/addon/hint/show-hint",
+	 "tos_cm/addon/hint/anyword-hint",
+	 "tos_cm/addon/display/placeholder",
+	 "tos_cm/addon/runmode/runmode",
 
 
 
@@ -82,8 +82,8 @@ define([ "cm/lib/codemirror",
 
 	  if ( file )
 	    data.file = file;
-	  if ( window.swish && window.swish.meta_data )
-	    data.meta = window.swish.meta_data;
+	  if ( window.trill_on_swish && window.trill_on_swish.meta_data )
+	    data.meta = window.trill_on_swish.meta_data;
 	} else {
 	  ta = $.el.textarea({placeholder:options.placeholder},
 			     elem.text());
@@ -98,7 +98,7 @@ define([ "cm/lib/codemirror",
 	data.role            = options.role;
 
 	elem.data(pluginName, data);
-	elem.addClass("swish-event-receiver");
+	elem.addClass("trill_on_swish-event-receiver");
 
 	if ( data.role == "source" ) {
 	  elem.on("source", function(ev, src) {
@@ -166,7 +166,7 @@ define([ "cm/lib/codemirror",
 	}
 
 	if ( !src.url )
-	  src.url = config.http.locations.swish;
+	  src.url = config.http.locations.trill_on_swish;
 
 	updateHistory(src);
       }
@@ -182,7 +182,7 @@ define([ "cm/lib/codemirror",
 	var that = this;
 	var options = this.data(pluginName);
 
-	$.ajax({ url: config.http.locations.web_storage + "/" + file,
+	$.ajax({ url: config.http.locations.trill_on_swish_web_storage + "/" + file,
 		 dataType: "text",
 		 success: function(data) {
 		   that.prologEditor('setSource', data);
@@ -217,7 +217,7 @@ define([ "cm/lib/codemirror",
      */
     save: function(meta, what) {
       var options = this.data(pluginName);
-      var url     = config.http.locations.web_storage;
+      var url     = config.http.locations.trill_on_swish_web_storage;
       var method  = "POST";
       var data;
 
@@ -381,7 +381,7 @@ define([ "cm/lib/codemirror",
 	iframe.contentWindow.print();
       }
 
-      $.ajax({ url: "/swish/bower_components/codemirror/theme/neo.css",
+      $.ajax({ url: "/trill_on_swish/bower_components/codemirror/theme/neo.css",
 	       dataType: "text",
 	       success: function(data) {
 		 printWithIframe($.el.div($.el.style(data),

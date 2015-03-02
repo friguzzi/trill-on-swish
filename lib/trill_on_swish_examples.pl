@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(swish_examples, []).
+:- module(trill_on_swish_examples, []).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_json)).
 :- use_module(library(http/json)).
@@ -41,15 +41,15 @@
 
 :- multifile
 	user:file_search_path/2,
-	swish_config:source_alias/1.
+	trill_on_swish_config:trill_on_swish_source_alias/1.
 
-% make example(File) find the example data
-user:file_search_path(example, swish(examples)).
-% make SWISH serve /example/File as example(File).
-swish_config:source_alias(example).
+% make tos_example(File) find the example data
+user:file_search_path(tos_example, trill_on_swish(examples)).
+% make SWISH serve /example/File as tos_example(File).
+trill_on_swish_config:trill_on_swish_source_alias(tos_example).
 
-:- http_handler(swish(list_examples),
-		list_examples, [id(swish_examples)]).
+:- http_handler(trill_on_swish(trill_on_swish_list_examples),
+		trill_on_swish_list_examples, [id(trill_on_swish_examples)]).
 
 
 %%	list_examples(+Request)
@@ -57,10 +57,10 @@ swish_config:source_alias(example).
 %	Get a list of registered example code. Examples are described in
 %	a file swish_examples('index.json').
 
-list_examples(_Request) :-
-	http_absolute_location(swish(example), HREF, []),
+trill_on_swish_list_examples(_Request) :-
+	http_absolute_location(trill_on_swish(tos_example), HREF, []),
 	findall(Index,
-		absolute_file_name(example(.), Index,
+		absolute_file_name(tos_example(.), Index,
 				   [ access(read),
 				     file_type(directory),
 				     file_errors(fail),

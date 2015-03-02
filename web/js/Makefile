@@ -1,18 +1,18 @@
-JS=editor.js navbar.js answer.js pane.js query.js runner.js swish.js \
+JS=editor.js navbar.js answer.js pane.js query.js runner.js trill_on_swish.js \
    config.js jswish.js
 CM=$(shell find codemirror -name '*.js')
 JQ=jquery.jsdoc
 CONF=conf.json
-MAIN=swish.js
+MAIN=trill_on_swish.js
 
-all:	min require.js
+all:	min tos_require.js
 
 doc::	$(CONF) $(JQ) $(JS)
 	jsdoc -p -c $(CONF) $(JQ) $(JS)
 
-min:	swish-min.js
+min:	trill_on_swish-min.js
 
-swish-min.js:	build.js $(JS) $(CM)
+trill_on_swish-min.js:	build.js $(JS) $(CM)
 	r.js -o build.js
 	gzip -fk $@
 
@@ -23,4 +23,4 @@ require.js: ../bower_components/requirejs/require.js
 	cp -p $< $@
 
 clean:
-	rm -f require.js swish-min.js swish-min.js.gz
+	rm -f tos_require.js trill_on_swish-min.js trill_on_swish-min.js.gz

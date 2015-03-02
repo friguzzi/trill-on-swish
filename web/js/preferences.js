@@ -54,7 +54,7 @@ define(["jquery"],
      * Broadcast the change of a preference.
      */
     broadcast: function(name, value) {
-      $(".swish-event-receiver").trigger("preference",
+      $(".trill_on_swish-event-receiver").trigger("preference",
 					 { name: name,
 					   value: value
 					 });

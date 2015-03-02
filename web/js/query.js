@@ -49,7 +49,7 @@ define([ "jquery", "laconic", "editor" ],
 				     tabled,
 				     runButton(options))));
 
-	elem.addClass("prolog-query-editor swish-event-receiver");
+	elem.addClass("prolog-query-editor trill_on_swish-event-receiver");
 	elem.append(content);
 
 	function tableSelected() {
@@ -184,10 +184,10 @@ define([ "jquery", "laconic", "editor" ],
       q = $.trim(q);
 
       if ( !q ) {
-	$(".swish-event-receiver").trigger("help", {file:"query.html"});
+	$(".trill_on_swish-event-receiver").trigger("trill_on_swish_help", {file:"query.html"});
 	return this;
       }
-      $(".swish-event-receiver").trigger("clearMessages");
+      $(".trill_on_swish-event-receiver").trigger("clearMessages");
 
       var query = { query:q };
       if ( typeof(data.source) == "function" )

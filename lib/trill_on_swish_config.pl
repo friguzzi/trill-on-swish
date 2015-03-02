@@ -27,10 +27,10 @@
     the GNU General Public License.
 */
 
-:- module(swish_config,
-	  [ swish_reply_config/1,	% +Request
-	    swish_config/2,		% ?Type, ?Config
-	    swish_config_hash/1		% -HASH
+:- module(trill_on_swish_config,
+	  [ trill_on_swish_reply_config/1,	% +Request
+	    trill_on_swish_config/2,		% ?Type, ?Config
+	    trill_on_swish_config_hash/1		% -HASH
 	  ]).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_json)).
@@ -43,31 +43,31 @@
 		 *	       CONFIG		*
 		 *******************************/
 
-%%	swish_reply_config(+Request) is semidet.
+%%	trill_on_swish_reply_config(+Request) is semidet.
 %
 %	Emit a configuration object to the client if the client requests
-%	for '.../swish_config.json', regardless  of   the  path  prefix.
+%	for '.../trill_on_swish_config.json', regardless  of   the  path  prefix.
 
-swish_reply_config(Request) :-
+trill_on_swish_reply_config(Request) :-
 	option(path(Path), Request),
-	file_base_name(Path, 'swish_config.json'),
+	file_base_name(Path, 'trill_on_swish_config.json'),
 	json_config(JSON),
 	reply_json(JSON).
 
-%%	swish_config_hash(-Hash) is det.
+%%	trill_on_swish_config_hash(-Hash) is det.
 %
 %	True if Hash is the SHA1 of the SWISH config.
 
-swish_config_hash(Hash) :-
+trill_on_swish_config_hash(Hash) :-
 	json_config(Config),
 	variant_sha1(Config, Hash).
 
 json_config(json{ http: json{ locations:JSON
 			    },
-		  swish: SWISHConfig
+		  trill_on_swish: SWISHConfig
 		}) :-
 	http_locations(JSON),
-	swish_config(SWISHConfig).
+	trill_on_swish_config(SWISHConfig).
 
 http_locations(JSON) :-
 	findall(ID-Path,
@@ -96,24 +96,24 @@ same_ids([Id-Path|T0], Id, T, [Path|TP]) :- !,
 same_ids(T, _, T, []).
 
 
-%%	swish_config(-Config:dict) is det.
+%%	trill_on_swish_config(-Config:dict) is det.
 %
-%	Obtain name-value pairs from swish_config:config/2
+%	Obtain name-value pairs from trill_on_swish_config:tos_config/2
 
-swish_config(Config) :-
-	findall(Key-Value, config(Key, Value), Pairs),
+trill_on_swish_config(Config) :-
+	findall(Key-Value, tos_config(Key, Value), Pairs),
 	dict_pairs(Config, json, Pairs).
 
 %%	config(-Key, -Value) is nondet.
-%%	swish_config(-Key, -Value) is nondet.
+%%	trill_on_swish_config(-Key, -Value) is nondet.
 %
 %	Define a name/value pair that will end   up  in the SWISH config
 %	object (see =web/js/config.js=)
 
-:- multifile config/2.
+:- multifile tos_config/2.
 
-swish_config(Key, Value) :-
-	config(Key, Value).
+trill_on_swish_config(Key, Value) :-
+	tos_config(Key, Value).
 
 
 		 /*******************************

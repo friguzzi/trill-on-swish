@@ -186,7 +186,7 @@ define([ "jquery", "config", "form", "laconic" ],
 	    else
 	      file = commit;
 
-	    elem.parents(".swish").swish('playFile', file);
+	    elem.parents(".trill_on_swish").trill_on_swish('playFile', file);
 	    $("#ajaxModal").modal('hide');
 	  }
 	  return false;

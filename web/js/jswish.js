@@ -27,7 +27,7 @@ define([ "jquery",
 preferences.setDefault("semantic-highlighting", false);
 
 (function($) {
-  var pluginName = 'swish';
+  var pluginName = 'trill_on_swish';
 
   var defaults = {
     newProgramText: "% Your program goes here\n\n\n\n"+
@@ -47,7 +47,7 @@ preferences.setDefault("semantic-highlighting", false);
 	},
 	"Share": "--",
 	"Collaborate ...": function() {
-	  $("body").swish('collaborate');
+	  $("body").trill_on_swish('collaborate');
 	},
 	"Print group": "--",
 	"Print ...": function() {
@@ -65,28 +65,28 @@ preferences.setDefault("semantic-highlighting", false);
 	}
       },
       "Examples": function(navbar, dropdown) {
-	$("body").swish('populateExamples', navbar, dropdown);
+	$("body").trill_on_swish('populateExamples', navbar, dropdown);
       },
       "Help":
       { "About ...": function() {
-	  menuBroadcast("help", {file:"about.html"});
+	  menuBroadcast("trill_on_swish_help", {file:"about.html"});
 	},
 	"Topics": "--",
 	"Help ...": function() {
-	  menuBroadcast("help", {file:"help.html"});
+	  menuBroadcast("trill_on_swish_help", {file:"help.html"});
 	},
 	"Runner ...": function() {
-	  menuBroadcast("help", {file:"runner.html"});
+	  menuBroadcast("trill_on_swish_help", {file:"runner.html"});
 	},
 	"Background": "--",
 	"Beware! ...": function() {
-	  menuBroadcast("help", {file:"beware.html"});
+	  menuBroadcast("trill_on_swish_help", {file:"beware.html"});
 	},
 	"Caveats ...": function() {
-	  menuBroadcast("help", {file:"caveats.html"});
+	  menuBroadcast("trill_on_swish_help", {file:"caveats.html"});
 	},
 	"Background ...": function() {
-	  menuBroadcast("help", {file:"background.html"});
+	  menuBroadcast("trill_on_swish_help", {file:"background.html"});
 	},
       }
     }
@@ -111,7 +111,7 @@ preferences.setDefault("semantic-highlighting", false);
       $("#search").search();
 
       options = options||{};
-      this.addClass("swish");
+      this.addClass("trill_on_swish");
 
       return this.each(function() {
 	var elem = $(this);
@@ -123,17 +123,17 @@ preferences.setDefault("semantic-highlighting", false);
 	data.runner = $(".prolog-runners").prologRunners();
 	data.query  = $(".prolog-query").queryEditor(
           { source:   function() {
-	      return elem.swish('prologSource');
+	      return elem.trill_on_swish('prologSource');
 	    },
 	    sourceID: function() {
 	      return data.editor.prologEditor('getSourceID');
 	    },
-	    examples: elem.swish('examples'),
+	    examples: elem.trill_on_swish('examples'),
 	    runner:   data.runner,
 	  }).trigger("source");
 
 	if ( options.show_beware )
-	  menuBroadcast("help", {file:"beware.html", notagain:"beware"});
+	  menuBroadcast("trill_on_swish_help", {file:"beware.html", notagain:"beware"});
 
 	elem.data(pluginName, data);	/* store with element */
       });
@@ -212,13 +212,13 @@ preferences.setDefault("semantic-highlighting", false);
      */
     populateExamples: function(navbar, dropdown) {
       var that = this;
-      $.ajax(config.http.locations.swish_examples,
+      $.ajax(config.http.locations.trill_on_swish_examples,
 	     { dataType: "json",
 	       success: function(data) {
 		 for(var i=0; i<data.length; i++) {
 		   $("#navbar").navbar('extendDropdown', dropdown,
 				       data[i].title,
-				       that.swish('openExampleFunction',
+				       that.trill_on_swish('openExampleFunction',
 						  data[i]));
 		 }
 	       }
@@ -286,7 +286,7 @@ preferences.setDefault("semantic-highlighting", false);
    * interested.
    */
   function menuBroadcast(event, data) {
-    $(".swish-event-receiver").trigger(event, data);
+    $(".trill_on_swish-event-receiver").trigger(event, data);
   }
 
   /**
@@ -311,7 +311,7 @@ preferences.setDefault("semantic-highlighting", false);
   function setupModal() {
     if ( $("#modal").length == 0 ) {
       $("body").append($.el.div({id:"modal"}));
-      $("#modal").swishModal();
+      $("#modal").trill_on_swishModal();
     }
   }
 
@@ -337,7 +337,7 @@ preferences.setDefault("semantic-highlighting", false);
    * @param [...] Zero or more arguments passed to the jQuery `method`
    */
 
-  $.fn.swish = function(method) {
+  $.fn.trill_on_swish = function(method) {
     if ( methods[method] ) {
       return methods[method]
 	.apply(this, Array.prototype.slice.call(arguments, 1));

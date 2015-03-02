@@ -78,7 +78,7 @@ define([ "jquery", "config", "typeahead" ],
 		 *******************************/
 
 	function predicateMatcher(q, cb) {
-	  var templates = config.swish.templates;
+	  var templates = config.trill_on_swish.templates;
 	  var matches = [];
 	  var ql = q.split(" ");
 	  var pl = [];
@@ -212,9 +212,9 @@ define([ "jquery", "config", "typeahead" ],
 	  .on('typeahead:selected typeahead:autocompleted',
 	      function(ev, datum, set) {
 		if ( datum.type == "store" ) {
-		  $(ev.target).parents(".swish").swish('playFile', datum.file);
+		  $(ev.target).parents(".trill_on_swish").swish('playFile', datum.file);
 		} else if ( datum.arity !== undefined ) {
-		  $(".swish-event-receiver").trigger("pldoc", datum);
+		  $(".trill_on_swish-event-receiver").trigger("pldoc", datum);
 		} else if ( datum.editor !== undefined &&
 			    datum.line !== undefined ) {
 		  $(datum.editor).prologEditor('gotoLine', datum.line,

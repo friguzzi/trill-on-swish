@@ -27,12 +27,12 @@
     the GNU General Public License.
 */
 
-:- module(swish_render,
-	  [ use_rendering/1,		% +Renderer
-	    use_rendering/2,		% +Renderer, +Options
+:- module(trill_on_swish_render,
+	  [ trill_on_swish_use_rendering/1,		% +Renderer
+	    trill_on_swish_use_rendering/2,		% +Renderer, +Options
 
-	    register_renderer/2,	% Declare a rendering module
-	    current_renderer/2		% Name, Comment
+	    trill_on_swish_register_renderer/2,	% Declare a rendering module
+	    trill_on_swish_current_renderer/2		% Name, Comment
 	  ]).
 :- use_module(library(pengines_io), []).
 :- use_module(library(http/html_write)).
@@ -41,9 +41,9 @@
 :- use_module(library(error)).
 
 :- meta_predicate
-	register_renderer(:, +),
-	use_rendering(:),
-	use_rendering(:, +).
+	trill_on_swish_register_renderer(:, +),
+	trill_on_swish_use_rendering(:),
+	trill_on_swish_use_rendering(:, +).
 
 /** <module> SWISH term-rendering support
 
@@ -62,7 +62,7 @@ look for render(Spec), or it is a   (single) file specification that can
 be used for use_module/1.
 
   ==
-  :- use_rendering(Spec).
+  :- trill_on_swish_use_rendering(Spec).
   ==
 
 A rendering module is a  Prolog   module  that  defines the non-terminal
@@ -80,48 +80,48 @@ means it must call html//1 to generate HTML tokens).
 
 :- multifile user:file_search_path/2.
 
-user:file_search_path(render, swish('lib/render')).
+user:file_search_path(tos_render, trill_on_swish('lib/render')).
 
 
-%%	use_rendering(+FileOrID)
+%%	trill_on_swish_use_rendering(+FileOrID)
 %
-%	Register an answer  renderer.   Same  as use_rendering(FileOrID,
+%	Register an answer  renderer.   Same  as trill_on_swish_use_rendering(FileOrID,
 %	[]).
 %
-%	@see use_rendering/2.
+%	@see trill_on_swish_use_rendering/2.
 
 :- multifile user:term_expansion/2.
 
-use_rendering(Rendering) :-
-	use_rendering(Rendering, []).
+trill_on_swish_use_rendering(Rendering) :-
+	trill_on_swish_use_rendering(Rendering, []).
 
-%%	use_rendering(:ID, +Options)
+%%	trill_on_swish_use_rendering(:ID, +Options)
 %
 %	Register an answer renderer  with   options.  Options are merged
 %	with   write-options   and   passed     to    the   non-terminal
 %	term_rendering//3 defined in the rendering module.
 
-use_rendering(Rendering, Options) :-
+trill_on_swish_use_rendering(Rendering, Options) :-
 	Rendering = Into:Renderer,
 	must_be(atom, Renderer),
-	(   renderer(Renderer, _, _)
+	(   trill_on_swish_renderer(Renderer, _, _)
 	->  true
 	;   existence_error(renderer, Renderer)
 	),
-	retractall(Into:'swish renderer'(Renderer, _)),
-	assertz(Into:'swish renderer'(Renderer, Options)).
+	retractall(Into:'trill_on_swish renderer'(Renderer, _)),
+	assertz(Into:'trill_on_swish renderer'(Renderer, Options)).
 
-user:term_expansion((:- use_rendering(Renderer)), Expanded) :-
+user:term_expansion((:- trill_on_swish_use_rendering(Renderer)), Expanded) :-
 	expand_rendering(Renderer, [], Expanded).
-user:term_expansion((:- use_rendering(Renderer, Options)), Expanded) :-
+user:term_expansion((:- trill_on_swish_use_rendering(Renderer, Options)), Expanded) :-
 	expand_rendering(Renderer, Options, Expanded).
 
 expand_rendering(Module:Renderer, Options,
-		 Module:'swish renderer'(Renderer, Options)) :- !,
+		 Module:'trill_on_swish renderer'(Renderer, Options)) :- !,
 	must_be(atom, Module),
 	must_be(atom, Renderer).
 expand_rendering(Renderer, Options,
-		 'swish renderer'(Renderer, Options)) :-
+		 'trill_on_swish renderer'(Renderer, Options)) :-
 	must_be(atom, Renderer).
 
 %%	pengines_io:binding_term(+Term, +Vars, +Options) is semidet.
@@ -148,11 +148,11 @@ pengines_io:binding_term(Term, Vars, Options) -->
 call_term_rendering(Module, Term, Vars, Options, Tokens) :-
 	State = state([]),
 	default_module(Module, Target),
-	current_predicate(Target:'swish renderer'/2),
-	Target:'swish renderer'(Name, RenderOptions),
+	current_predicate(Target:'trill_on_swish renderer'/2),
+	Target:'trill_on_swish renderer'(Name, RenderOptions),
 	atom(Name),
 	is_new(State, Name),
-	renderer(Name, RenderModule, _Comment),
+	trill_on_swish_renderer(Name, RenderModule, _Comment),
 	merge_options(RenderOptions, Options, AllOptions),
 	phrase(RenderModule:term_rendering(Term, Vars, AllOptions), Tokens).
 
@@ -191,23 +191,23 @@ tokens([H|T]) --> [H], tokens(T).
 		 *******************************/
 
 :- multifile
-	renderer/3.
+	trill_on_swish_renderer/3.
 
-%%	current_renderer(Name, Comment) is nondet.
+%%	trill_on_swish_current_renderer(Name, Comment) is nondet.
 %
 %	True when renderer Name is declared with Comment.
 
-current_renderer(Name, Comment) :-
-	renderer(Name, _Module, Comment).
+trill_on_swish_current_renderer(Name, Comment) :-
+	trill_on_swish_renderer(Name, _Module, Comment).
 
-%%	register_renderer(:Name, +Comment)
+%%	trill_on_swish_register_renderer(:Name, +Comment)
 %
 %	Register a module as SWISH rendering component.
 
-register_renderer(Name, Comment) :-
-	throw(error(context_error(nodirective, register_renderer(Name, Comment)),
+trill_on_swish_register_renderer(Name, Comment) :-
+	throw(error(context_error(nodirective, trill_on_swish_register_renderer(Name, Comment)),
 		    _)).
 
-user:term_expansion((:- register_renderer(Name, Comment)),
-		    swish_render:renderer(Name, Module, Comment)) :-
+user:term_expansion((:- trill_on_swish_register_renderer(Name, Comment)),
+		    trill_on_swish_render:trill_on_swish_renderer(Name, Module, Comment)) :-
 	prolog_load_context(module, Module).

@@ -7,6 +7,6 @@
 ({ baseURL: ".",
    @CONFIG@
 
-   name: "swish",
-   out: "swish-min.js"
+   name: "trill_on_swish",
+   out: "trill_on_swish-min.js"
 })

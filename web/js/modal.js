@@ -11,33 +11,33 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
        function(config, preferences) {
 
 (function($) {
-  var pluginName = 'swishModal';
+  var pluginName = 'trill_on_swishModal';
 
   /** @lends $.fn.modal */
   var methods = {
     /**
-     * Initialize the widget and listen for "help" events.
+     * Initialize the widget and listen for "trill_on_swish_help" events.
      * @param {Object} options currently ignored
      */
     _init: function(options) {
       return this.each(function() {
 	var elem = $(this);
 
-	elem.addClass("swish-event-receiver");
-	elem.on("help", function(ev, data) {
-	  elem.swishModal('showHelp', data);
+	elem.addClass("trill_on_swish-event-receiver");
+	elem.on("trill_on_swish_help", function(ev, data) {
+	  elem.trill_on_swishModal('showHelp', data);
 	});
 	elem.on("pldoc", function(ev, data) {
-	  elem.swishModal('showPlDoc', data);
+	  elem.trill_on_swishModal('showPlDoc', data);
 	});
 	elem.on("form", function(ev, data) {
-	  elem.swishModal('showForm', data);
+	  elem.trill_on_swishModal('showForm', data);
 	});
 	elem.on("dialog", function(ev, data) {
-	  elem.swishModal('show', data);
+	  elem.trill_on_swishModal('show', data);
 	});
 	elem.on("error", function(ev, data) { /* still needed? */
-	  elem.swishModal('show', data);
+	  elem.trill_on_swishModal('show', data);
 	});
       });
     },
@@ -56,12 +56,12 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
       if ( options.notagain && preferences.notagain(options.notagain) )
 	return;
 
-      $.ajax({ url: config.http.locations.help + "/" + options.file,
+      $.ajax({ url: config.http.locations.trill_on_swish_help + "/" + options.file,
 	       dataType: "html",
 	       success: function(data) {
 		 var container = $("<div>");
 		 container.html(data);
-		 that.swishModal('show',
+		 that.trill_on_swishModal('show',
 				 $.extend(
 				   { title: container.find("title").text(),
 				     body:  container
@@ -84,7 +84,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 	       success: function(data) {
 		 var container = $("<div>");
 		 container.html(data);
-		 that.swishModal('show',
+		 that.trill_on_swishModal('show',
 				 $.extend(
 				   { title: container.find("legend").text(),
 				     body:  container
@@ -121,7 +121,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 		   }
                  };
 
-      return this.swishModal('show', data);
+      return this.trill_on_swishModal('show', data);
     },
 
     /**
@@ -246,7 +246,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
    * @param [...] Zero or more arguments passed to the jQuery `method`
    */
 
-  $.fn.swishModal = function(method) {
+  $.fn.trill_on_swishModal = function(method) {
     if ( methods[method] ) {
       return methods[method]
 	.apply(this, Array.prototype.slice.call(arguments, 1));
