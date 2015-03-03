@@ -345,8 +345,13 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
         unionOf/1,\n\
         propertyRange/2,\n\
         propertyDomain/2,\n\
-        p/2,\n\
-        p_x/2.\n\
+        annotationAssertion/3,\n\
+        exactCardinality/2,\n\
+        exactCardinality/3,\n\
+        maxCardinality/2,\n\
+        maxCardinality/3,\n\
+        minCardinality/2,\n\
+        minCardinality/3.\n\
 \n\
 :- use_module(library(lists),[member/2]).\n\
 :- use_module(library(pengines)).\n\

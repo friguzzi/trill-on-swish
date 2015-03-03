@@ -79,13 +79,13 @@ preferences.setDefault("semantic-highlighting", false);
 	  menuBroadcast("trill_on_swish_help", {file:"runner.html"});
 	},
 	"Background": "--",
-	"Beware! ...": function() {
+	"SWISH Beware! ...": function() {
 	  menuBroadcast("trill_on_swish_help", {file:"beware.html"});
 	},
-	"Caveats ...": function() {
+	"SWISH Caveats ...": function() {
 	  menuBroadcast("trill_on_swish_help", {file:"caveats.html"});
 	},
-	"Background ...": function() {
+	"Prolog Background ...": function() {
 	  menuBroadcast("trill_on_swish_help", {file:"background.html"});
 	},
       }

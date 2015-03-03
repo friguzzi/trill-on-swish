@@ -7,26 +7,21 @@
 <body>
 <h4>Table of Contents</h4>
   <ul>
-    <li><a href="#help-basics">Basic operation</a></li>
-    <li><a href="#help-examples">Embedding examples in the program text</a></li>
-    <li><a href="#help-share">Save or share your program</a></li>
-    <li><a href="#help-preload">Preload SWISH with data</a></li>
-    <li><a href="#help-rdf-xml">RDF/XML syntax and tools</a></li>
-    <li><a href="#help-trill">TRILL manual</a></li>
+    <li>Basic operation</li>
+    <li>Embedding examples in the program text</li>
+    <li>Save or share your program</li>
+    <li>Preload SWISH with data</li>
+    <li>RDF/XML syntax and tools</li>
+    <li>TRILL manual</li>
   </ul>
 
 <h4 id="help-basics">Basic operation</h4>
 <p>
 TRILL is about running a <i>query</i> against a <i>knowledge base</i>. 
 It can handle <i>SHOQ</i> knowledge bases writtend in RDF/XML format.
-TRILL can be installed on SWI Prolog using the commands below
-<pre style="font-size:80%">
-?- pack_install(cplint).
-?- pack_install(trill).
-</pre>
 
 <p>
-TRILL is a tableau reasoner written in Prolog, the queries available are listed in <a href="#help-trill">TRILL manual</a> section.
+TRILL is a tableau reasoner written in Prolog, the queries available are listed in TRILL manual section.
 The <i>query</i> goes into the bottom-right editor and the <i>program</i>
 into the left editor. 
 
@@ -208,35 +203,47 @@ TRILL ("Tableau Reasoner for descrIption Logics in Prolog") implements a tableau
 Prolog to compute the set of all the explanations of a query. After generating the explanations, TRILL can computes the probability of the query. The management of the tableau rules' non-determinism is delegated to the Prolog language.
 </p>
 <p>
-The types of query that are available are shown below:
+TRILL can compute the probability of queries using the commands shown below:
 <dl>
-  <dt><b>instanceOf(Class,Individual),
-instanceOf(Class,Individual,Expl),
-prob instanceOf(Class,Individual,Prob)</b><dd>
+  <dt><b>prob_instanceOf(Class,Individual,Prob)</b><dd>
   Concept membership queries.
   </dd>
-  <dt><b>sub class(Class1,Class2),
-sub class(Class1,Class2,Expl),
-prob sub class(Class1,Class2,Prob)</b>
+  <dt><b>prob_sub_class(Class1,Class2,Prob)</b>
+  <dd>
+  Subsumption queries.
+  </dd>
+  <dt><b>prob_unsat(ClassExpression,Prob)</b><dd>
+  Unsatifiability of a concept.
+  </dd>
+  <dt><b>prob_inconsistent_theory(Prob)</b><dd>
+  Inconsistency of the knowledge base.
+  </dd>
+  </dl>
+TRILL can test entailment or find an explanation <code>Expl</code> using the queries below:
+<dl>
+  <dt><b>instanceOf(Class,Individual),
+instanceOf(Class,Individual,Expl)</b><dd>
+  Concept membership queries.
+  </dd>
+  <dt><b>sub_class(Class1,Class2),
+sub_class(Class1,Class2,Expl)</b>
   <dd>
   Subsumption queries.
   </dd>
   <dt><b>unsat(ClassExpression),
-unsat(ClassExpression,Expl),
-prob unsat(ClassExpression,Prob)</b><dd>
+unsat(ClassExpression,Expl)</b><dd>
   Unsatifiability of a concept.
   </dd>
   <dt><b>inconsistent_theory,
-inconsistent_theory(Expl),
-prob inconsistent_theory(Prob)</b><dd>
+inconsistent_theory(Expl)</b><dd>
   Inconsistency of the knowledge base.
   </dd>
   </dl>
-Each query has three versions which respectively test entailment, find an explanation <code>Expl</code> or compute the probability <code>Prob</code> of the query.
 </p>
 
 </body>
 </html>
+
 
 
 
