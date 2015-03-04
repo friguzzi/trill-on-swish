@@ -53,8 +53,8 @@ search from the server side. What do we want to search for?
       these?
 */
 
-:- http_handler(trill_on_swish(typeahead), trill_on_swish_typeahead, [id(trill_on_swish_typeahead)]).
-:- http_handler(trill_on_swish(search),    trill_on_swish_search,    [id(trill_on_swish_search)]).
+:- http_handler(trill_on_swish(typeahead), tos_typeahead, [id(trill_on_swish_typeahead)]).
+:- http_handler(trill_on_swish(search),    tos_search,    [id(trill_on_swish_search)]).
 
 %%	search_box(+Options)//
 %

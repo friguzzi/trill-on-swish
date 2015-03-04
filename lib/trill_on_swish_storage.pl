@@ -54,7 +54,7 @@ their own version.
 
 :- setting(directory, atom, storage, 'The directory for storing files.').
 
-:- http_handler(trill_on_swish(p), trill_on_swish_web_storage, [ id(trill_on_swish_web_storage), prefix ]).
+:- http_handler(trill_on_swish(p), tos_web_storage, [ id(trill_on_swish_web_storage), prefix ]).
 
 %%	web_storage(+Request) is det.
 %
@@ -63,7 +63,7 @@ their own version.
 %	URL for the data and the plain   file name. Understands the HTTP
 %	methods =GET=, =POST=, =PUT= and =DELETE=.
 
-web_storage(Request) :-
+tos_web_storage(Request) :-
 	option(method(Method), Request),
 	storage(Method, Request).
 
