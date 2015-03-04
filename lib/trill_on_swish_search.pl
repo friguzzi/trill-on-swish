@@ -103,7 +103,7 @@ tos_typeahead(predicates, Query, Template) :-
 %	Returns an HTML  document  with  the   actual  results  that  is
 %	displayed in a modal dialog.
 
-search(_Request) :-
+tos_search(_Request) :-
 	reply_html_page(search,
 			[],
 			h1('Search results')).
