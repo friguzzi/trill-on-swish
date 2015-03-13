@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 
 <!--
+
+Model of risk factor of breast cancer, from
+Klinov, P., Parsia, B.: Optimization and evaluation of reasoning in probabilistic
+description logic: Towards a systematic approach. In: International Semantic Web
+Conference. LNCS, vol. 5318, pp. 213–228. Springer (2008)
+
 /** <examples>
 
 ?- prob_instanceOf(\'http://clarkparsia.com/pronto/cancer_ra.owl#WomanUnderLifetimeBRCRisk\',\'http://clarkparsia.com/pronto/cancer_ra.owl#Helen\',Prob).

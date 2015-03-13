@@ -3,6 +3,9 @@
 <!--
 /** <examples>
 
+This knowledge base is an extract of the Vicodi knowledge base that contains information on European history.
+http://www.vicodi.org/
+
 ?- prob_instanceOf(\'http://vicodi.org/ontology#Role\',\'http://vicodi.org/ontology#Anthony-van-Dyck-is-Painter-in-Flanders\',Prob).
 ?- instanceOf(\'http://vicodi.org/ontology#Role\',\'http://vicodi.org/ontology#Anthony-van-Dyck-is-Painter-in-Flanders\',ListExpl).
 

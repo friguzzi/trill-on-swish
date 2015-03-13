@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 
 <!--
+
+An extract of the DBPedia ontology, it contains structured information from Wikipedia.
+http://dbpedia.org/
+
 /** <examples>
 
 ?- prob_sub_class(\'http://dbpedia.org/ontology/Village\',\'http://dbpedia.org/ontology/PopulatedPlace\',Prob).

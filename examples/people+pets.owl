@@ -1,6 +1,13 @@
 <?xml version="1.0"?>
 
 <!--
+
+This knowledge base is inpired by the people+pets ontology from
+Patel-Schneider, P, F., Horrocks, I., and Bechhofer, S. 2003. Tutorial on OWL.
+The knowledge base indicates that the individuals that own an animal which is a pet are nature lovers, from
+Zese, R.: Reasoning with Probabilistic Logics. ArXiv e-prints 1405.0915v3. 
+Doctoral Consortium of the 30th International Conference on Logic Programming (ICLP 2014), July 19-22, Vienna, Austria.
+
 /** <examples>
 
 ?- prob_instanceOf(\'http://cohse.semanticweb.org/ontologies/people#natureLover\',\'http://cohse.semanticweb.org/ontologies/people#Kevin\',Prob).

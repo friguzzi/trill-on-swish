@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 
 <!--
+
+Model of metabolic pathways.
+http://www.biopax.org/
+
 /** <examples>
 
 ?- prob_sub_class(\'http://www.biopax.org/release/biopax-level3.owl#TransportWithBiochemicalReaction\',\'http://www.biopax.org/release/biopax-level3.owl#Entity\',Prob).
