@@ -3150,18 +3150,16 @@ timed_forall(Cond,Action) :-\n\
 ---+ See Also\n\
 The file owl2_from_rdf.plt has some examples\n\
 */\n\
-\n\
 load_owl(String):-\n\
   pengine_self(Self),\n\
   pengine_property(Self,module(M)),\n\
   open_chars_stream(String,S),\n\
-  process_rdf(stream(S), assert_list(M), []),\n\
+  process_rdf(stream(S), assert_list(M), [namespaces(NSList)]),\n\
+  assert(M:ns4query(NSList)),\n\
   close(S),\n\
   rdf_2_owl('ont','ont'),\n\
   owl_canonical_parse_3(['ont']),\n\
   parse_probabilistic_annotation_assertions.\n\
-\n\
-\n\
 \n\
 assert_list(_M,[], _):-!.\n\
 assert_list(M,[H|T], Source) :-\n\
@@ -3184,6 +3182,52 @@ parse_probabilistic_annotation_assertions :-\n\
   % forall(aNN(X,Y,Z),assert(annotation(X,Y,Z))), VV remove 25/1/11\n\
   % annotation/3 axioms created already during owl_parse_annotated_axioms/1\n\
   retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).\n\
+\n\
+query_call(Q):-\n\
+  Q =.. [P|Args],\n\
+  pengine_self(Self),\n\
+  pengine_property(Self,module(M)),\n\
+  M:ns4query(NSList),!,\n\
+  retract(M:ns4query(NSList)),\n\
+  expand_all_ns(Args,NSList,NewArgs),!,\n\
+  NQ =.. [P|NewArgs],\n\
+  call(NQ).\n\
+\n\
+expand_all_ns([],_,[]).\n\
+expand_all_ns([H|T],NSList,[H|NewArgs]):-\n\
+  check_query_arg(H),!,\n\
+  expand_all_ns(T,NSList,NewArgs).\n\
+\n\
+expand_all_ns([H|T],NSList,[NewArg|NewArgs]):-\n\
+  expand_ns4query(H,NSList,NewArg),\n\
+  expand_all_ns(T,NSList,NewArgs).\n\
+\n\
+check_query_arg(Arg) :-\n\
+  atomic(Arg),!,\n\
+  axiom(Ax),\n\
+  Ax =.. [_|L],\n\
+  flatten(L,L1),\n\
+  member(Arg,L1),!.\n\
+\n\
+expand_ns4query(NS_URL, [], NS_URL).\n\
+expand_ns4query(NS_URL, [Short_NSL=Long_NSL|_],Full_URL):- \n\
+	nonvar(NS_URL),\n\
+	NS_URL \\= literal(_),\n\
+	uri_split(NS_URL,Short_NS,Term, ':'),\n\
+	Short_NS = Short_NSL,\n\
+	Long_NS = Long_NSL,!,\n\
+	concat_atom([Long_NS,Term],Full_URL).\n\
+\n\
+expand_ns4query(NS_URL, [[]=Long_NSL|_],Full_URL):- \n\
+	nonvar(NS_URL),\n\
+	NS_URL \\= literal(_),\n\
+	\\+ sub_atom(NS_URL,_,_,_,':'),\n\
+	Long_NS = Long_NSL,!,\n\
+	concat_atom([Long_NS,NS_URL],Full_URL).\n\
+\n\
+expand_ns4query(NS_URL, [_|T],Full_URL):- \n\
+  expand_ns4query(NS_URL, T,Full_URL),!.\n\
+expand_ns4query(URL,_, URL).\n\
 \n\
 parse:- \n\
   pengine_self(M),\n\
@@ -3520,7 +3564,7 @@ parse:- \n\
     var elem = this.pengine.options.runner;
     var data = elem.data('prologRunner');
 
-    this.pengine.ask("parse,"+termNoFullStop(data.query.query));
+    this.pengine.ask("parse,query_call("+termNoFullStop(data.query.query)+")");
     elem.prologRunner('setState', "running");
   }
 
