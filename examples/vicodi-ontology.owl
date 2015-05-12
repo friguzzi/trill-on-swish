@@ -6,11 +6,11 @@
 This knowledge base is an extract of the Vicodi knowledge base that contains information on European history.
 http://www.vicodi.org/
 
-?- prob_instanceOf(\'http://vicodi.org/ontology#Role\',\'http://vicodi.org/ontology#Anthony-van-Dyck-is-Painter-in-Flanders\',Prob).
-?- instanceOf(\'http://vicodi.org/ontology#Role\',\'http://vicodi.org/ontology#Anthony-van-Dyck-is-Painter-in-Flanders\',ListExpl).
+?- prob_instanceOf(\'vicodi:Role\',\'vicodi:Anthony-van-Dyck-is-Painter-in-Flanders\',Prob).
+?- instanceOf(\'vicodi:Role\',\'vicodi:Anthony-van-Dyck-is-Painter-in-Flanders\',ListExpl).
 
-?- prob_sub_class(\'http://vicodi.org/ontology#Painter\',\'http://vicodi.org/ontology#Role\',Prob).
-?- sub_class(\'http://vicodi.org/ontology#Painter\',\'http://vicodi.org/ontology#Role\',ListExpl).
+?- prob_sub_class(\'vicodi:Painter\',\'vicodi:Role\',Prob).
+?- sub_class(\'vicodi:Painter\',\'vicodi:Role\',ListExpl).
 
 */
 -->
@@ -26,6 +26,7 @@ http://www.vicodi.org/
 
 <rdf:RDF xmlns="http://example.org#"
      xml:base="http://example.org"
+     xmlns:vicodi="http://vicodi.org/ontology#"
      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
      xmlns:owl="http://www.w3.org/2002/07/owl#"
      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"

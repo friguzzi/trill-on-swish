@@ -7,8 +7,8 @@ http://www.biopax.org/
 
 /** <examples>
 
-?- prob_sub_class(\'http://www.biopax.org/release/biopax-level3.owl#TransportWithBiochemicalReaction\',\'http://www.biopax.org/release/biopax-level3.owl#Entity\',Prob).
-?- sub_class(\'http://www.biopax.org/release/biopax-level3.owl#TransportWithBiochemicalReaction\',\'http://www.biopax.org/release/biopax-level3.owl#Entity\',ListExpl).
+?- prob_sub_class(\'TransportWithBiochemicalReaction\',\'Entity\',Prob).
+?- sub_class(\'TransportWithBiochemicalReaction\',\'Entity\',ListExpl).
 
 */
 -->

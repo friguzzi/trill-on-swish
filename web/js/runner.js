@@ -3155,6 +3155,7 @@ load_owl(String):-\n\
   pengine_property(Self,module(M)),\n\
   open_chars_stream(String,S),\n\
   process_rdf(stream(S), assert_list(M), [namespaces(NSList)]),\n\
+  rdf_register_prefix('disponte','https://sites.google.com/a/unife.it/ml/disponte#',[keep(true)]),\n\
   assert(M:ns4query(NSList)),\n\
   close(S),\n\
   rdf_2_owl('ont','ont'),\n\

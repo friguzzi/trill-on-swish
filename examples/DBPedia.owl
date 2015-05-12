@@ -7,8 +7,8 @@ http://dbpedia.org/
 
 /** <examples>
 
-?- prob_sub_class(\'http://dbpedia.org/ontology/Village\',\'http://dbpedia.org/ontology/PopulatedPlace\',Prob).
-?- sub_class(\'http://dbpedia.org/ontology/Village\',\'http://dbpedia.org/ontology/PopulatedPlace\',ListExpl).
+?- prob_sub_class(\'Village\',\'PopulatedPlace\',Prob).
+?- sub_class(\'Village\',\'PopulatedPlace\',ListExpl).
 
 */
 -->

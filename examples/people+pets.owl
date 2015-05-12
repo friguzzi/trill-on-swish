@@ -10,8 +10,8 @@ Doctoral Consortium of the 30th International Conference on Logic Programming (I
 
 /** <examples>
 
-?- prob_instanceOf(\'http://cohse.semanticweb.org/ontologies/people#natureLover\',\'http://cohse.semanticweb.org/ontologies/people#Kevin\',Prob).
-?- instanceOf(\'http://cohse.semanticweb.org/ontologies/people#natureLover\',\'http://cohse.semanticweb.org/ontologies/people#Kevin\',ListExpl).
+?- prob_instanceOf(\'natureLover\',\'Kevin\',Prob).
+?- instanceOf(\'natureLover\',\'Kevin\',ListExpl).
 
 */
 -->
