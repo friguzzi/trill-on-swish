@@ -11,15 +11,15 @@
 define([ "tos_cm/lib/codemirror",
 	 "config",
 	 "preferences",
-
+	 "form",
 	 //"../bower_components/codemirror/mode/javascript/javascript",
 	 //"../bower_components/codemirror/mode/xml/xml",
 	 //"../bower_components/codemirror/mode/clike/clike",
-	 "modal",
-	 "form",
+	 "tos_cm/mode/xml/xml-template-hint",
 	 "trill_on_swish_gitty",
+	 "modal",
 
-
+	 "tos_cm/addon/edit/matchbrackets",
 	 "tos_cm/addon/comment/continuecomment",
 	 "tos_cm/addon/comment/comment",
 	 "tos_cm/addon/hint/show-hint",
@@ -27,12 +27,14 @@ define([ "tos_cm/lib/codemirror",
 	 "tos_cm/addon/display/placeholder",
 	 "tos_cm/addon/runmode/runmode",
 	 "tos_cm/mode/xml/xml",
-	 //"tos_cm/mode/xml/xml_keys",
-	 //"tos_cm/mode/xml/xml_query",
-	 //"tos_cm/mode/xml/xml_server",
-	 //"tos_cm/addon/hover/xml-hover",
+	 "tos_cm/mode/xml/xml_keys",
+	 "tos_cm/mode/xml/xml_query",
+	 "tos_cm/mode/xml/xml_server",
+	 "tos_cm/addon/hover/xml-hover",
+	 "tos_cm/addon/hover/text-hover",
 
-
+	 "tos_cm/addon/hint/templates-hint",
+	 "tos_cm/addon/hint/show-context-info",
 
          "jquery", "laconic"
          /*"tos_cm/lib/codemirror",
