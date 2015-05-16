@@ -29,7 +29,7 @@ Conference. LNCS, vol. 5318, pp. 213–228. Springer (2008)
 ]>
 
 
-<rdf:RDF xmlns="&cancer_ra;#"
+<rdf:RDF xmlns="&cancer_ra;"
      xml:base="http://clarkparsia.com/pronto/cancer_ra.owl#"
      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
      xmlns:cancer_ra="http://clarkparsia.com/pronto/cancer_ra.owl#"
