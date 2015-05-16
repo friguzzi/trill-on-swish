@@ -162,7 +162,7 @@ preferences.setDefault("semantic-highlighting", false);
      * @param {String} name is the name of the file in the web storage
      */
     playFile: function(file) {
-      var url = config.http.locations.web_storage + "/" + file;
+      var url = config.http.locations.trill_on_swish_web_storage + "/" + file;
       $.ajax({ url: url,
 	       type: "GET",
 	       data: {format: "json"},

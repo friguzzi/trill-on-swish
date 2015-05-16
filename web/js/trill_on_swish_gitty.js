@@ -192,7 +192,7 @@ define([ "jquery", "config", "form", "laconic" ],
 	  return false;
 	});
 
-	var url  = config.http.locations.web_storage
+	var url  = config.http.locations.trill_on_swish_web_storage
 		 + "/" + encodeURI(meta.name);
 
 	$.ajax({ url: url,
@@ -319,7 +319,7 @@ define([ "jquery", "config", "form", "laconic" ],
 	  return;
 
 	elem.find(".trill_on_swish_gitty-diff").html("");
-	var url  = config.http.locations.web_storage
+	var url  = config.http.locations.trill_on_swish_web_storage
 		 + "/" + encodeURI(data.commit);
 
 	$.ajax({ url: url,

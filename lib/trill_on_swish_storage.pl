@@ -47,14 +47,15 @@
 /** <module> Store files on behalve of web clients
 
 The file store needs to deal  with   versioning  and  meta-data. This is
-achieved using gitty.pl, a git-like content-base  store that lacks git's
+achieved using trill_on_swish_gitty.pl, a git-like content-base  store that lacks git's
 notion of a _tree_. I.e., all files   are considered individual and have
 their own version.
 */
 
 :- setting(directory, atom, storage, 'The directory for storing files.').
 
-:- http_handler(trill_on_swish(p), tos_web_storage, [ id(trill_on_swish_web_storage), prefix ]).
+
+:- http_handler(trill_on_swish(ptos), trill_on_swish_web_storage, [ id(trill_on_swish_web_storage), prefix ]).
 
 %%	web_storage(+Request) is det.
 %
@@ -63,7 +64,7 @@ their own version.
 %	URL for the data and the plain   file name. Understands the HTTP
 %	methods =GET=, =POST=, =PUT= and =DELETE=.
 
-tos_web_storage(Request) :-
+trill_on_swish_web_storage(Request) :-
 	option(method(Method), Request),
 	storage(Method, Request).
 
@@ -100,8 +101,8 @@ storage(post, Request) :-
 	meta_data(Request, Dir, Dict, Meta),
 	(   atom_string(Base, Dict.get(meta).get(name))
 	->  file_name_extension(Base, Type, File),
-	    (	catch(gitty_create(Dir, File, Data, Meta, Commit),
-		      error(gitty(file_exists(File)),_),
+	    (	catch(trill_on_swish_gitty_create(Dir, File, Data, Meta, Commit),
+		      error(trill_on_swish_gitty(file_exists(File)),_),
 		      fail)
 	    ->	true
 	    ;	Error = json{error:file_exists,
@@ -110,8 +111,8 @@ storage(post, Request) :-
 	;   (   repeat,
 	        random_filename(Base),
 		file_name_extension(Base, Type, File),
-		catch(gitty_create(Dir, File, Data, Meta, Commit),
-		      error(gitty(file_exists(File)),_),
+		catch(trill_on_swish_gitty_create(Dir, File, Data, Meta, Commit),
+		      error(trill_on_swish_gitty(file_exists(File)),_),
 		      fail)
 	    ->  true
 	    )
@@ -131,12 +132,12 @@ storage(put, Request) :-
 	setting(directory, Dir),
 	request_file(Request, Dir, File),
 	(   Dict.get(update) == "meta-data"
-	->  gitty_data(Dir, File, Data, _OldMeta)
+	->  trill_on_swish_gitty_data(Dir, File, Data, _OldMeta)
 	;   option(data(Data), Dict, "")
 	),
 	meta_data(Request, Dict, Meta),
 	storage_url(File, URL),
-	gitty_update(Dir, File, Data, Meta, Commit),
+	trill_on_swish_gitty_update(Dir, File, Data, Meta, Commit),
 	debug(storage, 'Updated: ~p', [Commit]),
 	reply_json_dict(json{url:URL,
 			     file:File,
@@ -146,19 +147,19 @@ storage(delete, Request) :-
 	authentity(Request, Meta),
 	setting(directory, Dir),
 	request_file(Request, Dir, File),
-	gitty_update(Dir, File, "", Meta, _New),
+	trill_on_swish_gitty_update(Dir, File, "", Meta, _New),
 	reply_json_dict(true).
 
 request_file(Request, Dir, File) :-
 	option(path_info(PathInfo), Request),
 	atom_concat(/, File, PathInfo),
-	(   gitty_file(Dir, File, _Hash)
+	(   trill_on_swish_gitty_file(Dir, File, _Hash)
 	->  true
 	;   http_404([], Request)
 	).
 
 storage_url(File, HREF) :-
-	http_link_to_id(web_storage, path_postfix(File), HREF).
+	http_link_to_id(trill_on_swish_web_storage, path_postfix(File), HREF).
 
 %%	meta_data(+Request, +Dict, -Meta) is det.
 %%	meta_data(+Request, Store, +Dict, -Meta) is det.
@@ -177,7 +178,7 @@ meta_data(Request, Store, Dict, Meta) :-
 	meta_data(Request, Dict, Meta1),
 	(   atom_string(Previous, Dict.get(previous)),
 	    is_sha1(Previous),
-	    gitty_commit(Store, Previous, _PrevMeta)
+	    trill_on_swish_gitty_commit(Store, Previous, _PrevMeta)
 	->  Meta = Meta1.put(previous, Previous)
 	;   Meta = Meta1
 	).
@@ -206,7 +207,7 @@ meta_allowed(commit_message, string).
 
 %%	storage_get(+Request, +Format) is det.
 %
-%	HTTP handler that returns information a given gitty file.
+%	HTTP handler that returns information a given trill_on_swish_gitty file.
 %
 %	@arg Format is one of
 %
@@ -230,30 +231,30 @@ storage_get(Request, Format) :-
 	storage_get(Format, Dir, Type, FileOrHash, Request).
 
 storage_get(trill_on_swish, Dir, _, FileOrHash, Request) :-
-	gitty_data(Dir, FileOrHash, Code, Meta),
+	trill_on_swish_gitty_data(Dir, FileOrHash, Code, Meta),
 	trill_on_swish_reply([code(Code),file(FileOrHash),meta(Meta)], Request).
 storage_get(raw, Dir, _, FileOrHash, _Request) :-
-	gitty_data(Dir, FileOrHash, Code, Meta),
+	trill_on_swish_gitty_data(Dir, FileOrHash, Code, Meta),
 	file_mime_type(Meta.name, MIME),
 	format('Content-type: ~w~n~n', [MIME]),
 	format('~s', [Code]).
 storage_get(json, Dir, _, FileOrHash, _Request) :-
-	gitty_data(Dir, FileOrHash, Code, Meta),
+	trill_on_swish_gitty_data(Dir, FileOrHash, Code, Meta),
 	reply_json_dict(json{data:Code, meta:Meta}).
 storage_get(history(Depth, Includes), Dir, _, File, _Request) :-
-	gitty_history(Dir, File, History, [depth(Depth),includes(Includes)]),
+	trill_on_swish_gitty_history(Dir, File, History, [depth(Depth),includes(Includes)]),
 	reply_json_dict(History).
 storage_get(history(Depth), Dir, _, File, _Request) :-
-	gitty_history(Dir, File, History, [depth(Depth)]),
+	trill_on_swish_gitty_history(Dir, File, History, [depth(Depth)]),
 	reply_json_dict(History).
 storage_get(diff(RelTo), Dir, _, File, _Request) :-
-	gitty_diff(Dir, RelTo, File, Diff),
+	trill_on_swish_gitty_diff(Dir, RelTo, File, Diff),
 	reply_json_dict(Diff).
 
 request_file_or_hash(Request, Dir, FileOrHash, Type) :-
 	option(path_info(PathInfo), Request),
 	atom_concat(/, FileOrHash, PathInfo),
-	(   gitty_file(Dir, FileOrHash, _Hash)
+	(   trill_on_swish_gitty_file(Dir, FileOrHash, _Hash)
 	->  Type = file
 	;   is_sha1(FileOrHash)
 	->  Type = hash
@@ -328,8 +329,8 @@ random_char(Char) :-
 
 trill_on_swish_search:tos_typeahead(file, Query, FileInfo) :-
 	setting(directory, Dir),
-	gitty_file(Dir, File, Head),
-	gitty_commit(Dir, Head, Meta),
+	trill_on_swish_gitty_file(Dir, File, Head),
+	trill_on_swish_gitty_commit(Dir, Head, Meta),
 	Meta.get(public) == true,
 	(   sub_atom(File, 0, _, _, Query) % find only public
 	->  true

@@ -28,17 +28,17 @@
 */
 
 :- module(trill_on_swish_gitty,
-	  [ gitty_file/3,		% +Store, ?Name, ?Hash
-	    gitty_create/5,		% +Store, +Name, +Data, +Meta, -Commit
-	    gitty_update/5,		% +Store, +Name, +Data, +Meta, -Commit
-	    gitty_commit/3,		% +Store, +Name, -Meta
-	    gitty_data/4,		% +Store, +Name, -Data, -Meta
-	    gitty_history/4,		% +Store, +Name, -History, +Options
-	    gitty_scan/1,		% +Store
-	    gitty_hash/2,		% +Store, ?Hash
-	    gitty_reserved_meta/1,	% ?Key
+	  [ trill_on_swish_gitty_file/3,		% +Store, ?Name, ?Hash
+	    trill_on_swish_gitty_create/5,		% +Store, +Name, +Data, +Meta, -Commit
+	    trill_on_swish_gitty_update/5,		% +Store, +Name, +Data, +Meta, -Commit
+	    trill_on_swish_gitty_commit/3,		% +Store, +Name, -Meta
+	    trill_on_swish_gitty_data/4,		% +Store, +Name, -Data, -Meta
+	    trill_on_swish_gitty_history/4,		% +Store, +Name, -History, +Options
+	    trill_on_swish_gitty_scan/1,		% +Store
+	    trill_on_swish_gitty_hash/2,		% +Store, ?Hash
+	    trill_on_swish_gitty_reserved_meta/1,	% ?Key
 
-	    gitty_diff/4,		% +Store, ?Start, +End, -Diff
+	    trill_on_swish_gitty_diff/4,		% +Store, ?Start, +End, -Diff
 
 	    data_diff/3,		% +String1, +String2, -Diff
 	    udiff_string/2		% +Diff, -String
@@ -73,7 +73,7 @@ following fields are reserved for gitties bookkeeping:
   Hash of the previous commit.
 
 The key =commit= is reserved and returned   as  part of the meta-data of
-the newly created (gitty_create/5) or updated object (gitty_update/5).
+the newly created (trill_on_swish_gitty_create/5) or updated object (trill_on_swish_gitty_update/5).
 */
 
 :- dynamic
@@ -83,29 +83,29 @@ the newly created (gitty_create/5) or updated object (gitty_update/5).
 	head/3,
 	store/1.
 
-%%	gitty_file(+Store, ?File, ?Head) is nondet.
+%%	trill_on_swish_gitty_file(+Store, ?File, ?Head) is nondet.
 %
-%	True when File entry in the  gitty   store  and Head is the HEAD
+%	True when File entry in the  trill_on_swish_gitty   store  and Head is the HEAD
 %	revision.
 
-gitty_file(Store, Head, Hash) :-
-	gitty_scan(Store),
+trill_on_swish_gitty_file(Store, Head, Hash) :-
+	trill_on_swish_gitty_scan(Store),
 	head(Store, Head, Hash).
 
-%%	gitty_create(+Store, +Name, +Data, +Meta, -Commit) is det.
+%%	trill_on_swish_gitty_create(+Store, +Name, +Data, +Meta, -Commit) is det.
 %
 %	Create a new object Name from Data and meta information.
 %
 %	@arg Commit is a dit describing the new Commit
 
-gitty_create(Store, Name, _Data, _Meta, _) :-
-	gitty_scan(Store),
+trill_on_swish_gitty_create(Store, Name, _Data, _Meta, _) :-
+	trill_on_swish_gitty_scan(Store),
 	head(Store, Name, _), !,
-	throw(error(gitty(file_exists(Name)),_)).
-gitty_create(Store, Name, Data, Meta, CommitRet) :-
+	throw(error(trill_on_swish_gitty(file_exists(Name)),_)).
+trill_on_swish_gitty_create(Store, Name, Data, Meta, CommitRet) :-
 	save_object(Store, Data, blob, Hash),
 	get_time(Now),
-	Commit = gitty{}.put(Meta)
+	Commit = trill_on_swish_gitty{}.put(Meta)
 		        .put(_{ name:Name,
 				time:Now,
 				data:Hash
@@ -113,28 +113,28 @@ gitty_create(Store, Name, Data, Meta, CommitRet) :-
 	format(string(CommitString), '~q.~n', [Commit]),
 	save_object(Store, CommitString, commit, CommitHash),
 	CommitRet = Commit.put(commit, CommitHash),
-	with_mutex(gitty,
+	with_mutex(trill_on_swish_gitty,
 		   (   head(Store, Name, _)
 		   ->  delete_object(Store, CommitHash),
-		       throw(error(gitty(file_exists(Name),_)))
+		       throw(error(trill_on_swish_gitty(file_exists(Name),_)))
 		   ;   assertz(head(Store, Name, CommitHash))
 		   )).
 
-%%	gitty_update(+Store, +Name, +Data, +Meta, -Commit) is det.
+%%	trill_on_swish_gitty_update(+Store, +Name, +Data, +Meta, -Commit) is det.
 %
 %	Update document Name using Data and the given meta information
 
-gitty_update(Store, Name, Data, Meta, CommitRet) :-
-	gitty_scan(Store),
+trill_on_swish_gitty_update(Store, Name, Data, Meta, CommitRet) :-
+	trill_on_swish_gitty_scan(Store),
 	head(Store, Name, OldHead),
 	(   _{previous:OldHead} >:< Meta
 	->  true
-	;   throw(error(gitty(commit_version(OldHead, Meta.previous)), _))
+	;   throw(error(trill_on_swish_gitty(commit_version(OldHead, Meta.previous)), _))
 	),
 	load_plain_commit(Store, OldHead, OldMeta),
 	get_time(Now),
 	save_object(Store, Data, blob, Hash),
-	Commit = gitty{}.put(OldMeta)
+	Commit = trill_on_swish_gitty{}.put(OldMeta)
 		        .put(Meta)
 		        .put(_{ name:Name,
 				time:Now,
@@ -144,36 +144,36 @@ gitty_update(Store, Name, Data, Meta, CommitRet) :-
 	format(string(CommitString), '~q.~n', [Commit]),
 	save_object(Store, CommitString, commit, CommitHash),
 	CommitRet = Commit.put(commit, CommitHash),
-	with_mutex(gitty,
+	with_mutex(trill_on_swish_gitty,
 		   (   retract(head(Store, Name, OldHead))
 		   ->  assertz(head(Store, Name, CommitHash))
 		   ;   delete_object(Store, CommitHash),
-		       throw(error(gitty(not_at_head(OldHead)), _))
+		       throw(error(trill_on_swish_gitty(not_at_head(OldHead)), _))
 		   )).
 
-%%	gitty_data(+Store, +NameOrHash, -Data, -Meta) is semidet.
+%%	trill_on_swish_gitty_data(+Store, +NameOrHash, -Data, -Meta) is semidet.
 %
 %	Get the data in object Name and its meta-data
 
-gitty_data(Store, Name, Data, Meta) :-
-	gitty_scan(Store),
+trill_on_swish_gitty_data(Store, Name, Data, Meta) :-
+	trill_on_swish_gitty_scan(Store),
 	head(Store, Name, Head), !,
 	load_commit(Store, Head, Meta),
 	load_object(Store, Meta.data, Data).
-gitty_data(Store, Hash, Data, Meta) :-
+trill_on_swish_gitty_data(Store, Hash, Data, Meta) :-
 	load_commit(Store, Hash, Meta),
 	load_object(Store, Meta.data, Data).
 
-%%	gitty_commit(+Store, +NameOrHash, -Meta) is semidet.
+%%	trill_on_swish_gitty_commit(+Store, +NameOrHash, -Meta) is semidet.
 %
 %	True if Meta holds the commit data of NameOrHash. A key =commit=
 %	is added to the meta-data to specify the commit hash.
 
-gitty_commit(Store, Name, Meta) :-
-	gitty_scan(Store),
+trill_on_swish_gitty_commit(Store, Name, Meta) :-
+	trill_on_swish_gitty_scan(Store),
 	head(Store, Name, Head), !,
 	load_commit(Store, Head, Meta).
-gitty_commit(Store, Hash, Meta) :-
+trill_on_swish_gitty_commit(Store, Hash, Meta) :-
 	load_commit(Store, Hash, Meta).
 
 load_commit(Store, Hash, Meta) :-
@@ -188,7 +188,7 @@ load_plain_commit(Store, Hash, Meta) :-
 	load_object(Store, Hash, String),
 	term_string(Meta, String, []).
 
-%%	gitty_history(+Store, +NameOrHash, -History, +Options) is det.
+%%	trill_on_swish_gitty_history(+Store, +NameOrHash, -History, +Options) is det.
 %
 %	History is a list of dicts representating the history of Name in
 %	Store.  Options:
@@ -201,7 +201,7 @@ load_plain_commit(Store, Hash, Meta) :-
 %	  history includes the entry with HASH an (depth+1)//2 entries
 %	  after the requested HASH.
 
-gitty_history(Store, Name, History, Options) :-
+trill_on_swish_gitty_history(Store, Name, History, Options) :-
 	history_hash_start(Store, Name, Hash0),
 	option(depth(Depth), Options, 5),
 	(   option(includes(Hash), Options)
@@ -215,7 +215,7 @@ gitty_history(Store, Name, History, Options) :-
 	).
 
 history_hash_start(Store, Name, Hash) :-
-	gitty_scan(Store),
+	trill_on_swish_gitty_scan(Store),
 	head(Store, Name, Head), !,
 	Hash = Head.
 history_hash_start(_, Hash, Hash).
@@ -321,24 +321,24 @@ read_hdr(C, In, [C|T]) :-
 	read_hdr(C1, In, T).
 read_hdr(_, _, []).
 
-%%	gitty_scan(+Store) is det.
+%%	trill_on_swish_gitty_scan(+Store) is det.
 %
-%	Scan gitty store for files (entries),   filling  head/3. This is
+%	Scan trill_on_swish_gitty store for files (entries),   filling  head/3. This is
 %	performed lazily at first access to the store.
 %
 %	@tdb	Possibly we need to maintain a cached version of this
-%		index to avoid having to open all objects of the gitty
+%		index to avoid having to open all objects of the trill_on_swish_gitty
 %		store.
 
-gitty_scan(Store) :-
+trill_on_swish_gitty_scan(Store) :-
 	store(Store), !.
-gitty_scan(Store) :-
-	with_mutex(gitty, gitty_scan_sync(Store)).
+trill_on_swish_gitty_scan(Store) :-
+	with_mutex(trill_on_swish_gitty, trill_on_swish_gitty_scan_sync(Store)).
 
-gitty_scan_sync(Store) :-
+trill_on_swish_gitty_scan_sync(Store) :-
 	store(Store), !.
-gitty_scan_sync(Store) :-
-	(   gitty_hash(Store, Hash),
+trill_on_swish_gitty_scan_sync(Store) :-
+	(   trill_on_swish_gitty_hash(Store, Hash),
 	    load_object(Store, Hash, Data, commit, _Size),
 	    term_string(Meta, Data, []),
 	    (	head(Store, Meta.name, OldHash)
@@ -354,11 +354,11 @@ gitty_scan_sync(Store) :-
 	).
 
 
-%%	gitty_hash(+Store, ?Hash) is nondet.
+%%	trill_on_swish_gitty_hash(+Store, ?Hash) is nondet.
 %
 %	True when Hash is an object in the store.
 
-gitty_hash(Store, Hash) :-
+trill_on_swish_gitty_hash(Store, Hash) :-
 	var(Hash), !,
 	access_file(Store, exist),
 	directory_files(Store, Level0),
@@ -375,7 +375,7 @@ gitty_hash(Store, Hash) :-
 	member(File, Files),
 	atom_length(File, 36),
 	atomic_list_concat([E0,E1,File], Hash).
-gitty_hash(Store, Hash) :-
+trill_on_swish_gitty_hash(Store, Hash) :-
 	hash_file(Store, Hash, File),
 	exists_file(File).
 
@@ -393,21 +393,21 @@ hash_file(Store, Hash, Path) :-
 	sub_atom(Hash, 4, _, 0, File),
 	atomic_list_concat([Store, Dir0, Dir1, File], /, Path).
 
-%%	gitty_reserved_meta(?Key) is nondet.
+%%	trill_on_swish_gitty_reserved_meta(?Key) is nondet.
 %
-%	True when Key is a gitty reserved key for the commit meta-data
+%	True when Key is a trill_on_swish_gitty reserved key for the commit meta-data
 
-gitty_reserved_meta(name).
-gitty_reserved_meta(time).
-gitty_reserved_meta(data).
-gitty_reserved_meta(previous).
+trill_on_swish_gitty_reserved_meta(name).
+trill_on_swish_gitty_reserved_meta(time).
+trill_on_swish_gitty_reserved_meta(data).
+trill_on_swish_gitty_reserved_meta(previous).
 
 
 		 /*******************************
 		 *	       DIFF		*
 		 *******************************/
 
-%%	gitty_diff(+Store, ?Hash1, +FileOrHash2, -Dict) is det.
+%%	trill_on_swish_gitty_diff(+Store, ?Hash1, +FileOrHash2, -Dict) is det.
 %
 %	True if Dict representeds the changes   in Hash1 to FileOrHash2.
 %	If Hash1 is unbound,  it  is   unified  with  the  `previous` of
@@ -423,13 +423,13 @@ gitty_reserved_meta(previous).
 %	  - tags:_{added:AddedTags, deleted:DeletedTags}
 %	  If tags have changed, the added and deleted ones.
 
-gitty_diff(Store, C1, C2, Dict) :-
-	gitty_data(Store, C2, Data2, Meta2),
+trill_on_swish_gitty_diff(Store, C1, C2, Dict) :-
+	trill_on_swish_gitty_data(Store, C2, Data2, Meta2),
 	(   var(C1)
 	->  C1 = Meta2.get(previous)
 	;   true
 	), !,
-	gitty_data(Store, C1, Data1, Meta1),
+	trill_on_swish_gitty_data(Store, C1, Data1, Meta1),
 	Pairs = [ from-Meta1, to-Meta2|_],
 	(   Data1 \== Data2
 	->  udiff_string(Data1, Data2, UDIFF),
@@ -446,7 +446,7 @@ gitty_diff(Store, C1, C2, Dict) :-
 	),
 	once(length(Pairs,_)),			% close list
 	dict_pairs(Dict, json, Pairs).
-gitty_diff(_Store, '0000000000000000000000000000000000000000', _C2,
+trill_on_swish_gitty_diff(_Store, '0000000000000000000000000000000000000000', _C2,
 	   json{initial:true}).
 
 

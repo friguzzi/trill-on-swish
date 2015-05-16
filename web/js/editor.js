@@ -277,7 +277,7 @@ define([ "tos_cm/lib/codemirror",
 	data = { update: "meta-data" };
       } else if ( method == "POST" ) {
 	data = { data: this.prologEditor('getSource'),
-		 type: "pl"
+		 type: "owl"
 	       };
 	if ( options.meta ) {			/* rename */
 	  data.previous = options.meta.commit;
@@ -285,7 +285,7 @@ define([ "tos_cm/lib/codemirror",
       } else {
 	if ( !options.tos_cm.isClean(options.cleanGeneration) ) {
 	  data = { data: this.prologEditor('getSource'),
-		   type: "pl"
+		   type: "owl"
 		 };
 	} else if ( sameSet(options.meta.tags, meta.tags) ) {
 	  alert("No change");
