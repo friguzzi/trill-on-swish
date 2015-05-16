@@ -30,9 +30,9 @@ preferences.setDefault("semantic-highlighting", false);
   var pluginName = 'trill_on_swish';
 
   var defaults = {
-    newProgramText: "% Your program goes here\n\n\n\n"+
+    newProgramText: "<!-- Your program goes here\n\n\n\n"+
 		     "/** <examples>\n\n\n"+
-		     "*/\n",
+		     "*/\n-->",
     menu: {
       "File":
       { "New": function() {
