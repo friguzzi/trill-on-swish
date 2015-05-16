@@ -1,9 +1,9 @@
 // list of examples, represented as a JSON list
 
 [
-{ "file":"biopax-level3.owl",             "title":"Biopax KB" },
-{ "file":"BRCA.owl",                      "title":"BRCA KB" },
-{ "file":"DBPedia.owl",                   "title":"DBPedia KB" },
-{ "file":"people+pets.owl",               "title":"people+pets KB" },
-{ "file":"vicodi-ontology.owl",           "title":"Vicodi KB" },
+{ "file":"biopax-level3.owl",             "title":"Biopax" },
+{ "file":"BRCA.owl",                      "title":"BRCA" },
+{ "file":"DBPedia.owl",                   "title":"DBPedia" },
+{ "file":"people+pets.owl",               "title":"people+pets" },
+{ "file":"vicodi-ontology.owl",           "title":"Vicodi" },
 ]
