@@ -126,7 +126,7 @@ preferences.setDefault("semantic-highlighting", false);
 	      return elem.trill_on_swish('prologSource');
 	    },
 	    sourceID: function() {
-	      return data.editor.xmlEditor('getSourceID');
+	      return data.editor.prologEditor('getSourceID');
 	    },
 	    examples: elem.trill_on_swish('examples'),
 	    runner:   data.runner,
