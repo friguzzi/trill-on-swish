@@ -9,7 +9,7 @@
  * @requires editor
  */
 
-define([ "jquery", "laconic", "editor" ],
+define([ "jquery", "laconic", "editorprolog" ],
        function() {
 
 (function($) {
@@ -58,9 +58,10 @@ define([ "jquery", "laconic", "editor" ],
 
 	$(qediv).append(elem.children("textarea"))
 	        .prologEditor({ role: "query",
+				//mode: "prolog",
 				sourceID: options.sourceID,
 		                placeholder: "Your query goes here ...",
-				lineNumbers: false,
+		                lineNumbers: false,
 				lineWrapping: true,
 				prologQuery: function(q) {
 				  elem.queryEditor('run', q, tableSelected());

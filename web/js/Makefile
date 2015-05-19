@@ -1,4 +1,4 @@
-JS=editor.js navbar.js answer.js pane.js query.js runner.js trill_on_swish.js \
+JS=editorxml.js editorprolog.js navbar.js answer.js pane.js query.js runner.js trill_on_swish.js \
    config.js jswish.js
 CM=$(shell find codemirror -name '*.js')
 JQ=jquery.jsdoc

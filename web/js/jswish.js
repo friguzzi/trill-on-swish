@@ -16,7 +16,7 @@ define([ "jquery",
 	 "pane",
 	 "navbar",
 	 "search",
-	 "editor",
+	 "editorxml",
 	 "query",
 	 "runner",
 	 "modal",
@@ -51,7 +51,7 @@ preferences.setDefault("semantic-highlighting", false);
 	},
 	"Print group": "--",
 	"Print ...": function() {
-	  $(".prolog-editor").prologEditor('print');
+	  $(".prolog-editor").xmlEditor('print');
 	}
       },
       "Edit":
@@ -119,14 +119,14 @@ preferences.setDefault("semantic-highlighting", false);
 
 	$("#navbar").navbar(defaults.menu);
 
-	data.editor = $(".prolog-editor").prologEditor();
+	data.editor = $(".prolog-editor").xmlEditor();
 	data.runner = $(".prolog-runners").prologRunners();
 	data.query  = $(".prolog-query").queryEditor(
           { source:   function() {
 	      return elem.trill_on_swish('prologSource');
 	    },
 	    sourceID: function() {
-	      return data.editor.prologEditor('getSourceID');
+	      return data.editor.xmlEditor('getSourceID');
 	    },
 	    examples: elem.trill_on_swish('examples'),
 	    runner:   data.runner,
@@ -239,7 +239,7 @@ preferences.setDefault("semantic-highlighting", false);
       var list = [];
       var src;
 
-      if ( (src=$(".prolog-editor").prologEditor('getSource')) )
+      if ( (src=$(".prolog-editor").xmlEditor('getSource')) )
 	list.push(src);
       if ( (src=$(".background.prolog.source").text()) )
 	list.push(src);
@@ -257,10 +257,10 @@ preferences.setDefault("semantic-highlighting", false);
       var text = $(".examples.prolog").text();
 
       if ( text )
-	return $().prologEditor('getExamples', text, false);
+	return $().xmlEditor('getExamples', text, false);
       else
 	return function() {
-	  return $(".prolog-editor").prologEditor('getExamples');
+	  return $(".prolog-editor").xmlEditor('getExamples');
 	};
     },
 
