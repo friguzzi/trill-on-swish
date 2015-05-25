@@ -113,8 +113,8 @@ define([ "tos_cm/lib/codemirror",
 	  placeholder: "Your ontology goes here (use RDF/XML format) ...",
 	  lineNumbers: true,
 	  mode: "erlang",
-//	  theme: "xml",
-//          matchBrackets: true,
+//	  theme: "erlang-dark",
+          matchBrackets: true,
 //          textHover: true,
 //          prologKeys: true
 	}, options);
@@ -287,7 +287,7 @@ define([ "tos_cm/lib/codemirror",
 	data = { update: "meta-data" };
       } else if ( method == "POST" ) {
 	data = { data: this.prologEditor('getSource'),
-		 type: "owl"
+		 type: "pl"
 	       };
 	if ( options.meta ) {			/* rename */
 	  data.previous = options.meta.commit;
@@ -295,7 +295,7 @@ define([ "tos_cm/lib/codemirror",
       } else {
 	if ( !options.tos_cm.isClean(options.cleanGeneration) ) {
 	  data = { data: this.prologEditor('getSource'),
-		   type: "owl"
+		   type: "pl"
 		 };
 	} else if ( sameSet(options.meta.tags, meta.tags) ) {
 	  alert("No change");
