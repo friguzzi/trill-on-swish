@@ -49,8 +49,8 @@ load_theory(Name):-
 
 check_query_args([H|T]) :-
   atomic(H),!,
-  %get_trill_current_module(Name),
-  translate_rdf:axiom(A),
+  get_trill_current_module(Name),
+  Name:axiom(A),
   A =.. [_|L],
   flatten(L,L1),
   member(H,L1),!,

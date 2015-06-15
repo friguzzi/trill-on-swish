@@ -330,7 +330,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 	    server: config.http.locations.pengines,
 	    runner: elem,
 	    application: "trill_on_swish",
-	    src: " :- use_module(library(trill_on_swish/translate_rdf)). :- use_module(library(pengines)). :- use_module(library(trill_on_swish/trill/trill)). \n\
+	    src: " :- use_module(library(trill_on_swish/translate_rdf)). :- use_module(library(pengines)). :- use_module(library(trill)). \n\
 	    	   parse:- \n\
 		     pengine_self(M),\n\
 		     set_prolog_flag(M:unknwon,fail),\n\
