@@ -108,3 +108,5 @@ pengines:prepare_module(Module, trill_on_swish, _Options) :-
 %:- use_module('/home/collab1/zese/ClioPatria/cpack/trill_on_swish/web/trill/trill.pl').
 :- use_foreign_library(foreign(bddem),install).
 
+:- use_module(trill_on_swish(lib/translate_rdf)).
+

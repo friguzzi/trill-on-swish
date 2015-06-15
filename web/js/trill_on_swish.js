@@ -31,18 +31,6 @@ require.config({
     "tos_cm/addon/runmode/runmode": "../bower_components/codemirror/addon/runmode/runmode",
 					/* Our own xml mode */
     "tos_cm/mode/xml/xml": "../bower_components/codemirror/mode/xml/xml",
-    "tos_cm/mode/erlang/erlang": "../bower_components/codemirror/mode/erlang/erlang",
-    /*"tos_cm/mode/xml/xml": "codemirror/mode/xml/xml",
-    "tos_cm/mode/xml/xml_keys": "codemirror/mode/xml/xml_keys",
-    "tos_cm/mode/xml/xml_query": "codemirror/mode/xml/xml_query",
-    "tos_cm/mode/xml/xml_server": "codemirror/mode/xml/xml_server",
-
-    "tos_cm/addon/hover/text-hover": "codemirror/addon/hover/text-hover",
-    "tos_cm/addon/hover/xml-hover": "codemirror/addon/hover/xml-hover",
-
-    "tos_cm/addon/hint/templates-hint": "codemirror/addon/hint/templates-hint",
-    "tos_cm/addon/hint/show-context-info": "codemirror/addon/hint/show-context-info",
-    "tos_cm/mode/xml/xml-template-hint": "codemirror/mode/xml/xml-template-hint",*/
     				/* Our own prolog mode */
     "tos_cm/mode/prolog/prolog": "codemirror/mode/prolog/prolog",
     "tos_cm/mode/prolog/prolog_keys": "codemirror/mode/prolog/prolog_keys",
