@@ -1,4 +1,4 @@
-:- module(translate_rdf, [load_owl/1, query_call/1]).
+:- module(translate_rdf, [load_owl/1, query_expand/1]).
 
 
 :- thread_local
@@ -23,7 +23,7 @@
 
 :- use_module(library(lists),[member/2]).
 :- use_module(library(pengines)).
-:- use_module(library(trill)).
+:- use_module(library(trill_on_swish/trill/trill)).
 
 
 :- discontiguous(valid_axiom/1).
@@ -2848,7 +2848,7 @@ parse_probabilistic_annotation_assertions :-
   % annotation/3 axioms created already during owl_parse_annotated_axioms/1
   retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).
 
-query_call(Q):-
+query_expand(Q):-
   Q =.. [P|Args],
   pengine_self(Self),
   pengine_property(Self,module(M)),

@@ -330,7 +330,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 	    server: config.http.locations.pengines,
 	    runner: elem,
 	    application: "trill_on_swish",
-	    src: " :- use_module(library(trill_on_swish/translate_rdf)). :- use_module(library(pengines)). :- use_module(library(trill)). \n\
+	    src: ":- use_module(library(trill_on_swish/trill/trill)). :- use_module(library(trill_on_swish/translate_rdf)). :- use_module(library(pengines)).\n\
 	    	   parse:- \n\
 		     pengine_self(M),\n\
 		     set_prolog_flag(M:unknwon,fail),\n\
@@ -666,7 +666,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
     var elem = this.pengine.options.runner;
     var data = elem.data('prologRunner');
 
-    this.pengine.ask("parse,query_call("+termNoFullStop(data.query.query)+")");
+    this.pengine.ask("parse,query_expand("+termNoFullStop(data.query.query)+")");
     elem.prologRunner('setState', "running");
   }
 

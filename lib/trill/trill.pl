@@ -16,7 +16,11 @@
 %:- use_module(library(tries)).
 %:- load_foreign_files(['cplint-swi'],[],init_my_predicates).
 %:-use_foreign_library(bddem,install).
-:-['trillProbComputation'].
+
+:- use_foreign_library(foreign(bddem),install).
+
+:- thread_local rule_n/1.
+%:-['trillProbComputation'].
 
 :- thread_local
 	ind/1.
@@ -43,6 +47,7 @@
         owl2_model:minCardinality/2,
         owl2_model:minCardinality/3.
 
+%:- multifile init_test/2,ret_prob/3,end_test/1,one/2,zero/2,and/4,or/4,get_var_n/5,add_var/5,equality/4,na/2,remove/3,v/3.
 
 load_theory(Name):-
   [Name].
@@ -1782,10 +1787,12 @@ add_all_n([H|T],A,AN):-
  ==========
 */
 retract_sameIndividual(L):-
-  retract(sameIndividual(L)).
+  get_trill_current_module(N),
+  retract(N:sameIndividual(L)).
 
 retract_sameIndividual(L):-
-  \+ retract(sameIndividual(L)).
+  get_trill_current_module(N),
+  \+ retract(N:sameIndividual(L)).
 /* ****** */
 
 /*
@@ -1976,7 +1983,134 @@ get_trill_current_module('translate_rdf'):-
 get_trill_current_module('owl2_model'):- !.
 /**************/
 
+/****************
+	TRILLPROBCOMPUTATION
+****************/
+
+compute_prob(Expl,Prob):-
+  %writeln('retract'),
+  retractall(v(_,_,_)),
+  retractall(na(_,_)),
+  retractall(rule_n(_)),
+  %writeln('assert'),
+  assert(rule_n(0)),
+  %writeln('test'),
+  init_test(_,Env),
+  %writeln('build_bdd'),
+  build_bdd(Env,Expl,BDD),
+  %writeln('ret_prob'),
+  ret_prob(Env,BDD,Prob),
+  %writeln('end'),
+  end_test(Env), !.
+  
+  
+
+
+build_bdd(Env,[X],BDD):- !,
+  %write('1'),nl,
+  %writel(X),nl,
+  bdd_and(Env,X,BDD).
+  
+build_bdd(Env, [H|T],BDD):-
+  %write('2'),nl,
+  build_bdd(Env,T,BDDT),
+  bdd_and(Env,H,BDDH),
+  or(Env,BDDH,BDDT,BDD).
+  
+build_bdd(Env,[],BDD):- !,
+  %write('3'),nl,
+  zero(Env,BDD).
+  
+  
+bdd_and(Env,[X],BDDX):-
+  %write('bdd_and-1: '),write(X),nl,
+  get_prob_ax(X,AxN,Prob),!,
+  %write('   '),write(Prob),nl,
+  ProbN is 1-Prob,
+  get_var_n(Env,AxN,[],[Prob,ProbN],VX),
+  equality(Env,VX,0,BDDX),!.
+bdd_and(Env,[_X],BDDX):- !,
+  %write('bdd_and-1: '),write(X),nl,write('   1'),nl,
+  one(Env,BDDX).
+  
+bdd_and(Env,[H|T],BDDAnd):-
+  %write('bdd_and-2: '),write(H),nl, 
+  get_prob_ax(H,AxN,Prob),!,
+  %write('   '),write(Prob),nl,
+  ProbN is 1-Prob,
+  %write('bdd_and-2: ProbN'),nl,
+  get_var_n(Env,AxN,[],[Prob,ProbN],VH),
+  %write('bdd_and-2: get_var_n'),nl, 
+  equality(Env,VH,0,BDDH),
+  %write('bdd_and-2: equality'),nl,
+  bdd_and(Env,T,BDDT),
+  %write('bdd_and-2: bdd_and'),nl,
+  and(Env,BDDH,BDDT,BDDAnd).
+  
+bdd_and(Env,[_H|T],BDDAnd):- !,
+  %write('bdd_and-2: '),write(H),nl,write('   1'),nl,
+  one(Env,BDDH),
+  bdd_and(Env,T,BDDT),
+  and(Env,BDDH,BDDT,BDDAnd).
+
+
+
+  
+get_var_n(Env,R,S,Probs,V):-
+  ( 
+    v(R,S,V) -> 
+      true
+    ; 
+      length(Probs,L),
+      %trace,
+      add_var(Env,L,Probs,R,V),
+      %notrace,
+      assert(v(R,S,V))
+  ).
+
+
+get_prob_ax((Ax,_Ind),N,Prob):- !,
+  compute_prob_ax(Ax,Prob),
+  ( na(Ax,N) -> 
+      true
+    ;
+      rule_n(N),
+      assert(na(Ax,N)),
+      retract(rule_n(N)),
+      N1 is N + 1,
+      assert(rule_n(N1))
+  ).
+get_prob_ax(Ax,N,Prob):- !,
+  compute_prob_ax(Ax,Prob),  
+  ( na(Ax,N) -> 
+      true 
+    ; 
+      rule_n(N),
+      assert(na(Ax,N)),
+      retract(rule_n(N)),
+      N1 is N + 1,
+      assert(rule_n(N1))
+  ).
+  
+compute_prob_ax(Ax,Prob):-
+  get_trill_current_module(Name),
+  findall(ProbA, (Name:annotationAssertion('https://sites.google.com/a/unife.it/ml/disponte#probability',Ax,literal(ProbAT)),atom_number(ProbAT,ProbA)),Probs),
+  compute_prob_ax1(Probs,Prob).
+  
+compute_prob_ax1([Prob],Prob):-!.
+
+compute_prob_ax1([Prob1,Prob2],Prob):-!,
+  Prob is Prob1+Prob2-(Prob1*Prob2).
+  
+compute_prob_ax1([Prob1 | T],Prob):-
+  compute_prob_ax1(T,Prob0),
+  Prob is Prob1 + Prob0 - (Prob1*Prob0).  
+/************************/
+
+
+/*
 :- multifile sandbox:safe_primitive/1.
+		
 
 sandbox:safe_primitive(trill:init_test(_,_)).
 sandbox:safe_primitive(trill:ret_prob(_,_,_)).
@@ -2005,4 +2139,4 @@ sandbox:safe_primitive(trill:inconsistent_theory(_)).
 sandbox:safe_primitive(trill:prob_inconsistent_theory(_)).
 sandbox:safe_primitive(trill:load_theory(_)).
 sandbox:safe_primitive(trill:check_query_args(_)).
-
+*/
