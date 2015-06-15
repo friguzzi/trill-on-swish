@@ -1876,6 +1876,7 @@ s_predecessors2(SN,[H|T],T1,ABox):-
    
    ************* */
 
+/*
 build_formula([],[],Var,Var).
 
 build_formula([D|TD],TF,VarIn,VarOut):-
@@ -1923,12 +1924,14 @@ build_term([Ax|TC],F0,F,VarIn,VarOut):-!,
   ;
     build_term(TC,F0,F,VarIn,VarOut)
   ).
-
+*/
 
 /* nth0_eq(PosIn,PosOut,List,El) takes as input a List,
 an element El and an initial position PosIn and returns in PosOut
 the position in the List that contains an element exactly equal to El
 */
+
+/*
 nth0_eq(N,N,[H|_T],El):-
         H==El,!.
 
@@ -1936,9 +1939,11 @@ nth0_eq(NIn,NOut,[_H|T],El):-
         N1 is NIn+1,
         nth0_eq(N1,NOut,T,El).
 
+*/
 /* var2numbers converts a list of couples (Rule,Substitution) into a list
 of triples (N,NumberOfHeadsAtoms,ListOfProbabilities), where N is an integer
 starting from 0 */
+/*
 var2numbers([],_N,[]).
 
 var2numbers([(R,_S)|T],N,[[N,2,[Prob,Prob1,0.3,0.7]]|TNV]):-
@@ -1947,7 +1952,8 @@ var2numbers([(R,_S)|T],N,[[N,2,[Prob,Prob1,0.3,0.7]]|TNV]):-
         Prob1 is 1-Prob,
         N1 is N+1,
         var2numbers(T,N1,TNV).
-        
+
+     
 compute_prob_ax(R,Prob):-
   findall(P, p(R,P),Probs),
   compute_prob_ax1(Probs,Prob).
@@ -1960,7 +1966,8 @@ compute_prob_ax1([Prob1,Prob2],Prob):-!,
 compute_prob_ax1([Prob1 | T],Prob):-
   compute_prob_ax1(T,Prob0),
   Prob is Prob1 + Prob0 - (Prob1*Prob0).
-  
+
+*/  
   
   
 /**************/
