@@ -153,7 +153,7 @@ define([ "jquery", "config", "typeahead" ],
 
 	  $(".prolog-editor").each(function() {
 	    var editor = this;
-	    var m = $(editor).prologEditor('search', re, {max: 7});
+	    var m = $(editor).xmlEditor('search', re, {max: 7});
 
 	    for(var i=0; i<m.length; i++) {
 	      m[i].editor = editor;
@@ -217,7 +217,7 @@ define([ "jquery", "config", "typeahead" ],
 		  $(".trill_on_swish-event-receiver").trigger("pldoc", datum);
 		} else if ( datum.editor !== undefined &&
 			    datum.line !== undefined ) {
-		  $(datum.editor).prologEditor('gotoLine', datum.line,
+		  $(datum.editor).xmlEditor('gotoLine', datum.line,
 					       { regex: datum.regex,
 						 showAllMatches: true
 					       });
