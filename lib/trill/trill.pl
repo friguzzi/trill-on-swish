@@ -16,7 +16,15 @@
 %:- use_module(library(tries)).
 %:- load_foreign_files(['cplint-swi'],[],init_my_predicates).
 %:-use_foreign_library(bddem,install).
-:-['trillProbComputation'].
+
+:- use_foreign_library(foreign(bddem),install).
+
+:- thread_local %get_var_n/5
+        rule_n/1,
+        na/2,
+        v/3.
+        
+%:-['trillProbComputation'].
 
 :- thread_local
 	ind/1.
@@ -43,6 +51,7 @@
         owl2_model:minCardinality/2,
         owl2_model:minCardinality/3.
 
+:- multifile init_test/2,ret_prob/3,end_test/1,one/2,zero/2,and/4,or/4,add_var/5,equality/4,remove/3.
 
 load_theory(Name):-
   [Name].
@@ -338,118 +347,6 @@ apply_nondet_rules([_|T],ABox,ABox1):-
   apply_nondet_rules(T,ABox,ABox1).
   
 
-/**********************
-   old version for the rules application
-
-apply_rules_0((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules((ABox0,Tabs0),(ABox,Tabs)):-
-  %writel(ABox0),nl,
-  %apply_rules1((ABox0,Tabs0),(ABox,Tabs)).
-  apply_rules1_1((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules1_1((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('o_rule: '),nl,
-  o_rule((ABox0,Tabs0),(ABox1,Tabs1)),!,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules1_1((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules1((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules1((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('and_rule: '),nl,
-  and_rule((ABox0,Tabs0),(ABox1,Tabs1)),!,
-  %write('apllyied'),nl,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules1((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules2((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules2((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('exists_rule: '),nl,
-  exists_rule((ABox0,Tabs0),(ABox1,Tabs1)),!,
-  %write('apllyied'),nl,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules2((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules3((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules3((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('forall_rule: '), nl,
-  forall_rule((ABox0,Tabs0),(ABox1,Tabs1)),!,
-  %write('apllyied'),nl,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules3((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules3_1((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules3_1((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('forall_plus_rule: '),nl,
-  forall_plus_rule((ABox0,Tabs0),(ABox1,Tabs1)),!,
-  %write('apllyied'),nl,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules3_1((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules4((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules4((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('min_rule: '),nl,
-  min_rule((ABox0,Tabs0),(ABox1,Tabs1)),!,
-  %write('apllyied'),nl,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules4((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules5((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules5((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('unfold_rule: '),nl,
-  unfold_rule((ABox0,Tabs0),(ABox1,Tabs1)),!,
-  %write('apllyied'),nl,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules5((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules6((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules6((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('add_exists_rule: '),nl,
-  add_exists_rule((ABox0,Tabs0),(ABox1,Tabs1)),!,
-  %writel(ABox1),nl,
-  %write('apllyied'),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules6((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules7((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules7((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('or_rule: '),nl,
-  or_rule((ABox0,Tabs0),L),!,
-  member((ABox1,Tabs1),L),
-  %write('apllyied'),nl,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules7((ABox0,Tabs0),(ABox,Tabs)):-
-  apply_rules8((ABox0,Tabs0),(ABox,Tabs)).
-
-apply_rules8((ABox0,Tabs0),(ABox,Tabs)):-
-  %write('max_rule: '),nl,
-  max_rule((ABox0,Tabs0),L),!,
-  member((ABox1,Tabs1),L),
-  %write('apllyied'),nl,
-  %writel(ABox1),nl,
-  apply_rules((ABox1,Tabs1),(ABox,Tabs)).
-
-apply_rules8((ABox,Tabs),(ABox,Tabs)).
-
-*/
 
 /*
   add_exists_rule
@@ -750,7 +647,7 @@ find_sub_sup_class(C,D,equivalentClasses(L)):-
 /*******************
  managing the concept (C subclassOf Thing)
  this implementation doesn't work well in a little set of cases
- TO IMPROVE!
+ TO FIX!
  *******************
 
 find_sub_sup_class(C,'Thing',subClassOf(C,'Thing')):-
@@ -1782,10 +1679,12 @@ add_all_n([H|T],A,AN):-
  ==========
 */
 retract_sameIndividual(L):-
-  retract(sameIndividual(L)).
+  get_trill_current_module(N),
+  retract(N:sameIndividual(L)).
 
 retract_sameIndividual(L):-
-  \+ retract(sameIndividual(L)).
+  get_trill_current_module(N),
+  \+ retract(N:sameIndividual(L)).
 /* ****** */
 
 /*
@@ -1976,7 +1875,112 @@ get_trill_current_module('translate_rdf'):-
 get_trill_current_module('owl2_model'):- !.
 /**************/
 
+/****************
+	TRILLPROBCOMPUTATION
+****************/
+
+compute_prob(Expl,Prob):-
+  retractall(v(_,_,_)),
+  retractall(na(_,_)),
+  retractall(rule_n(_)),
+  assert(rule_n(0)),
+  init_test(_,Env),
+  build_bdd(Env,Expl,BDD),
+  ret_prob(Env,BDD,Prob),
+  end_test(Env), !.
+  
+  
+
+
+build_bdd(Env,[X],BDD):- !,
+  bdd_and(Env,X,BDD).
+  
+build_bdd(Env, [H|T],BDD):-
+  build_bdd(Env,T,BDDT),
+  bdd_and(Env,H,BDDH),
+  or(Env,BDDH,BDDT,BDD).
+  
+build_bdd(Env,[],BDD):- !,
+  zero(Env,BDD).
+  
+  
+bdd_and(Env,[X],BDDX):-
+  get_prob_ax(X,AxN,Prob),!,
+  ProbN is 1-Prob,
+  get_var_n(Env,AxN,[],[Prob,ProbN],VX),
+  equality(Env,VX,0,BDDX),!.
+bdd_and(Env,[_X],BDDX):- !,
+  one(Env,BDDX).
+  
+bdd_and(Env,[H|T],BDDAnd):-
+  get_prob_ax(H,AxN,Prob),!,
+  ProbN is 1-Prob,
+  get_var_n(Env,AxN,[],[Prob,ProbN],VH),
+  equality(Env,VH,0,BDDH),
+  bdd_and(Env,T,BDDT),
+  and(Env,BDDH,BDDT,BDDAnd).
+  
+bdd_and(Env,[_H|T],BDDAnd):- !,
+  one(Env,BDDH),
+  bdd_and(Env,T,BDDT),
+  and(Env,BDDH,BDDT,BDDAnd).
+
+
+
+  
+get_var_n(Env,R,S,Probs,V):-
+  ( 
+    v(R,S,V) -> 
+      true
+    ; 
+      length(Probs,L),
+      add_var(Env,L,Probs,R,V),
+      assert(v(R,S,V))
+  ).
+
+
+get_prob_ax((Ax,_Ind),N,Prob):- !,
+  compute_prob_ax(Ax,Prob),
+  ( na(Ax,N) -> 
+      true
+    ;
+      rule_n(N),
+      assert(na(Ax,N)),
+      retract(rule_n(N)),
+      N1 is N + 1,
+      assert(rule_n(N1))
+  ).
+get_prob_ax(Ax,N,Prob):- !,
+  compute_prob_ax(Ax,Prob),  
+  ( na(Ax,N) -> 
+      true 
+    ; 
+      rule_n(N),
+      assert(na(Ax,N)),
+      retract(rule_n(N)),
+      N1 is N + 1,
+      assert(rule_n(N1))
+  ).
+  
+compute_prob_ax(Ax,Prob):-
+  get_trill_current_module(Name),
+  findall(ProbA, (Name:annotationAssertion('https://sites.google.com/a/unife.it/ml/disponte#probability',Ax,literal(ProbAT)),atom_number(ProbAT,ProbA)),Probs),
+  compute_prob_ax1(Probs,Prob).
+  
+compute_prob_ax1([Prob],Prob):-!.
+
+compute_prob_ax1([Prob1,Prob2],Prob):-!,
+  Prob is Prob1+Prob2-(Prob1*Prob2).
+  
+compute_prob_ax1([Prob1 | T],Prob):-
+  compute_prob_ax1(T,Prob0),
+  Prob is Prob1 + Prob0 - (Prob1*Prob0).  
+/************************/
+
+
+
 :- multifile sandbox:safe_primitive/1.
+		
 
 sandbox:safe_primitive(trill:init_test(_,_)).
 sandbox:safe_primitive(trill:ret_prob(_,_,_)).
