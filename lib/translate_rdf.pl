@@ -2834,7 +2834,6 @@ load_owl(String):-
   owl_canonical_parse_3(['ont']),
   parse_probabilistic_annotation_assertions.
 
-%% perd(a,b) =.. [perd,a,b]
 
 assert_list(_M,[], _):-!.
 assert_list(M,[H|T], Source) :-
