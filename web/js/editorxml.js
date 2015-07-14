@@ -12,65 +12,22 @@ define([ "tos_cm/lib/codemirror",
 	 "config",
 	 "preferences",
 	 "form",
-	 //"../bower_components/codemirror/mode/javascript/javascript",
-	 //"../bower_components/codemirror/mode/xml/xml",
-	 //"../bower_components/codemirror/mode/clike/clike",
-	 //"tos_cm/mode/xml/xml-template-hint",
-	 //"tos_cm/mode/prolog/prolog-template-hint",
 	 "trill_on_swish_gitty",
 	 "modal",
 
 	 "tos_cm/addon/edit/matchbrackets",
 	 "tos_cm/addon/comment/continuecomment",
 	 "tos_cm/addon/comment/comment",
-	 "tos_cm/addon/hint/show-hint",
-	 "tos_cm/addon/hint/anyword-hint",
+	 //"tos_cm/addon/hint/show-hint",
+	 //"tos_cm/addon/hint/anyword-hint",
 	 "tos_cm/addon/display/placeholder",
 	 "tos_cm/addon/runmode/runmode",
 	 "tos_cm/mode/xml/xml",
-	 //"tos_cm/mode/xml/xml_keys",
-	 //"tos_cm/mode/xml/xml_query",
-	 //"tos_cm/mode/xml/xml_server",
-	 //"tos_cm/addon/hover/xml-hover",
-	 //"tos_cm/mode/prolog/prolog",
-	 //"tos_cm/mode/prolog/prolog_keys",
-	 //"tos_cm/mode/prolog/prolog_query",
-	 //"tos_cm/mode/prolog/prolog_server",
-	 //"tos_cm/addon/hover/prolog-hover",
-	 //"tos_cm/addon/hover/text-hover",
-
-	 //"tos_cm/addon/hint/templates-hint",
-	 //"tos_cm/addon/hint/show-context-info",
-
-         "jquery", "laconic"
-         /*"tos_cm/lib/codemirror",
-	 "config",
-	 "preferences",
-	 "form",
-	 "tos_cm/mode/prolog/prolog-template-hint",
-	 "trill_on_swish_gitty",
-	 "modal",
-
-	 	 "tos_cm/mode/prolog/prolog",
-	 "tos_cm/mode/prolog/prolog_keys",
-	 "tos_cm/mode/prolog/prolog_query",
-	 "tos_cm/mode/prolog/prolog_server",
-
-	 "tos_cm/addon/edit/matchbrackets",
-	 "tos_cm/addon/comment/continuecomment",
-	 "tos_cm/addon/comment/comment",
-	 "tos_cm/addon/hint/show-hint",
-	 "tos_cm/addon/hint/anyword-hint",
-	 "tos_cm/addon/display/placeholder",
-	 "tos_cm/addon/runmode/runmode",
-
-	 "tos_cm/addon/hover/text-hover",
-	 "tos_cm/addon/hover/prolog-hover",
-
-	 "tos_cm/addon/hint/templates-hint",
-	 "tos_cm/addon/hint/show-context-info",
-
-         "jquery", "laconic",*/
+	 "tos_cm/addon/fold/xml-fold",
+	 "tos_cm/addon/edit/matchtags",
+	 
+	 "jquery", "laconic"
+         	 
        ],
        function(CodeMirror, config, preferences, form, /*templateHint,*/ trill_on_swish_gitty) {
 
@@ -114,7 +71,8 @@ define([ "tos_cm/lib/codemirror",
 	  lineNumbers: true,
 	  mode: "xml",
 //	  theme: "xml",
-//          matchBrackets: true,
+          matchTags: {bothTags: true},
+    	  extraKeys: {"Ctrl-J": "toMatchingTag"},
 //          textHover: true,
 //          prologKeys: true
 	}, options);

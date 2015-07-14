@@ -12,9 +12,15 @@ define([ "tos_cm/lib/codemirror",
 	 "config",
 	 "preferences",
 	 "form",
+	 "tos_cm/mode/prolog/prolog-template-hint",
 	 "trill_on_swish_gitty",
 	 "modal",
-
+	 /* Our own prolog mode */
+	 "tos_cm/mode/prolog/prolog",
+	 "tos_cm/mode/prolog/prolog_keys",
+	 "tos_cm/mode/prolog/prolog_query",
+	 "tos_cm/mode/prolog/prolog_server",
+	 /* CodeMirror addons */
 	 "tos_cm/addon/edit/matchbrackets",
 	 "tos_cm/addon/comment/continuecomment",
 	 "tos_cm/addon/comment/comment",
@@ -22,22 +28,15 @@ define([ "tos_cm/lib/codemirror",
 	 "tos_cm/addon/hint/anyword-hint",
 	 "tos_cm/addon/display/placeholder",
 	 "tos_cm/addon/runmode/runmode",
-	 
-	 "tos_cm/mode/prolog/prolog",
-	 //"tos_cm/mode/prolog/prolog_keys",
-	 "tos_cm/mode/prolog/prolog_query",
-	 //"tos_cm/mode/prolog/prolog_server",
-	 //"tos_cm/addon/hover/prolog-hover",
-	 //"tos_cm/addon/hover/text-hover",
-
-	 //"tos_cm/mode/prolog/prolog-template-hint",
-	 //"tos_cm/addon/hint/templates-hint",
-	 //"tos_cm/addon/hint/show-context-info",
-
-         "jquery", "laconic"
+	 "tos_cm/addon/hover/text-hover",
+	 "tos_cm/addon/hover/prolog-hover",
+	 "tos_cm/addon/hint/templates-hint", 
+	 "tos_cm/addon/hint/show-context-info",
+	
+	 "jquery", "laconic"
          
        ],
-       function(CodeMirror, config, preferences, form, /*templateHint,*/ trill_on_swish_gitty) {
+       function(CodeMirror, config, preferences, form, templateHint, trill_on_swish_gitty) {
 
 (function($) {
   var pluginName = 'prologEditor';
@@ -80,11 +79,20 @@ define([ "tos_cm/lib/codemirror",
 	  mode: "prolog",
 	  theme: "prolog",
           matchBrackets: true,
-          //textHover: true,
-          prologKeys: true
+          textHover: true,
+          prologKeys: true,
+          extraKeys: { "Ctrl-Space": "autocomplete",
+	    "Alt-/": "autocomplete",
+	  },
+	  hintOptions: {
+	    hint: templateHint.getHints,
+	    completeSingle: false
+	  }
 	}, options);
 
-
+	if ( preferences.getVal("emacs-keybinding") )
+	  options.keyMap = "emacs";
+	
 	if ( options.role != "query" )
 	  options.continueComments = "Enter";
 

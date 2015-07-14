@@ -2820,6 +2820,8 @@ timed_forall(Cond,Action) :-
 ---+ See Also
 The file owl2_from_rdf.plt has some examples
 */
+:- thread_local ns4query/1.
+
 load_owl(String):-
   pengine_self(Self),
   pengine_property(Self,module(M)),
@@ -2831,6 +2833,8 @@ load_owl(String):-
   rdf_2_owl('ont','ont'),
   owl_canonical_parse_3(['ont']),
   parse_probabilistic_annotation_assertions.
+
+%% perd(a,b) =.. [perd,a,b]
 
 assert_list(_M,[], _):-!.
 assert_list(M,[H|T], Source) :-

@@ -212,7 +212,7 @@ define([ "jquery", "config", "typeahead" ],
 	  .on('typeahead:selected typeahead:autocompleted',
 	      function(ev, datum, set) {
 		if ( datum.type == "store" ) {
-		  $(ev.target).parents(".trill_on_swish").swish('playFile', datum.file);
+		  $(ev.target).parents(".trill_on_swish").trill_on_swish('playFile', datum.file);
 		} else if ( datum.arity !== undefined ) {
 		  $(".trill_on_swish-event-receiver").trigger("pldoc", datum);
 		} else if ( datum.editor !== undefined &&

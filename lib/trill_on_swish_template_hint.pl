@@ -329,14 +329,73 @@ m_same_name_arity(H1, H2) :-
 %
 %	Create a template for the SWISH rendering modules.
 
-rendering_template([ json{displayText:  "trill_on_swish_use_rendering(+Renderer).",
+rendering_template([ /*json{displayText:  "trill_on_swish_use_rendering(+Renderer).",
 			  type:         "directive",
 			  template:     "trill_on_swish_use_rendering(${Renderer}).",
 			  varTemplates: json{'Renderer': Template}},
 		     json{displayText:  "trill_on_swish_use_rendering(+Renderer, +Options).",
 			  type:         "directive",
 			  template:     "trill_on_swish_use_rendering(${Renderer}).",
-			  varTemplates: json{'Renderer': Template}}
+			  varTemplates: json{'Renderer': Template}},*/
+		     json{displayText:  "prob_instanceOf(+Class, +Individual, -Prob).",
+ 			  type:         "directive",
+			  template:     "prob_instanceOf(${Class},${Individual},${Prob}).",
+ 			  varTemplates: json{'Renderer': Template}},
+			  
+		     json{displayText:  "prob_sub_class(+Class1, +Class2, -Prob).",
+ 			  type:         "directive",
+			  template:     "prob_sub_class(${Class1},${Class2},${Prob}).",
+			  varTemplates: json{'Renderer': Template}},
+
+		     json{displayText:  "prob_unsat(+ClassExpression, -Prob).",
+			  type:         "directive",
+			  template:     "prob_unsat(${ClassExpression},${Prob}).",
+			  varTemplates: json{'Renderer': Template}},
+		 
+		     json{displayText:  "prob_inconsistent_theory(-Prob).",
+			  type:         "directive",
+			  template:     "prob_inconsistent_theory(${Prob}).",
+			  varTemplates: json{'Renderer': Template}},
+		
+		     json{displayText:  "instanceOf(+Class, +Individual, -Expl).",
+ 			  type:         "directive",
+			  template:     "instanceOf(${Class},${Individual},${Expl}).",
+ 			  varTemplates: json{'Renderer': Template}},
+			  
+		     json{displayText:  "sub_class(+Class1, +Class2, -Expl).",
+ 			  type:         "directive",
+			  template:     "sub_class(${Class1},${Class2},${Expl}).",
+			  varTemplates: json{'Renderer': Template}},
+
+		     json{displayText:  "unsat(+ClassExpression, -Expl).",
+			  type:         "directive",
+			  template:     "unsat(${ClassExpression},${Expl}).",
+			  varTemplates: json{'Renderer': Template}},
+			  
+		     json{displayText:  "inconsistent_theory(-Expl).",
+			  type:         "directive",
+			  template:     "inconsistent_theory(${Expl}).",
+			  varTemplates: json{'Renderer': Template}},
+		     
+		     json{displayText:  "instanceOf(+Class, +Individual).",
+ 			  type:         "directive",
+			  template:     "instanceOf(${Class},${Individual}).",
+ 			  varTemplates: json{'Renderer': Template}},
+			  
+		     json{displayText:  "sub_class(+Class1, +Class2).",
+ 			  type:         "directive",
+			  template:     "sub_class(${Class1},${Class2}).",
+			  varTemplates: json{'Renderer': Template}},
+
+		     json{displayText:  "unsat(+ClassExpression).",
+			  type:         "directive",
+			  template:     "unsat(${ClassExpression}).",
+			  varTemplates: json{'Renderer': Template}},
+			  
+		     json{displayText:  "inconsistent_theory.",
+			  type:         "directive",
+			  template:     "inconsistent_theory.",
+			  varTemplates: json{'Renderer': Template}}	
 		   ]) :-
 	findall(json{displayText: Comment,
 		     text: Name},
@@ -521,12 +580,12 @@ swish_templates(Template) :-
 	setof(From, visible_lib(trill_on_swish, From), FromList),
 	swish_templates(Template, [from(FromList)]).
 
-swish_templates(Template, Options) :-
-	library_template(Template, Options).
+%swish_templates(Template, Options) :-
+%	library_template(Template, Options).
 swish_templates(Template, _Options) :-
 	rendering_template(Template).
-swish_templates(Templates, Options) :-
-	visible_predicate_templates(trill_on_swish, Templates, Options).
+%swish_templates(Templates, Options) :-
+%	visible_predicate_templates(trill_on_swish, Templates, Options).
 
 %%	visible_lib(+Module, -Lib) is nondet.
 %

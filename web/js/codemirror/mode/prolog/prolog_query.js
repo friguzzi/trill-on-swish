@@ -11,25 +11,25 @@
 })(function(CodeMirror) {
 "use strict";
 
-  CodeMirror.commands.prologFireQuery = function(cm) {
-    var start = cm.getCursor("start");
-    var token = cm.getTokenAt(start, true);
+  CodeMirror.commands.prologFireQuery = function(tos_cm) {
+    var start = tos_cm.getCursor("start");
+    var token = tos_cm.getTokenAt(start, true);
 
     if ( token.type == "fullstop" )
-      return cm.prologFireQuery(cm.getValue());
+      return tos_cm.prologFireQuery(tos_cm.getValue());
 
     return CodeMirror.Pass;
   }
 
-  CodeMirror.defineOption("prologQuery", null, function(cm, func, prev) {
+  CodeMirror.defineOption("prologQuery", null, function(tos_cm, func, prev) {
     if (prev && prev != CodeMirror.Init)
-      cm.removeKeyMap("prologQuery");
+      tos_cm.removeKeyMap("prologQuery");
     if ( typeof(func) == "function" ) {
       var map = { name:     "prologQuery",
 		  "Enter":  "prologFireQuery"
 		};
-      cm.addKeyMap(map);
-      cm.prologFireQuery = func;
+      tos_cm.addKeyMap(map);
+      tos_cm.prologFireQuery = func;
     }
   });
 });

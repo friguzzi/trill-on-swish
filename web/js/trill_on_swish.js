@@ -29,8 +29,11 @@ require.config({
     "tos_cm/addon/hint/anyword-hint": "../bower_components/codemirror/addon/hint/anyword-hint",
     "tos_cm/addon/display/placeholder": "../bower_components/codemirror/addon/display/placeholder",
     "tos_cm/addon/runmode/runmode": "../bower_components/codemirror/addon/runmode/runmode",
-					/* Our own xml mode */
+    "tos_cm/keymap/emacs" : "../bower_components/codemirror/keymap/emacs",
+					/* Codemirror's xml mode */
     "tos_cm/mode/xml/xml": "../bower_components/codemirror/mode/xml/xml",
+    "tos_cm/addon/fold/xml-fold" : "../bower_components/codemirror/addon/fold/xml-fold",
+    "tos_cm/addon/edit/matchtags" : "../bower_components/codemirror/addon/edit/matchtags",
     				/* Our own prolog mode */
     "tos_cm/mode/prolog/prolog": "codemirror/mode/prolog/prolog",
     "tos_cm/mode/prolog/prolog_keys": "codemirror/mode/prolog/prolog_keys",
