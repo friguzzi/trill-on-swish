@@ -2842,14 +2842,22 @@ assert_list(M,[H|T], Source) :-
 	assert(M:H1),
         assert_list(M,T, Source).
 
+find_all_probabilistic_annotations(Ax,PV):-
+	annotation(Ax,'https://sites.google.com/a/unife.it/ml/disponte#probability',literal(type(_Type, PV))),
+	atomic(PV).
+
+find_all_probabilistic_annotations(Ax,PV):-
+	annotation(Ax,'https://sites.google.com/a/unife.it/ml/disponte#probability',literal(PV)),
+	atomic(PV).
+  
 
 parse_probabilistic_annotation_assertions :-
-  forall(annotation(Ax,'https://sites.google.com/a/unife.it/ml/disponte#probability',literal(type(_Type, PV))),
+  forall(find_all_probabilistic_annotations(Ax,PV),
        (assert_axiom(annotationAssertion('https://sites.google.com/a/unife.it/ml/disponte#probability',Ax,literal(PV))))
-  ),
+  ).
   % forall(aNN(X,Y,Z),assert(annotation(X,Y,Z))), VV remove 25/1/11
   % annotation/3 axioms created already during owl_parse_annotated_axioms/1
-  retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).
+  %retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).
 
 query_expand(Q):-
   Q =.. [P|Args],
