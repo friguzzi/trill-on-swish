@@ -2854,10 +2854,10 @@ find_all_probabilistic_annotations(Ax,PV):-
 parse_probabilistic_annotation_assertions :-
   forall(find_all_probabilistic_annotations(Ax,PV),
        (assert_axiom(annotationAssertion('https://sites.google.com/a/unife.it/ml/disponte#probability',Ax,literal(PV))))
-  ).
+  ),
   % forall(aNN(X,Y,Z),assert(annotation(X,Y,Z))), VV remove 25/1/11
   % annotation/3 axioms created already during owl_parse_annotated_axioms/1
-  %retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).
+  retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).
 
 query_expand(Q):-
   Q =.. [P|Args],
