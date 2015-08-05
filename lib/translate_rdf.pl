@@ -24,7 +24,6 @@
 :- use_module(library(lists),[member/2]).
 :- use_module(library(pengines)).
 :- use_module(library(trill_on_swish/trill/trill)).
-:- use_module(library(solution_sequences),[limit/2]).
 
 
 :- discontiguous(valid_axiom/1).
@@ -2860,7 +2859,20 @@ parse_probabilistic_annotation_assertions :-
   % annotation/3 axioms created already during owl_parse_annotated_axioms/1
   retractall(annotation(_,'https://sites.google.com/a/unife.it/ml/disponte#probability',_)).
 
-query_expand(aggregate_all(A,Q,C)):-
+query_is([Q|_],0,Q):-!.
+query_is([_|T],N,Q):-
+  NN is N - 1,
+  query_is(T,NN,Q).
+
+set_new_query([_|T],0,NQ,[NQ|T]):-!.
+set_new_query([Q|T],N,NQ,[Q|NT]):-
+  NN is N - 1,
+  set_new_query(T,NN,NQ,NT).
+
+query_expand(CQ):-
+  CQ =.. [CQP | CQArgs],
+  member((CQP,PosQ),[(aggregate_all,1), (limit,1)]),!,
+  query_is(CQArgs,PosQ,Q),
   Q =.. [P|Args],
   pengine_self(Self),
   pengine_property(Self,module(M)),
@@ -2868,9 +2880,11 @@ query_expand(aggregate_all(A,Q,C)):-
   retract(M:ns4query(NSList)),
   expand_all_ns(Args,NSList,NewArgs),!,
   NQ =.. [P|NewArgs],
-  call(aggregate_all(A,NQ,C)).
+  set_new_query(CQArgs,PosQ,NQ,CQNewArgs),
+  NCQ =.. [CQP|CQNewArgs],
+  call(NCQ).
   
-query_expand(limit(A,Q)):-
+/*query_expand(limit(A,Q)):-
   Q =.. [P|Args],
   pengine_self(Self),
   pengine_property(Self,module(M)),
@@ -2879,7 +2893,7 @@ query_expand(limit(A,Q)):-
   expand_all_ns(Args,NSList,NewArgs),!,
   NQ =.. [P|NewArgs],
   write(NQ),
-  call(limit(A,NQ)).
+  call(limit(A,NQ)).*/
 
 query_expand(Q):-
   Q =.. [P|Args],
