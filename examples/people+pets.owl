@@ -127,7 +127,7 @@ Doctoral Consortium of the 30th International Conference on Logic Programming (I
 
     <owl:NamedIndividual rdf:about="http://cohse.semanticweb.org/ontologies/people#Fluffy">
         <rdf:type rdf:resource="http://cohse.semanticweb.org/ontologies/people#cat"/>
-        <rdfs:label>Fuffy</rdfs:label>
+        <rdfs:label>Fluffy</rdfs:label>
         <rdfs:comment></rdfs:comment>
     </owl:NamedIndividual>
     <owl:Axiom>
