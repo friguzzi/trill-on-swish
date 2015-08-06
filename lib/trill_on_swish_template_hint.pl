@@ -563,8 +563,10 @@ imported_library(Module, Library) :-
 	setof(FromModule, imported_from(Module, FromModule), FromModules),
 	member(FromModule, FromModules),
 	module_property(FromModule, file(File)),
-	file_name_on_path(File, Library),
-	Library = library(_).
+	%file_name_on_path(File, Library),
+	%Library = library(_).
+	source_file_property(File, load_context(Module, _Pos, _Opts)),
+	file_name_on_path(File, Library).
 
 imported_from(Module, FromModule) :-
 	current_predicate(Module:Name/Arity),
@@ -592,12 +594,15 @@ swish_templates(Template, _Options) :-
 %	Enumerate modules imported into  Module   and  generally  useful
 %	modules.
 
-visible_lib(Module, library(Path)) :-
+visible_lib(Module, Library) :-
 	imported_library(Module, Lib),
-	Lib = library(Name),
-	\+ no_autocomplete_module(Name),
-	atomic_list_concat(Segments, /, Name),
-	segments_to_slash(Segments, Path).
+	(   Lib = library(Name)
+	->  \+ no_autocomplete_module(Name),
+	    atomic_list_concat(Segments, /, Name),
+	    segments_to_slash(Segments, Path),
+	    Library = library(Path)
+	;   Library = Lib
+	).
 visible_lib(_, Lib) :-
 	visible_lib(Lib).
 

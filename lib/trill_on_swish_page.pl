@@ -41,15 +41,22 @@
 :- use_module(library(http/http_open)).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_parameters)).
+:- use_module(library(http/http_header)).
 :- use_module(library(http/html_write)).
 :- use_module(library(http/js_write)).
+:- use_module(library(http/json)).
+:- use_module(library(http/http_json)).
 :- use_module(library(http/http_path)).
 :- if(exists_source(library(http/http_ssl_plugin))).
 :- use_module(library(http/http_ssl_plugin)).
 :- endif.
 :- use_module(library(debug)).
 :- use_module(library(time)).
+:- use_module(library(lists)).
 :- use_module(library(option)).
+:- use_module(library(uri)).
+:- use_module(library(error)).
+:- use_module(library(http/http_client)).
 
 :- use_module(trill_on_swish_config).
 :- use_module(trill_on_swish_help).
@@ -69,7 +76,9 @@ http:location(tos_pldoc, trill_on_swish(tos_pldoc), [priority(100)]).
 
 :- multifile
 	trill_on_swish_config:trill_on_swish_source_alias/1,
-	trill_on_swish_config:trill_on_swish_reply_page/1.
+	trill_on_swish_config:trill_on_swish_reply_page/1,
+	trill_on_swish_config:trill_on_swish_verify_write_access/3, % +Request, +File, +Options
+	trill_on_swish_config:trill_on_swish_authenticate/2.	    % +Request, -User
 
 %%	trill_on_swish_reply(+Options, +Request)
 %
@@ -87,6 +96,13 @@ http:location(tos_pldoc, trill_on_swish(tos_pldoc), [priority(100)]).
 %	  - q(Query)
 %	  Use Query as the initial query.
 
+trill_on_swish_reply(_Options, Request) :-
+	trill_on_swish_config:trill_on_swish_authenticate(Request, _User), % must throw to deny access
+	fail.
+trill_on_swish_reply(Options, Request) :-
+	option(method(Method), Request),
+	Method \== get, !,
+	trill_on_swish_rest_reply(Method, Request, Options).
 trill_on_swish_reply(_, Request) :-
 	serve_resource(Request), !.
 trill_on_swish_reply(_, Request) :-
@@ -108,7 +124,7 @@ trill_on_swish_reply1(Options) :-
 	option(code(Code), Options),
 	option(format(raw), Options), !,
 	format('Content-type: text/x-prolog~n~n'),
-	format('~s~n', [Code]).
+	format('~s', [Code]).
 trill_on_swish_reply1(Options) :-
 	trill_on_swish_config:trill_on_swish_reply_page(Options), !.
 trill_on_swish_reply1(Options) :-
@@ -139,23 +155,48 @@ params_options([_|T0], T) :-
 %	If the data was requested  as   '/Alias/File',  reply using file
 %	Alias(File).
 
-source_option(_Request, Options, Options) :-
-	option(code(_), Options),
-	option(format(trill_on_swish), Options), !.
+source_option(_Request, Options0, Options) :-
+	option(code(Code), Options0),
+	option(format(swish), Options0), !,
+	(   uri_is_global(Code)
+	->  Options = [url(Code)|Options0]
+	;   Options = Options0
+	).
 source_option(Request, Options0, Options) :-
-	option(path_info(Info), Request),
-	Info \== 'index.html', !,	% Backward compatibility
-	(   source_data(Info, String)
-	->  Options = [code(String)|Options0]
+	source_file(Request, File, Options0), !,
+	option(path(Path), Request),
+	(   source_data(File, String, Options1)
+	->  append([ [code(String), url(Path)],
+		     Options1,
+		     Options0
+		   ], Options)
 	;   http_404([], Request)
 	).
 source_option(_, Options, Options).
 
-source_data(Info, Code) :-
-	sub_atom(Info, B, _, A, /),
-	sub_atom(Info, 0, B, _, Alias),
-	sub_atom(Info, _, A, 0, File),
-	catch(trill_on_swish_config:trill_on_swish_source_alias(Alias), E,
+%%	source_file(+Request, -File, +Options) is semidet.
+%
+%	File is the file associated with a SWISH request.  A file is
+%	associated if _path_info_ is provided.  If the file does not
+%	exist, an HTTP 404 exception is returned.  Options:
+%
+%	  - alias(-Alias)
+%	    Get the swish_config:source_alias/2 Alias name that
+%	    was used to find File.
+
+source_file(Request, File, Options) :-
+	option(path_info(PathInfo), Request), !,
+	PathInfo \== 'index.html',
+	(   path_info_file(PathInfo, File, Options)
+	->  true
+	;   http_404([], Request)
+	).
+
+path_info_file(PathInfo, Path, Options) :-
+	sub_atom(PathInfo, B, _, A, /),
+	sub_atom(PathInfo, 0, B, _, Alias),
+	sub_atom(PathInfo, _, A, 0, File),
+	catch(swish_config:source_alias(Alias, AliasOptions), E,
 	      (print_message(warning, E), fail)),
 	Spec =.. [Alias,File],
 	http_safe_file(Spec, []),
@@ -163,10 +204,25 @@ source_data(Info, Code) :-
 			   [ access(read),
 			     file_errors(fail)
 			   ]),
+	confirm_access(Path, AliasOptions), !,
+	option(alias(Alias), Options, _).
+
+source_data(Path, Code, [title(Title), type(Ext)]) :-
 	setup_call_cleanup(
 	    open(Path, read, In, [encoding(utf8)]),
 	    read_string(In, _, Code),
-	    close(In)).
+	    close(In)),
+	file_base_name(Path, File),
+	file_name_extension(Title, Ext, File).
+
+confirm_access(Path, Options) :-
+	option(if(Condition), Options), !,
+	must_be(oneof([loaded]), Condition),
+	eval_condition(Condition, Path).
+confirm_access(_, _).
+
+eval_condition(loaded, Path) :-
+	source_file(Path).
 
 %%	serve_resource(+Request) is semidet.
 %
@@ -257,11 +313,17 @@ swish_search_form(Options) -->
 %	  Load initial source from HREF
 
 trill_on_swish_content(Options) -->
+	{ document_type(Type, Options)
+	},
 	trill_on_swish_resources,
 	trill_on_swish_config_hash,
 	html(div([id(content), class([container, trill_on_swish])],
 		 [ div([class([tile, horizontal]), 'data-split'('50%')],
-		       [ div(class('prolog-editor'), \swish_source(Options)),
+		       [ div([ class(['prolog-editor',tabbed])
+			     ],
+			     [ \swish_source(Type, Options),
+			       \swish_notebooks(Type, Options)
+			     ]),
 			 div([class([tile, vertical]), 'data-split'('70%')],
 			     [ div(class('prolog-runners'), []),
 			       div(class('prolog-query'), \swish_query(Options))
@@ -286,7 +348,7 @@ trill_on_swish_config_hash -->
 		   |}).
 
 
-%%	source(+Options)//
+%%	swish_source(+Type, +Options)//
 %
 %	Associate the source with the SWISH   page. The source itself is
 %	stored  in  the  textarea  from  which  CodeMirror  is  created.
@@ -298,35 +360,80 @@ trill_on_swish_config_hash -->
 %	  If present and code(String) is present, also associate the
 %	  editor with the given file.  See storage.pl.
 
-swish_source(Options) -->
+%
+%swish_source(Options) -->
+%	{ option(code(Spec), Options), !,
+%	  download_source(Spec, Source, Options),
+%	  (   option(file(File), Options)
+%	  ->  Extra = ['data-file'(File)]
+%	  ;   Extra = []
+%	  )
+%	},
+%	source_meta_data(File, Options),
+%	html(textarea([ class([source,prolog]),
+%			tos_style('display:none')
+%		      | Extra
+%		      ],
+%		      Source)).
+%swish_source(_) --> [].
+%
+
+swish_source(pl, Options) -->
 	{ option(code(Spec), Options), !,
 	  download_source(Spec, Source, Options),
-	  (   option(file(File), Options)
-	  ->  Extra = ['data-file'(File)]
-	  ;   Extra = []
-	  )
+	  phrase(source_data_attrs(Options), Extra),
+	  source_meta_data(MetaAttrs, Options)
 	},
-	source_meta_data(File, Options),
-	html(textarea([ class([source,prolog]),
-			tos_style('display:none')
-		      | Extra
-		      ],
-		      Source)).
-swish_source(_) --> [].
+	html(div([ class(['prolog-editor']),
+		   'data-label'('Program')
+		 | MetaAttrs
+		 ],
+		 [ textarea([ class([source,prolog]),
+			      style('display:none')
+			    | Extra
+			    ],
+			    Source)
+		 ])).
+swish_source(_, _) --> [].
 
-%%	source_meta_data(+File, +Options)//
+source_data_attrs(Options) -->
+	(source_file_data(Options) -> [] ; []),
+	(source_url_data(Options) -> [] ; []),
+	(source_title_data(Options) -> [] ; []).
+
+source_file_data(Options) -->
+	{ option(file(File), Options) },
+	['data-file'(File)].
+source_url_data(Options) -->
+	{ option(url(URL), Options) },
+	['data-url'(URL)].
+source_title_data(Options) -->
+	{ option(title(File), Options) },
+	['data-title'(File)].
+
+
+%%	source_meta_data(-Extra, +Options)  - source_meta_data(+File, +Options)//
 %
 %	Dump the meta-data of the provided file into swish.meta_data.
+%	@tbd: serialize and add
 
-source_meta_data(File, Options) -->
-	{ nonvar(File),
-	  option(meta(Meta), Options)
-	}, !,
-	js_script({|javascript(Meta)||
-		   window.trill_on_swish = window.trill_on_swish||{};
-		   window.trill_on_swish.meta_data = Meta;
-		   |}).
-source_meta_data(_, _) --> [].
+%
+%source_meta_data(File, Options) -->
+%	{ nonvar(File),
+%	  option(meta(Meta), Options)
+%	}, !,
+%	js_script({|javascript(Meta)||
+%		   window.trill_on_swish = window.trill_on_swish||{};
+%		   window.trill_on_swish.meta_data = Meta;
+%		   |}).
+%source_meta_data(_, _) --> [].
+%
+
+source_meta_data(['data-meta'(Text)], Options) :-
+	option(file(_), Options),
+	option(meta(Meta), Options), !,
+	atom_json_dict(Text, Meta, []).
+source_meta_data([], _).
 
 swish_background(Options) -->
 	{ option(background(Spec), Options), !,
@@ -358,8 +465,30 @@ swish_query(Options) -->
 		      Query)).
 swish_query(_) --> [].
 
+%%	notebooks(+Type, +Options)//
+%
+%	We have opened a notebook. Embed the notebook data in the
+%	left-pane tab area.
 
-%%	download_source(+HREF, -Source, Options) is det.
+swish_notebooks(swinb, Options) -->
+	{ option(code(Spec), Options),
+	  download_source(Spec, NoteBookText, Options),
+	  phrase(source_data_attrs(Options), Extra),
+	  source_meta_data(MetaAttrs, Options)
+	},
+	html(div([ class('notebook'),
+		   'data-label'('Notebook')		% Use file?
+		 | MetaAttrs
+		 ],
+		 [ pre([ class('notebook-data'),
+			 style('display:none')
+		       | Extra
+		       ],
+		       NoteBookText)
+		 ])).
+swish_notebooks(_, _) --> [].
+
+%%	download_source(+HREF, -Source, +Options) is det.
 %
 %	Download source from a URL.  Options processed:
 %
@@ -382,7 +511,7 @@ download_source(HREF, Source, Options) :-
 		  TMO,
 		  setup_call_cleanup(
 		      http_open(HREF, In,
-				[ cert_verify_hook(ssl_verify)
+				[ cert_verify_hook(cert_accept_any)
 				]),
 		      read_source(In, MaxLen, Source, Options),
 		      close(In))),
@@ -393,7 +522,7 @@ download_source(Source0, Source, Options) :-
 	(   Len =< MaxLen
 	->  Source = Source0
 	;   format(string(Source),
-		   '%ERROR: Content too long (max ~D)~n', [MaxLen])
+		   '% ERROR: Content too long (max ~D)~n', [MaxLen])
 	).
 
 read_source(In, MaxLen, Source, Options) :-
@@ -405,14 +534,16 @@ read_source(In, MaxLen, Source, Options) :-
 	(   Len =< MaxLen
 	->  Source = Source0
 	;   format(string(Source),
-		   '%ERROR: Content too long (max ~D)~n', [MaxLen])
+		   ' % ERROR: Content too long (max ~D)~n', [MaxLen])
 	).
 
 load_error(E, Source) :-
 	message_to_string(E, String),
-	format(string(Source), '%ERROR: ~s~n', [String]).
+	format(string(Source), '% ERROR: ~s~n', [String]).
 
-:- public ssl_verify/5.
+%
+%:- public ssl_verify/5.
+%
 
 %%	ssl_verify(+SSL, +ProblemCert, +AllCerts, +FirstCert, +Error)
 %
@@ -420,9 +551,28 @@ load_error(E, Source) :-
 %	security using SHA1 signatures, so  we   do  not  care about the
 %	source of the data.
 
-ssl_verify(_SSL,
-	   _ProblemCertificate, _AllCertificates, _FirstCertificate,
-	   _Error).
+%
+%ssl_verify(_SSL,
+%	   _ProblemCertificate, _AllCertificates, _FirstCertificate,
+%	   _Error).
+%
+
+
+%%	document_type(-Type, +Options) is det.
+%
+%	Determine the type of document.
+%
+%	@arg Type is one of `notebook` or `prolog`
+
+document_type(Type, Options) :-
+	(   option(type(Type0), Options)
+	->  Type = Type0
+	;   option(meta(Meta), Options),
+	    file_name_extension(_, Type0, Meta.name),
+	    Type0 \== ''
+	->  Type = Type0
+	;   Type = pl
+	).
 
 
 		 /*******************************
@@ -485,3 +635,49 @@ trill_on_swish_alt(rjs, 'js/tos_require.js', trill_on_swish_web('js/tos_require.
 	\+ debugging(nominified).
 trill_on_swish_alt(rjs, 'bower_components/requirejs/require.js', -).
 
+
+		 /*******************************
+		 *	       REST		*
+		 *******************************/
+
+%%	trill_on_swish_rest_reply(+Method, +Request, +Options) is det.
+%
+%	Handle non-GET requests.  Such requests may be used to modify
+%	source code.
+
+trill_on_swish_rest_reply(put, Request, Options) :-
+	merge_options(Options, [alias(_)], Options1),
+	source_file(Request, File, Options1), !,
+	option(content_type(String), Request),
+	http_parse_header_value(content_type, String, Type),
+	read_data(Type, Request, Data, _Meta),
+	trill_on_swish_verify_write_access(Request, File, Options1),
+	setup_call_cleanup(
+	    open(File, write, Out),
+	    format(Out, '~s', [Data]),
+	    close(Out)),
+	reply_json_dict(true).
+
+read_data(media(Type,_), Request, Data, Meta) :-
+	http_json:json_type(Type), !,
+	http_read_json_dict(Request, Dict),
+	del_dict(data, Dict, Data, Meta).
+read_data(media(text/_,_), Request, Data, _{}) :-
+	http_read_data(Request, Data, [to(string)]).
+
+%%	trill_on_swish_config:trill_on_swish_verify_write_access(+Request, +File, +Options) is
+%%	nondet.
+%
+%	Hook that verifies that the HTTP Request  may write to File. The
+%	hook must succeed to grant access. Failure   is  is mapped to an
+%	HTTP _403 Forbidden_ reply. The  hook   may  throw  another HTTP
+%	reply.  By default, the following options are passed:
+%
+%	  - alias(+Alias)
+%	    The swish_config:source_alias/2 Alias used to find File.
+
+trill_on_swish_verify_write_access(Request, File, Options) :-
+	trill_on_swish_config:trill_on_swish_verify_write_access(Request, File, Options), !.
+trill_on_swish_verify_write_access(Request, _File, _Options) :-
+	option(path(Path), Request),
+	throw(http_reply(forbidden(Path))).

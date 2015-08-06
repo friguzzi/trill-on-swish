@@ -35,6 +35,7 @@
 	    trill_on_swish_gitty_data/4,		% +Store, +Name, -Data, -Meta
 	    trill_on_swish_gitty_history/4,		% +Store, +Name, -History, +Options
 	    trill_on_swish_gitty_scan/1,		% +Store
+	    trill_on_swish_gitty_rescan/1,		% ?Store
 	    trill_on_swish_gitty_hash/2,		% +Store, ?Hash
 	    trill_on_swish_gitty_reserved_meta/1,	% ?Key
 
@@ -78,10 +79,23 @@ the newly created (trill_on_swish_gitty_create/5) or updated object (trill_on_sw
 
 :- dynamic
 	head/3,				% Store, Name, Hash
-	store/1.			% Store
+	store/2,			% Store, Updated
+	heads_input_stream_cache/2.	% Store, Stream
 :- volatile
 	head/3,
-	store/1.
+	store/2,
+	heads_input_stream_cache/2.	% Store, Stream
+
+% enable/disable syncing remote servers running on  the same file store.
+% This facility requires shared access to files and thus doesn't work on
+% Windows.
+
+:- if(current_prolog_flag(windows, true)).
+remote_sync(false).
+:- else.
+remote_sync(true).
+:- endif.
+
 
 %%	trill_on_swish_gitty_file(+Store, ?File, ?Head) is nondet.
 %
@@ -113,12 +127,10 @@ trill_on_swish_gitty_create(Store, Name, Data, Meta, CommitRet) :-
 	format(string(CommitString), '~q.~n', [Commit]),
 	save_object(Store, CommitString, commit, CommitHash),
 	CommitRet = Commit.put(commit, CommitHash),
-	with_mutex(trill_on_swish_gitty,
-		   (   head(Store, Name, _)
-		   ->  delete_object(Store, CommitHash),
-		       throw(error(trill_on_swish_gitty(file_exists(Name),_)))
-		   ;   assertz(head(Store, Name, CommitHash))
-		   )).
+	catch(trill_on_swish_gitty_update_head(Store, Name, -, CommitHash),
+	      E,
+	      ( delete_object(Store, CommitHash),
+		throw(E))).
 
 %%	trill_on_swish_gitty_update(+Store, +Name, +Data, +Meta, -Commit) is det.
 %
@@ -144,12 +156,10 @@ trill_on_swish_gitty_update(Store, Name, Data, Meta, CommitRet) :-
 	format(string(CommitString), '~q.~n', [Commit]),
 	save_object(Store, CommitString, commit, CommitHash),
 	CommitRet = Commit.put(commit, CommitHash),
-	with_mutex(trill_on_swish_gitty,
-		   (   retract(head(Store, Name, OldHead))
-		   ->  assertz(head(Store, Name, CommitHash))
-		   ;   delete_object(Store, CommitHash),
-		       throw(error(trill_on_swish_gitty(not_at_head(OldHead)), _))
-		   )).
+	catch(trill_on_swish_gitty_update_head(Store, Name, OldHead, CommitHash),
+	      E,
+	      ( delete_object(Store, CommitHash),
+		throw(E))).
 
 %%	trill_on_swish_gitty_data(+Store, +NameOrHash, -Data, -Meta) is semidet.
 %
@@ -321,6 +331,14 @@ read_hdr(C, In, [C|T]) :-
 	read_hdr(C1, In, T).
 read_hdr(_, _, []).
 
+%%	trill_on_swish_gitty_rescan(?Store) is det.
+%
+%	Update our view of the shared   storage  for all stores matching
+%	Store.
+
+trill_on_swish_gitty_rescan(Store) :-
+	retractall(store(Store, _)).
+
 %%	trill_on_swish_gitty_scan(+Store) is det.
 %
 %	Scan trill_on_swish_gitty store for files (entries),   filling  head/3. This is
@@ -331,26 +349,46 @@ read_hdr(_, _, []).
 %		store.
 
 trill_on_swish_gitty_scan(Store) :-
-	store(Store), !.
+	store(Store, _), !,
+	(   remote_sync(true)
+	->  with_mutex(gitty, remote_updates(Store))
+	;   true
+	).
 trill_on_swish_gitty_scan(Store) :-
 	with_mutex(trill_on_swish_gitty, trill_on_swish_gitty_scan_sync(Store)).
 
+:- thread_local
+	latest/3.
+
 trill_on_swish_gitty_scan_sync(Store) :-
-	store(Store), !.
+	store(Store, _), !.
 trill_on_swish_gitty_scan_sync(Store) :-
+	trill_on_swish_gitty_scan_latest(Store),
+	forall(retract(latest(Name, Hash, _Time)),
+	       assert(head(Store, Name, Hash))),
+	get_time(Now),
+	assertz(store(Store, Now)).
+
+%%	trill_on_swish_gitty_scan_latest(+Store)
+%
+%	Scans the gitty store, extracting  the   latest  version of each
+%	named entry.
+
+trill_on_swish_gitty_scan_latest(Store) :-
+	retractall(head(Store, _, _)),
+	retractall(latest(_, _, _)),
 	(   trill_on_swish_gitty_hash(Store, Hash),
 	    load_object(Store, Hash, Data, commit, _Size),
 	    term_string(Meta, Data, []),
-	    (	head(Store, Meta.name, OldHash)
-	    ->	(   OldHash == Meta.get(previous)
-		->  retract(head(Store, Meta.name, OldHash)),
-		    assertz(head(Store, Meta.name, Hash))
-		;   true
-		)
-	    ;	assertz(head(Store, Meta.name, Hash))
+	    _{name:Name, time:Time} :< Meta,
+	    (	latest(Name, _, OldTime),
+		OldTime > Time
+	    ->	true
+	    ;	retractall(latest(Name, _, _)),
+		assertz(latest(Name, Hash, Time))
 	    ),
 	    fail
-	;   assertz(store(Store))
+	;   true
 	).
 
 
@@ -401,6 +439,127 @@ trill_on_swish_gitty_reserved_meta(name).
 trill_on_swish_gitty_reserved_meta(time).
 trill_on_swish_gitty_reserved_meta(data).
 trill_on_swish_gitty_reserved_meta(previous).
+
+
+		 /*******************************
+		 *	      SYNCING		*
+		 *******************************/
+
+%%	trill_on_swish_gitty_update_head(+Store, +Name, +OldCommit, +NewCommit) is det.
+%
+%	Update the head of a gitty  store   for  Name.  OldCommit is the
+%	current head and NewCommit is the new  head. If Name is created,
+%	and thus there is no head, OldCommit must be `-`.
+%
+%	This operation can fail because another   writer has updated the
+%	head.  This can both be in-process or another process.
+
+trill_on_swish_gitty_update_head(Store, Name, OldCommit, NewCommit) :-
+	with_mutex(gitty,
+		   trill_on_swish_gitty_update_head_sync(Store, Name, OldCommit, NewCommit)).
+
+trill_on_swish_gitty_update_head_sync(Store, Name, OldCommit, NewCommit) :-
+	remote_sync(true), !,
+	setup_call_cleanup(
+	    heads_output_stream(Store, HeadsOut),
+	    trill_on_swish_gitty_update_head_sync(Store, Name, OldCommit, NewCommit, HeadsOut),
+	    close(HeadsOut)).
+trill_on_swish_gitty_update_head_sync(Store, Name, OldCommit, NewCommit) :-
+	trill_on_swish_gitty_update_head_sync2(Store, Name, OldCommit, NewCommit).
+
+trill_on_swish_gitty_update_head_sync(Store, Name, OldCommit, NewCommit, HeadsOut) :-
+	gitty_update_head_sync2(Store, Name, OldCommit, NewCommit),
+	format(HeadsOut, '~q.~n', [head(Name, OldCommit, NewCommit)]).
+
+trill_on_swish_gitty_update_head_sync2(Store, Name, OldCommit, NewCommit) :-
+	trill_on_swish_gitty_scan(Store),		% fetch remote changes
+	(   OldCommit == (-)
+	->  (   head(Store, Name, _)
+	    ->	throw(error(gitty(file_exists(Name),_)))
+	    ;	assertz(head(Store, Name, NewCommit))
+	    )
+	;   (   retract(head(Store, Name, OldCommit))
+	    ->	assertz(head(Store, Name, NewCommit))
+	    ;	throw(error(gitty(not_at_head(Name, OldCommit)), _))
+	    )
+	).
+
+remote_updates(Store) :-
+	remote_updates(Store, List),
+	maplist(update_head(Store), List).
+
+update_head(Store, head(Name, OldCommit, NewCommit)) :-
+	(   OldCommit == (-)
+	->  \+ head(Store, Name, _)
+	;   retract(head(Store, Name, OldCommit))
+	), !,
+	assert(head(Store, Name, NewCommit)).
+update_head(_, _).
+
+%%	remote_updates(+Store, -List) is det.
+%
+%	Find updates from other gitties  on   the  same filesystem. Note
+%	that we have to push/pop the input   context to avoid creating a
+%	notion of an  input  context   which  possibly  relate  messages
+%	incorrectly to the sync file.
+
+remote_updates(Store, List) :-
+	heads_input_stream(Store, Stream),
+	setup_call_cleanup(
+	    '$push_input_context'(gitty_sync),
+	    read_new_terms(Stream, List),
+	    '$pop_input_context').
+
+read_new_terms(Stream, Terms) :-
+	read(Stream, First),
+	read_new_terms(First, Stream, Terms).
+
+read_new_terms(end_of_file, _, List) :- !,
+	List = [].
+read_new_terms(Term, Stream, [Term|More]) :-
+	read(Stream, Term2),
+	read_new_terms(Term2, Stream, More).
+
+heads_output_stream(Store, Out) :-
+	heads_file(Store, HeadsFile),
+	open(HeadsFile, append, Out,
+	     [ encoding(utf8),
+	       lock(exclusive)
+	     ]).
+
+heads_input_stream(Store, Stream) :-
+	heads_input_stream_cache(Store, Stream0), !,
+	Stream = Stream0.
+heads_input_stream(Store, Stream) :-
+	heads_file(Store, File),
+	between(1, 2, _),
+	catch(open(File, read, In,
+		   [ encoding(utf8),
+		     eof_action(reset)
+		   ]),
+	      _,
+	      create_heads_file(Store)), !,
+	assert(heads_input_stream_cache(Store, In)),
+	Stream = In.
+
+create_heads_file(Store) :-
+	call_cleanup(
+	    heads_output_stream(Store, Out),
+	    close(Out)),
+	fail.					% always fail!
+
+heads_file(Store, HeadsFile) :-
+	ensure_directory(Store),
+	directory_file_path(Store, ref, RefDir),
+	ensure_directory(RefDir),
+	directory_file_path(RefDir, head, HeadsFile).
+
+:- multifile
+	prolog:error_message//1.
+
+prolog:error_message(gitty(not_at_head(Name, _OldCommit))) -->
+	[ 'Gitty: cannot update head for "~w" because it was \c
+	   updated by someone else'-[Name] ].
 
 
 		 /*******************************

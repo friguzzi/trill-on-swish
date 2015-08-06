@@ -2884,17 +2884,6 @@ query_expand(CQ):-
   NCQ =.. [CQP|CQNewArgs],
   call(NCQ).
   
-/*query_expand(limit(A,Q)):-
-  Q =.. [P|Args],
-  pengine_self(Self),
-  pengine_property(Self,module(M)),
-  M:ns4query(NSList),!,
-  retract(M:ns4query(NSList)),
-  expand_all_ns(Args,NSList,NewArgs),!,
-  NQ =.. [P|NewArgs],
-  write(NQ),
-  call(limit(A,NQ)).*/
-
 query_expand(Q):-
   Q =.. [P|Args],
   pengine_self(Self),

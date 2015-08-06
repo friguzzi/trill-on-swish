@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014, VU University Amsterdam
+    Copyright (C): 2014-2015, VU University Amsterdam
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -35,12 +35,22 @@
 :- use_module(library(filesex)).
 :- use_module(library(apply)).
 :- use_module(library(lists)).
+:- use_module(library(settings)).
+
+:- use_module(trill_on_swish_gitty).
 
 /** <module> Serve example files
+
+Locate and serve files for the _Examples_   menu. The examples come from
+two sources:
+
+  - Prolog files in the file search path `examples`
+  - Gitty files marked as `example`.
 */
 
 :- multifile
 	user:file_search_path/2,
+	trill_on_swish_config:trill_on_swish_config/2,
 	trill_on_swish_config:trill_on_swish_source_alias/1.
 
 % make tos_example(File) find the example data
@@ -58,6 +68,20 @@ trill_on_swish_config:trill_on_swish_source_alias(tos_example).
 %	a file swish_examples('index.json').
 
 trill_on_swish_list_examples(_Request) :-
+	trill_on_swish_example_files(FileExamples),
+	trill_on_swish_storage_examples(StorageExamples),
+	append(FileExamples, StorageExamples, AllExamples),
+	reply_json(AllExamples).
+
+%%	example_files(JSON:list) is det.
+%
+%	JSON is a list of JSON dicts containing the keys below. The list
+%	is composed from all *.pl files in the search path `example`.
+%
+%	  - file:File
+%	  - href:URL
+%	  - title:String
+trill_on_swish_example_files(AllExamples) :-
 	http_absolute_location(trill_on_swish(tos_example), HREF, []),
 	findall(Index,
 		absolute_file_name(tos_example(.), Index,
@@ -68,8 +92,7 @@ trill_on_swish_list_examples(_Request) :-
 				   ]),
 		ExDirs),
 	maplist(index_json(HREF), ExDirs, JSON),
-	append(JSON, AllExamples),
-	reply_json(AllExamples).
+	append(JSON, AllExamples).
 
 index_json(HREF, Dir, JSON) :-
 	directory_file_path(Dir, 'index.json', File),
@@ -87,8 +110,11 @@ read_file_to_json(File, JSON) :-
 	    json_read_dict(In, JSON),
 	    close(In)).
 
-add_href(HREF0, Dict, Dict.put(href, HREF)) :-
-	directory_file_path(HREF0, Dict.file, HREF).
+add_href(HREF0, Dict, Dict2) :-
+	is_dict(Dict),
+	directory_file_path(HREF0, Dict.get(file), HREF), !,
+	Dict2 = Dict.put(href, HREF).
+add_href(_, Dict, Dict).
 
 %%	ex_file_json(+ExampleBase, +Path, -JSON) is det.
 %
@@ -99,3 +125,29 @@ ex_file_json(HREF0, Path, json{file:File, href:HREF, title:Base}) :-
 	file_base_name(Path, File),
 	file_name_extension(Base, _, File),
 	directory_file_path(HREF0, File, HREF).
+
+
+		 /*******************************
+		 *	      STORAGE		*
+		 *******************************/
+
+%%	trill_on_swish_storage_examples(-List) is det.
+%
+%	Extract examples from the gitty store.
+
+trill_on_swish_storage_examples(List) :-
+	trill_on_swish_config:trill_on_swish_config(community_examples, true),
+	findall(Ex, trill_on_swish_gitty_example(Ex), List1),
+	List1 \== [], !,
+	List = [json{type:"divider"}|List1].
+trill_on_swish_storage_examples([]).
+
+trill_on_swish_gitty_example(json{title:Title, file:File, type:"store"}) :-
+	setting(trill_on_swish_web_storage:directory, Store),
+	trill_on_swish_gitty_file(Store, File, _),
+	trill_on_swish_gitty_commit(Store, File, Meta),
+	Meta.get(example) == true,
+	(   Title = Meta.get(title), Title \== ""
+	->  true
+	;   Title = File
+	).

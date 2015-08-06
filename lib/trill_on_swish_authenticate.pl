@@ -1,9 +1,9 @@
 /*  Part of SWI-Prolog
 
-    Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@cs.vu.nl
+    Author:        Jan Wielemaker - Riccardo Zese
+    E-mail:        J.Wielemaker@cs.vu.nl - riccardo.zese@unife.it
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014, VU University Amsterdam
+    Copyright (C): 2014-2015, VU University Amsterdam - ENDIF University of Ferrara
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -35,6 +35,14 @@
 :- use_module(library(crypt)).
 :- use_module(library(http/http_authenticate)).
 
+:- use_module(trill_on_swish_config).
+:- use_module(trill_on_swish_page).
+
+:- multifile
+	trill_on_swish_config:config/2,
+	trill_on_swish_config:authenticate/2,
+	trill_on_swishswish_config:verify_write_access/3.
+
 /** <module> SWISH login management
 
 This module provides basic login and  password management facilities for
@@ -61,13 +69,37 @@ password_file(File) :-
 	absolute_file_name(trill_on_swish(passwd), File, [access(read)]),
 	asserta(password_file_cache(File)).
 
-pengines:authentication_hook(Request, _Application, User) :-
+logged_in(Request, User) :-
 	password_file(File),
-	http_authenticate(basic(File), Request, [User|_Fields]), !.
-pengines:authentication_hook(_Request, _Application, _User) :-
+	http_authenticate(basic(File), Request, [User|_Fields]), !,
+	debug(authenticate, 'Logged in as ~p', [User]).
+logged_in(_Request, _User) :-
 	throw(http_reply(authorise(basic('SWISH user')))).
 
+%%	pengines:authentication_hook(+Request, +Application, -User)
+%
+%	Is called from the  /pengine/create   request  to  establish the
+%	logged in user.
+
+pengines:authentication_hook(Request, _Application, User) :-
+	logged_in(Request, User), !.
+
 pengines:not_sandboxed(_, _).
+
+%%	trill_on_swish_config:verify_write_access(+Request, +File, +Options)
+
+trill_on_swish_config:verify_write_access(Request, _File, _Options) :-
+	logged_in(Request, _User), !.
+
+%%	trill_on_swish_config:authenticate(+Request, -User)
+%
+%	Called for all SWISH  actions.  May   be  used  to  restrict all
+%	access. Access can only be denied by throwing an exception.
+
+trill_on_swish_config:authenticate(Request, User) :-
+	\+ trill_on_swish_config(public_access, true),
+	logged_in(Request, User).
+
 
 %%	swish_add_user(+User, +Passwd, +Fields) is det.
 %

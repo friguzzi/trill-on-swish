@@ -27,7 +27,10 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_web_storage, []).
+:- module(trill_on_swish_web_storage,
+	  [ trill_on_swish_storage_file/1,			% ?File
+	    trill_on_swish_storage_file/3			% +File, -Data, -Meta
+	  ]).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_parameters)).
 :- use_module(library(http/http_json)).
@@ -39,6 +42,7 @@
 :- use_module(library(apply)).
 :- use_module(library(option)).
 :- use_module(library(debug)).
+:- use_module(library(solution_sequences)).
 
 :- use_module(trill_on_swish_page).
 :- use_module(trill_on_swish_gitty).
@@ -53,7 +57,6 @@ their own version.
 */
 
 :- setting(directory, atom, storage, 'The directory for storing files.').
-
 
 :- http_handler(trill_on_swish(ptos), trill_on_swish_web_storage, [ id(trill_on_swish_web_storage), prefix ]).
 
@@ -198,6 +201,7 @@ filter_pairs([_|T0], T) :-
 	filter_pairs(T0, T).
 
 meta_allowed(public,	     boolean).
+meta_allowed(example,	     boolean).
 meta_allowed(author,	     string).
 meta_allowed(email,	     string).
 meta_allowed(title,	     string).
@@ -314,6 +318,24 @@ random_char(Char) :-
 
 
 		 /*******************************
+		 *	    INTERFACE		*
+		 *******************************/
+
+%%	trill_on_swish_storage_file(?File) is semidet.
+%%	trill_on_swish_storage_file(?File, -Data, -Meta) is semidet.
+%
+%	True if File is known in the store.
+
+trill_on_swish_storage_file(File) :-
+	setting(directory, Dir),
+	trill_on_swish_gitty_file(Dir, File, _Head).
+
+trill_on_swish_storage_file(File, Data, Meta) :-
+	setting(directory, Dir),
+	trill_on_swish_gitty_data(Dir, File, Data, Meta).
+
+
+		 /*******************************
 		 *	 SEARCH SUPPORT		*
 		 *******************************/
 
@@ -322,7 +344,13 @@ random_char(Char) :-
 
 %%	trill_on_swish_search:tos_typeahead(+Set, +Query, -Match) is nondet.
 %
-%	Find files using typeahead from the SWISH search box.
+%	Find files using typeahead  from  the   SWISH  search  box. This
+%	version defines the following sets:
+%
+%	  - file: Search the store for matching file names, matching tag
+%	    or title.
+%	  - store_content: Search the content of the store for matching
+%	    lines.
 %
 %	@tbd caching?
 %	@tbd We should only demand public on public servers.
@@ -353,3 +381,21 @@ meta_match_query(Query, Meta) :-
 	    sub_atom(Title, Before, 1, _, C),
 	    \+ char_type(C, csym)
 	).
+
+trill_on_swish_search:tos_typeahead(store_content, Query, FileInfo) :-
+	limit(25, search_store_content(Query, FileInfo)).
+
+search_store_content(Query, FileInfo) :-
+	setting(directory, Dir),
+	trill_on_swish_gitty_file(Dir, File, Head),
+	trill_on_swish_gitty_data(Dir, Head, Data, Meta),
+	Meta.get(public) == true,
+	limit(5, search_file(File, Meta, Data, Query, FileInfo)).
+
+search_file(File, Meta, Data, Query, FileInfo) :-
+	split_string(Data, "\n", "\r", Lines),
+	nth1(LineNo, Lines, Line),
+	once(sub_string(Line, _, _, _, Query)),
+	FileInfo = Meta.put(_{type:"store", file:File,
+			      line:LineNo, text:Line, query:Query
+			     }).

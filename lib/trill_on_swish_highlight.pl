@@ -151,7 +151,7 @@ remove([H|T], TB, ChPos, Changed) :-
 insert([], _, ChPos, ChPos, _) :- !.
 insert([H|T], TB, ChPos0, ChPos, Changed) :-
 	(   H == ""
-	->  true
+	->  Len	= 0
 	;   Changed = true,
 	    string_length(H, Len),
 	    debug(trill_on_swish(change), 'Insert ~q at ~d', [H, ChPos0]),
@@ -328,9 +328,15 @@ enriched_tokens(TB, _Data, Tokens) :-		% source window
 	xref(UUID),
 	server_tokens(TB, Tokens).
 enriched_tokens(TB, Data, Tokens) :-		% query window
-	atom_string(SourceID, Data.get(sourceID)),
+	(   [SourceIdS|_] = Data.get(sourceID)
+	->  true
+	;   SourceIdS = Data.get(sourceID),
+	    atomic(SourceIdS)
+	), !,
+	atom_string(SourceID, SourceIdS),
 	memory_file_to_string(TB, Query),
-	prolog_colourise_query(Query, SourceID, colour_item(TB)),
+	with_mutex(swish_highlight_query,
+		   prolog_colourise_query(Query, SourceID, colour_item(TB))),
 	collect_tokens(TB, Tokens).
 enriched_tokens(TB, _Data, Tokens) :-
 	memory_file_to_string(TB, Query),
@@ -350,7 +356,9 @@ enriched_tokens(TB, _Data, Tokens) :-
 %	state that must be reused, but  this   is  not true (for example
 %	because we have been restarted).
 %
-%	@throws cm(existence_error)
+%	@throws cm(existence_error) if the target editor did not exist
+%	@throws cm(out_of_sync) if the changes do not apply due to an
+%	internal error or a lost message.
 
 shadow_editor(Data, TB) :-
 	atom_string(UUID, Data.get(uuid)),
@@ -361,7 +369,10 @@ shadow_editor(Data, TB) :-
 	    insert_memory_file(TB, 0, Text),
 	    mark_changed(TB, true)
 	;   Changes = Data.get(changes)
-	->  maplist(apply_change(TB, Changed), Changes),
+	->  (   maplist(apply_change(TB, Changed), Changes)
+	    ->	true
+	    ;	throw(tos_cm(out_of_sync))
+	    ),
 	    mark_changed(TB, Changed)
 	).
 shadow_editor(Data, TB) :-
@@ -402,7 +413,7 @@ show_mirror(Role) :-
 
 server_tokens(Role) :-
 	current_editor(_UUID, TB, Role), !,
-	server_tokens(TB, Tokens),
+	enriched_tokens(TB, _{}, Tokens),
 	print_term(Tokens, [output(user_error)]).
 
 %%	server_tokens(+TextBuffer, -Tokens) is det.
@@ -492,16 +503,16 @@ atomic_special(atom, Start, Len, TB, Type, Attrs) :-
 	).
 
 json_attributes([], [], _, _, _).
-json_attributes([H0|T0], [H|T], TB, Start, Len) :-
-	json_attribute(H0, H, TB, Start, Len), !,
+json_attributes([H0|T0], Attrs, TB, Start, Len) :-
+	json_attribute(H0, Attrs, T, TB, Start, Len), !,
 	json_attributes(T0, T, TB, Start, Len).
 json_attributes([_|T0], T, TB, Start, Len) :-
 	json_attributes(T0, T, TB, Start, Len).
 
-
-json_attribute(text, text(Text), TB, Start, Len) :- !,
+json_attribute(text, [text(Text)|T], T, TB, Start, Len) :- !,
 	memory_file_substring(TB, Start, Len, _, Text).
-json_attribute(Term, Term, _, _, _).
+json_attribute(line(File:Line), [line(Line),file(File)|T], T, _, _, _) :- !.
+json_attribute(Term, [Term|T], T, _, _, _).
 
 colour_item(_TB, Style, Start, Len) :-
 	(   tos_style(Style)
@@ -571,7 +582,7 @@ tos_style(control,		 control,			   [text]).
 tos_style(identifier,	 identifier,			   [text]).
 tos_style(module(_Module),   module,			   [text]).
 tos_style(error,		 error,				   [text]).
-tos_style(type_error(_Expect), error,			   [text]).
+tos_style(type_error(Expect), error,		      [text,expected(Expect)]).
 tos_style(syntax_error(_Msg,_Pos), syntax_error,		   []).
 tos_style(predicate_indicator, atom,			   [text]).
 tos_style(predicate_indicator, atom,			   [text]).
