@@ -1,11 +1,17 @@
-MAIN=trill_on_swish.css
-CSS=$(MAIN) answer.css editor.css navbar.css pane.css query.css \
-	    runner.css term.css
+MAIN=swish.css
+CSS=$(MAIN) \
+	answer.css diffview.css editor.css gitty.css modal.css \
+	navbar.css notebook.css pane.css runner.css \
+	tabbed.css term.css typeaheadjs.css types.css
+
+all:	trill_on_swish-min.css trill_on_swish-min.css.gz
 
 trill_on_swish-min.css: $(CSS)
 	cleancss -o $@ $(MAIN)
 	swipl css-inline.pl $@
-	gzip -fk $@
+
+trill_on_swish-min.css.gz: swish-min.css
+	gzip < $< > $@
 
 clean::
 	rm -f trill_on_swish-min.css trill_on_swish-min.css.gz

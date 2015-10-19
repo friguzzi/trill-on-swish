@@ -19,7 +19,7 @@
 
 define([ "jquery" ],
        function($) {
-var KEY = "TRILLONSWISHCONFIG";
+var KEY = "SWISHCONFIG";
 
 /* Configuration of various server components.  We provide
    defaults for the case that these files are served from
@@ -51,7 +51,7 @@ function setCachedConfig(config) {
 
 if ( !config ) {
   if ( !(config = getCachedConfig()) ) {
-    $.ajax("trill_on_swish_config.json",
+    $.ajax("swish_config.json",
 	   { dataType: "json",
 	     async: false,
 	     success: function(data) {

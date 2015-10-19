@@ -17,35 +17,22 @@ require.config({
     laconic:     "../bower_components/laconic/laconic",
     bootstrap:   "../bower_components/bootstrap/dist/js/bootstrap.min",
     typeahead:   "../bower_components/typeahead.js/dist/typeahead.bundle.min",
-    splitter:    "../bower_components/jquery.splitter/js/jquery.splitter-0.14.0",
+    splitter:    "../bower_components/jquery.splitter/js/jquery.splitter-0.15.0",
     tagmanager:  "../bower_components/tagmanager/tagmanager",
+    sha1:        "../bower_components/js-sha1/src/sha1",
+    c3:          "../bower_components/c3/c3",
+    d3:          "../bower_components/d3/d3",
+    "svg-pan-zoom": "../bower_components/svg-pan-zoom/dist/svg-pan-zoom.min",
 
-    "tos_cm/lib/codemirror": "../bower_components/codemirror/lib/codemirror",
-					/* CodeMirror standard extensions */
-    "tos_cm/addon/edit/matchbrackets": "../bower_components/codemirror/addon/edit/matchbrackets",
-    "tos_cm/addon/comment/continuecomment": "../bower_components/codemirror/addon/comment/continuecomment",
-    "tos_cm/addon/comment/comment": "../bower_components/codemirror/addon/comment/comment",
-    "tos_cm/addon/hint/show-hint": "../bower_components/codemirror/addon/hint/show-hint",
-    "tos_cm/addon/hint/anyword-hint": "../bower_components/codemirror/addon/hint/anyword-hint",
-    "tos_cm/addon/display/placeholder": "../bower_components/codemirror/addon/display/placeholder",
-    "tos_cm/addon/runmode/runmode": "../bower_components/codemirror/addon/runmode/runmode",
-    "tos_cm/keymap/emacs" : "../bower_components/codemirror/keymap/emacs",
-					/* Codemirror's xml mode */
-    "tos_cm/mode/xml/xml": "../bower_components/codemirror/mode/xml/xml",
-    "tos_cm/addon/fold/xml-fold" : "../bower_components/codemirror/addon/fold/xml-fold",
-    "tos_cm/addon/edit/matchtags" : "../bower_components/codemirror/addon/edit/matchtags",
-    				/* Our own prolog mode */
-    "tos_cm/mode/prolog/prolog": "codemirror/mode/prolog/prolog",
-    "tos_cm/mode/prolog/prolog_keys": "codemirror/mode/prolog/prolog_keys",
-    "tos_cm/mode/prolog/prolog_query": "codemirror/mode/prolog/prolog_query",
-    "tos_cm/mode/prolog/prolog_server": "codemirror/mode/prolog/prolog_server",
+					/* CodeMirror extensions */
+    "cm/mode/prolog": "codemirror/mode/prolog",
+    "cm/addon/hover/prolog-hover": "codemirror/addon/hover/prolog-hover",
+    "cm/addon/hover/text-hover": "codemirror/addon/hover/text-hover",
+    "cm/addon/hint/templates-hint": "codemirror/addon/hint/templates-hint",
+    "cm/addon/hint/show-context-info": "codemirror/addon/hint/show-context-info",
 
-    "tos_cm/addon/hint/templates-hint": "codemirror/addon/hint/templates-hint",
-    "tos_cm/addon/hover/text-hover": "codemirror/addon/hover/text-hover",
-    "tos_cm/addon/hover/prolog-hover": "codemirror/addon/hover/prolog-hover",
-    "tos_cm/addon/hint/show-context-info": "codemirror/addon/hint/show-context-info",
-    "tos_cm/mode/prolog/prolog-template-hint": "codemirror/mode/prolog/prolog-template-hint"
-    
+					/* Standard CodeMirror */
+    "cm" : "../bower_components/codemirror"
   },
   shim:
   { bootstrap:

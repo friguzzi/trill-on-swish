@@ -26,7 +26,7 @@
 
   var ourMap = {
     Tab : selectNextVariable,
-    Enter : function(tos_cm) { selectNextVariable(tos_cm, true) },
+    Enter : function(cm) { selectNextVariable(cm, true) },
     Esc : uninstall,
     "Ctrl-Space": hintValue
   }
@@ -37,8 +37,8 @@
     this.varIndex = -1;
   }
 
-  function isNested(tos_cm) {
-    return tos_cm._templateStack ? tos_cm._templateStack.length : 0;
+  function isNested(cm) {
+    return cm._templateStack ? cm._templateStack.length : 0;
   }
 
 
@@ -163,8 +163,8 @@
   }
 
 
-  function getMarkerChanged(tos_cm, textChanged) {
-    var markers = tos_cm.findMarksAt(textChanged.from);
+  function getMarkerChanged(cm, textChanged) {
+    var markers = cm.findMarksAt(textChanged.from);
     if (markers) {
       for ( var i = 0; i < markers.length; i++) {
         var marker = markers[i];
@@ -182,25 +182,25 @@
    * there are any other template variables with the same name and
    * update them accordingly.
    */
-  function onChange(tos_cm, textChanged) {
-    var state = tos_cm._templateState;
+  function onChange(cm, textChanged) {
+    var state = cm._templateState;
     if (!textChanged.origin || !state || state.updating) {
       return;
     }
     try {
       state.updating = true;
-      var markerChanged = getMarkerChanged(tos_cm, textChanged);
+      var markerChanged = getMarkerChanged(cm, textChanged);
       if (markerChanged == null) {
-        uninstall(tos_cm);
+        uninstall(cm);
       } else {
         var posChanged = markerChanged.find();
-        var newContent = tos_cm.getRange(posChanged.from, posChanged.to);
+        var newContent = cm.getRange(posChanged.from, posChanged.to);
         for ( var i = 0; i < state.marked.length; i++) {
           var marker = state.marked[i];
           if (marker != markerChanged
               && marker._templateVar == markerChanged._templateVar) {
             var pos = marker.find();
-            tos_cm.replaceRange(newContent, pos.from, pos.to);
+            cm.replaceRange(newContent, pos.from, pos.to);
           }
         }
       }
@@ -209,28 +209,28 @@
     }
   }
 
-  function onEndCompletion(tos_cm) {
-    DEBUG("template", "endCompletion()", isNested(tos_cm));
-    if ( isNested(tos_cm) )
-      uninstall(tos_cm, true);
+  function onEndCompletion(cm) {
+    DEBUG("template", "endCompletion()", isNested(cm));
+    if ( isNested(cm) )
+      uninstall(cm, true);
   }
 
-  function selectNextVariable(tos_cm, exitOnEnd) {
-    var state = tos_cm._templateState;
+  function selectNextVariable(cm, exitOnEnd) {
+    var state = cm._templateState;
     if (state.selectableMarkers.length > 0) {
       state.varIndex++;
       if (state.varIndex >= state.selectableMarkers.length) {
         // If we reach the last token and exitOnEnd is true, we exit instead of
         // looping back to the first token.
         if (exitOnEnd) {
-          exit(tos_cm);
+          exit(cm);
           return;
         }
         state.varIndex = 0;
       }
       var marker = state.selectableMarkers[state.varIndex];
       var pos = marker.find();
-      tos_cm.setSelection(pos.from, pos.to);
+      cm.setSelection(pos.from, pos.to);
       var templateVar = marker._templateVar;
       for ( var i = 0; i < state.marked.length; i++) {
         var m = state.marked[i];
@@ -250,62 +250,62 @@
           }
         }
       }
-      tos_cm.refresh();
+      cm.refresh();
     } else {
       // No tokens - exit.
-      exit(tos_cm);
+      exit(cm);
     }
   }
 
   /**
    * Recursively use hinting for the values
    */
-  function hintValue(tos_cm) {
-    var state  = tos_cm._templateState;
+  function hintValue(cm) {
+    var state  = cm._templateState;
     var marker = state.selectableMarkers[state.varIndex];
     var prev   = {state:state};
 
-    if ( tos_cm._hintTemplateMarker )
-      prev.marker = tos_cm._hintTemplateMarker;
+    if ( cm._hintTemplateMarker )
+      prev.marker = cm._hintTemplateMarker;
 
-    if ( !tos_cm._templateStack )
-      tos_cm._templateStack = [];
-    tos_cm._templateStack.push(prev);
-    delete tos_cm._templateState;
+    if ( !cm._templateStack )
+      cm._templateStack = [];
+    cm._templateStack.push(prev);
+    delete cm._templateState;
 
     function samePos(p1, p2) {
       return p1.ch == p2.ch && p1.line == p2.line;
     }
 
-    tos_cm._hintTemplateMarker = marker;
+    cm._hintTemplateMarker = marker;
     var pos = marker.find();
-    var sels = tos_cm.listSelections();
+    var sels = cm.listSelections();
     if ( sels.length == 1 &&
 	 samePos(sels[0].anchor, pos.from) &&
 	 samePos(sels[0].head,   pos.to) ) {
-      tos_cm.replaceRange("\u2630", pos.from, pos.to);
+      cm.replaceRange("\u2630", pos.from, pos.to);
     }
 
-    CodeMirror.commands.autocomplete(tos_cm);
+    CodeMirror.commands.autocomplete(cm);
   }
 
-  Template.prototype.insert = function(tos_cm, data) {
+  Template.prototype.insert = function(cm, data) {
     var template = this;
-    var nested = isNested(tos_cm);
+    var nested = isNested(cm);
 
     DEBUG("template", "Insert, nested", nested, "template", template);
-    if ( tos_cm._templateState || nested ) {
+    if ( cm._templateState || nested ) {
       DEBUG("template", "Uninstall from insert()", nested);
-      uninstall(tos_cm);
+      uninstall(cm);
     }
 
     if ( template.text ) {
-      tos_cm.replaceRange(template.text, data.from, data.to);
+      cm.replaceRange(template.text, data.from, data.to);
       return;
     }
 
     var state = new TemplateState();
-    tos_cm._templateState = state;
+    cm._templateState = state;
 
     var tokens = this.tokens();
     var content = '';
@@ -348,7 +348,7 @@
     var from = data.from;
     var to = data.to;
     var startLine = from.line;
-    tos_cm.replaceRange(content, from, to);
+    cm.replaceRange(content, from, to);
 
     for ( var i = 0; i < markers.length; i++) {
       function subTemplate(tvar) {
@@ -358,7 +358,7 @@
       }
 
       var marker = markers[i], from = marker.from, to = marker.to;
-      var markText = tos_cm.markText(from, to, {
+      var markText = cm.markText(from, to, {
         className : "CodeMirror-templates-variable",
         startStyle : "CodeMirror-templates-variable-start",
         endStyle : "CodeMirror-templates-variable-end",
@@ -375,7 +375,7 @@
     }
 
     if (cursor != null) {
-      state.cursor = tos_cm.setBookmark(cursor);
+      state.cursor = cm.setBookmark(cursor);
     }
 
     // Auto-indent everything except the first line.
@@ -386,45 +386,45 @@
     var lines = content.split("\n");
     for ( var x = 1; x < lines.length; x++) {
       var targetLine = startLine + x;
-      tos_cm.indentLine(targetLine);
+      cm.indentLine(targetLine);
     }
 
     // Have to be before selectNextVariable, since selectNextVariable
     // may exit and remove the keymap again.
     if ( !nested ) {
-      tos_cm.on("change", onChange);
+      cm.on("change", onChange);
       DEBUG("template", "Installing endCompletion");
-      tos_cm.on("endCompletion", onEndCompletion);
-      tos_cm.addKeyMap(ourMap);
+      cm.on("endCompletion", onEndCompletion);
+      cm.addKeyMap(ourMap);
     }
 
-    selectNextVariable(tos_cm, true);
+    selectNextVariable(cm, true);
   }
 
-  function exit(tos_cm) {
+  function exit(cm) {
     // Move to ${cursor} in the template, then uninstall.
-    var cursor = tos_cm._templateState.cursor;
+    var cursor = cm._templateState.cursor;
     if (cursor != null) {
       var cursorPos = cursor.find();
       if (cursorPos != null) {
-        tos_cm.setSelection(cursorPos, cursorPos);
+        cm.setSelection(cursorPos, cursorPos);
       }
     }
-    uninstall(tos_cm);
+    uninstall(cm);
   }
 
-  function uninstall(tos_cm, canceled) {
-    var state = tos_cm._templateState;
+  function uninstall(cm, canceled) {
+    var state = cm._templateState;
 
     function canceledMarker() {
       DEBUG("template", "Canceled?");
 
       for ( var i = 0; i < state.marked.length; i++) {
 	var mark = state.marked[i];
-	if ( mark == tos_cm._hintTemplateMarker ) {
+	if ( mark == cm._hintTemplateMarker ) {
 	  var pos = mark.find();
-	  if ( pos && tos_cm.getRange(pos.from, pos.to) == "\u2630" )
-	    tos_cm.replaceRange(mark._templateVar, pos.from, pos.to);
+	  if ( pos && cm.getRange(pos.from, pos.to) == "\u2630" )
+	    cm.replaceRange(mark._templateVar, pos.from, pos.to);
 	}
       }
     }
@@ -443,29 +443,29 @@
       DEBUG("template", "Uninstall, no state");
     }
 
-    if ( tos_cm._templateStack && tos_cm._templateStack.length > 0 ) {
-      DEBUG("template", "Popping from level", tos_cm._templateStack.length);
-      var prev = tos_cm._templateStack.pop();
-      state = tos_cm._templateState = prev.state;
-      if ( canceled && tos_cm._hintTemplateMarker )
+    if ( cm._templateStack && cm._templateStack.length > 0 ) {
+      DEBUG("template", "Popping from level", cm._templateStack.length);
+      var prev = cm._templateStack.pop();
+      state = cm._templateState = prev.state;
+      if ( canceled && cm._hintTemplateMarker )
 	canceledMarker();
       if ( prev.marker ) {
-	tos_cm._hintTemplateMarker = prev.marker;
+	cm._hintTemplateMarker = prev.marker;
       } else {
-	delete tos_cm._hintTemplateMarker;
+	delete cm._hintTemplateMarker;
       }
     } else {
       DEBUG("template", "Leaving template mode");
-      tos_cm.off("change", onChange);
-      tos_cm.off("endCompletion", onEndCompletion);
-      tos_cm.removeKeyMap(ourMap);
-      delete tos_cm._templateState;
-      delete tos_cm._hintTemplateMarker;
+      cm.off("change", onChange);
+      cm.off("endCompletion", onEndCompletion);
+      cm.removeKeyMap(ourMap);
+      delete cm._templateState;
+      delete cm._hintTemplateMarker;
     }
   }
 
-  CodeMirror.templatesHint.getCompletions = function(tos_cm, completions, text) {
-    var mode = tos_cm.doc.mode.name;
+  CodeMirror.templatesHint.getCompletions = function(cm, completions, text) {
+    var mode = cm.doc.mode.name;
     var list = templatesMap[mode];
     if (list) {
       for ( var i = 0; i < list.length; i++) {
@@ -484,8 +484,8 @@
             "template" : template,
           };
           completion.data = completion;
-          completion.hint = function(tos_cm, data, completion) {
-            completion.template.insert(tos_cm, data);
+          completion.hint = function(cm, data, completion) {
+            completion.template.insert(cm, data);
           };
           completion.info = function(completion) {
             var content = completion.template.content();
@@ -493,9 +493,9 @@
             if (CodeMirror.runMode) {
               var result = document.createElement('div');
               result.className = 'cm-s-default';
-              if (tos_cm.options && tos_cm.options.theme)
-                result.className = 'cm-s-' + tos_cm.options.theme;
-              CodeMirror.runMode(content, tos_cm.getMode().name, result);
+              if (cm.options && cm.options.theme)
+                result.className = 'cm-s-' + cm.options.theme;
+              CodeMirror.runMode(content, cm.getMode().name, result);
               return result;
             }
             return content;

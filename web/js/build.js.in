@@ -2,7 +2,7 @@
 //
 //    r.js -o build.js
 //
-// Keep this in sync with swish.js.  There must be another way to do this ...
+// Keep this in sync with trill_on_swish.js.  There must be another way to do this ...
 
 ({ baseURL: ".",
    @CONFIG@

@@ -11,12 +11,12 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
        function(config, preferences) {
 
 (function($) {
-  var pluginName = 'trill_on_swishModal';
+  var pluginName = 'swishModal';
 
   /** @lends $.fn.modal */
   var methods = {
     /**
-     * Initialize the widget and listen for "trill_on_swish_help" events.
+     * Initialize the widget and listen for "help" events.
      * @param {Object} options currently ignored
      */
     _init: function(options) {
@@ -24,20 +24,26 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 	var elem = $(this);
 
 	elem.addClass("trill_on_swish-event-receiver");
-	elem.on("trill_on_swish_help", function(ev, data) {
-	  elem.trill_on_swishModal('showHelp', data);
+	elem.on("help", function(ev, data) {
+	  elem.swishModal('showHelp', data);
 	});
 	elem.on("pldoc", function(ev, data) {
-	  elem.trill_on_swishModal('showPlDoc', data);
+	  elem.swishModal('showPlDoc', data);
 	});
 	elem.on("form", function(ev, data) {
-	  elem.trill_on_swishModal('showForm', data);
+	  elem.swishModal('showForm', data);
 	});
 	elem.on("dialog", function(ev, data) {
-	  elem.trill_on_swishModal('show', data);
+	  elem.swishModal('show', data);
 	});
 	elem.on("error", function(ev, data) { /* still needed? */
-	  elem.trill_on_swishModal('show', data);
+	  elem.swishModal('show', data);
+	});
+	elem.on("ajaxError", function(ev, jqXHR) {
+	  elem.swishModal('showAjaxError', jqXHR);
+	});
+	elem.on("feedback", function(ev, options) {
+	  elem.swishModal('feedback', options);
 	});
       });
     },
@@ -56,12 +62,12 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
       if ( options.notagain && preferences.notagain(options.notagain) )
 	return;
 
-      $.ajax({ url: config.http.locations.trill_on_swish_help + "/" + options.file,
+      $.ajax({ url: config.http.locations.help + "/" + options.file,
 	       dataType: "html",
 	       success: function(data) {
 		 var container = $("<div>");
 		 container.html(data);
-		 that.trill_on_swishModal('show',
+		 that.swishModal('show',
 				 $.extend(
 				   { title: container.find("title").text(),
 				     body:  container
@@ -84,7 +90,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 	       success: function(data) {
 		 var container = $("<div>");
 		 container.html(data);
-		 that.trill_on_swishModal('show',
+		 that.swishModal('show',
 				 $.extend(
 				   { title: container.find("legend").text(),
 				     body:  container
@@ -101,7 +107,9 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
      */
     showPlDoc: function(options) {
       function docURL(options) {
-	var term = options.name+"/"+options.arity;
+	var term = "("+options.name+")/"+options.arity;
+	if ( options.module )			/* FIXME: must be valid Prolog term */
+	  term = options.module+":"+term;
 	return   config.http.locations.pldoc_doc_for
 	       + "?header=false&object="
 	       + encodeURIComponent(term);
@@ -121,7 +129,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 		   }
                  };
 
-      return this.trill_on_swishModal('show', data);
+      return this.swishModal('show', data);
     },
 
     /**
@@ -170,6 +178,47 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 		});
 
       return this
+    },
+
+    /**
+     * Display information about an ajax error
+     */
+    showAjaxError: function(jqXHR) {
+      var dom = $.el.div();
+
+      $(dom).html(jqXHR.responseText);
+      var h1 = $(dom).find("h1");
+      var title = h1.text() || "Server error";
+      h1.remove();
+
+      var data = { title: title,
+		   body: dom
+		 };
+
+      this.swishModal('show', data);
+    },
+
+    /**
+     * Display briefly a feedback message
+     * @param {Object} options
+     * @param {String} options.html defines the HTML content that is
+     * rendered.
+     * @param {Number} [options.duration=1500] number of milliseconds
+     * that the message is visible.
+     * @param {Object} [options.owner=$("body")] is the DOM element to
+     * which the feedback window is added.
+     */
+    feedback: function(options) {
+      var win = $.el.div({class:"feedback"});
+      $(win).html(options.html);
+
+      $(options.owner||"body").append(win);
+      setTimeout(function() {
+	$(win).hide(400, function() {
+	  $(win).remove();
+	});
+      }, options.duration||1500);
+      return this;
     }
   }; // methods
 
@@ -246,7 +295,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
    * @param [...] Zero or more arguments passed to the jQuery `method`
    */
 
-  $.fn.trill_on_swishModal = function(method) {
+  $.fn.swishModal = function(method) {
     if ( methods[method] ) {
       return methods[method]
 	.apply(this, Array.prototype.slice.call(arguments, 1));
@@ -257,5 +306,14 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
     }
   };
 }(jQuery));
+
+  return {
+    ajaxError: function(jqXHR) {
+      $(".trill_on_swish-event-receiver").trigger("ajaxError", jqXHR);
+    },
+    feedback: function(options) {
+      $(".trill_on_swish-event-receiver").trigger("feedback", options);
+    }
+  };
 });
 

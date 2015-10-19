@@ -9,8 +9,10 @@
  * @requires editor
  */
 
-define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
-       function($, config, CodeMirror) {
+define([ "jquery", "config", "preferences",
+	 "cm/lib/codemirror", "form", "answer", "laconic"
+       ],
+       function($, config, preferences, CodeMirror, form) {
 
 		 /*******************************
 		 *	  THE COLLECTION	*
@@ -77,6 +79,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
      * @param {Object} query
      * @param {String} query.query the Prolog query to prove
      * @param {String} [query.source] the Prolog program
+     * @param {prologEditor} [query.editor] the source editor
      * @param {Boolean} [query.iconifyLast=true] define whether or not
      * to iconify the previous runner.
      * @param {Boolean} [query.tabled=false] if `true`, make a table with
@@ -192,7 +195,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 		      65:      'stopOrAbort',	/* a */
 		      27:      'stopOrAbort',	/* Esc */
 		      46:      'close',		/* Del */
-		      112:     'trill_on_swish_help'		/* F1 */
+		      112:     'help'		/* F1 */
                     };
 
   /** @lends $.fn.prologRunner */
@@ -204,6 +207,8 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
      * @param {String} [query.source] the Prolog program
      * @param {Boolean} [query.tabled=false]  If `true`, represent the
      * results as a table.
+     * @param {Boolean} [query.title=true] If `false`, suppress the
+     * title.
      */
     _init: function(query) {
       return this.each(function() {
@@ -211,7 +216,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 	var data = {};
 
 	function closeButton() {
-	  var btn = $.el.button();
+	  var btn = $.el.button({title:"Close query"});
 	  $(btn).html('&times');
 
 	  $(btn).on("click", function() { elem.prologRunner('close'); });
@@ -219,8 +224,14 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 	}
 
 	function iconizeButton() {
-	  var btn = $.el.button("_");
+	  var btn = $.el.button({title:"Iconify query"}, "_");
 	  $(btn).on("click", function() { elem.prologRunner('toggleIconic'); });
+	  return btn;
+	}
+
+	function csvButton() {
+	  var btn = $.el.button({title:"Download CSV"}, "\u21ca");
+	  $(btn).on("click", function() { elem.prologRunner('downloadCSV'); });
 	  return btn;
 	}
 
@@ -249,22 +260,17 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 	    var btn = $.el.button("Send");
 
 	    $(inp).keypress(function(ev) {
-			      var s;
 			      if ( ev.which == 13 &&
-				   (s=termNoFullStop($(inp).val())) != "" ) {
+				   elem.prologRunner('respond', $(inp).val()) ) {
 				$(inp).val("");
 				ev.preventDefault();
-				elem.prologRunner('respond', s);
 				return false;		/* prevent bubbling */
 			      } else if ( ev.key != "Esc" ) {
 				ev.stopPropagation();   /* prevent bubbling */
 			      }
 			    });
 	    $(btn).on("click", function() {
-				 var s;
-				 if ( (s=termNoFullStop($(inp).val())) != "" ) {
-				   elem.prologRunner('respond', s);
-				 }
+				 elem.prologRunner('respond', $(inp).val());
 			       });
 
 	    return {input:inp, button:btn};
@@ -288,14 +294,27 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 	}
 
 	elem.addClass("prolog-runner");
-	var qspan = $.el.span({class:"query tos_cm-s-prolog"});
-	CodeMirror.runMode(query.query, "prolog", qspan);
-	elem.append($.el.div(
-	  {class:"runner-title ui-widget-header"},
-	  closeButton(),
-	  iconizeButton(),
-	  stateButton(),
-          qspan));
+	if ( query.tabled )
+	  elem.addClass("tabled");
+	if ( query.title != false ) {
+	  var qspan = $.el.span({class:"query cm-s-prolog"});
+	  CodeMirror.runMode(query.query, "prolog", qspan);
+	  elem.append($.el.div(
+	    {class:"runner-title ui-widget-header"},
+	    closeButton(),
+	    iconizeButton(),
+	    csvButton(),
+	    stateButton(),
+	    qspan));
+	} else {
+	  var close = glyphButton("remove-circle", "Close");
+	  elem.append(close);
+	  $(close).on("click", function() {
+	    elem.prologRunner('close');
+	  });
+	}
+	if ( query.chunk )
+	  data.chunk = query.chunk;
 	elem.append($.el.div(
 	  {class:"runner-results"}));
 	elem.append(controllerDiv());
@@ -304,7 +323,8 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 
 	elem.prologRunner('populateActionMenu');
 	elem.keydown(function(ev) {
-	  if ( elem.prologRunner('getState') != "wait-input" ) {
+	  if ( elem.prologRunner('getState') != "wait-input" &&
+	       !ev.ctrlKey && !ev.altKey ) {
 	    if ( keyBindings[ev.which] ) {
 	      ev.preventDefault();
 	      elem.prologRunner(keyBindings[ev.which]);
@@ -330,9 +350,11 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 	    server: config.http.locations.pengines,
 	    runner: elem,
 	    application: "trill_on_swish",
-	    src: ":- use_module(library(trill_on_swish/trill/trill)). :- use_module(library(trill_on_swish/translate_rdf)). :- use_module(library(pengines)).\n\
-	    	   parse:- \n\
-		     pengine_self(M),\n\
+	    src: ":- use_module(library(trill_on_swish/trill/trill)).\n\
+	          :- use_module(library(trill_on_swish/translate_rdf)).\n\
+	          :- use_module(library(pengines)).\n\
+	          parse:- \n\
+	             pengine_self(M),\n\
 		     set_prolog_flag(M:unknwon,fail),\n\
 		     load_owl('"+
 	    	     query.source+"')." ,
@@ -411,6 +433,67 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
     },
 
     /**
+     * Handle trace events
+     */
+    trace: function(data) {
+      var elem = this;
+      var goal = $.el.span({class:"goal"});
+      var prompt = data.data;
+      $(goal).html(prompt.goal);
+
+      function capitalizeFirstLetter(string) {
+	return string.charAt(0).toUpperCase() + string.slice(1);
+      }
+
+      function button(label, action, context) {
+	var btn = $.el.button({class:action,
+			       title:label
+			      },
+			      $.el.span(label));
+	$(btn).on("click", function(ev) {
+	  if ( context !== undefined ) {
+	    action += "("+Pengine.stringify(context(ev))+")";
+	  }
+	  data.pengine.respond(action);
+	  $(ev.target).parent().remove();
+	});
+	return btn;
+      }
+
+      addAnswer(this,
+		$.el.div({class:"prolog-trace"},
+			 $.el.span({ class:"depth",
+			             style:"width:"+(prompt.depth*5-1)+"px"
+				   }, "\u00A0"), /* &nbsp; */
+			 $.el.span({ class:"port "+prompt.port
+			           },
+				   capitalizeFirstLetter(prompt.port),
+				   ":"),
+			 goal));
+      if ( prompt.port == "exception" )
+	addAnswer(this,
+		  $.el.div({class:"prolog-exception"},
+			   prompt.exception.message));
+      addAnswer(this,
+		$.el.div({class:"trace-buttons"},
+			 button("Continue",  "nodebug", function(ev) {
+			   return breakpoints($(ev.target)
+				    .closest(".prolog-runner"));
+			 }),
+			 button("Step into", "continue"),
+			 button("Step over", "skip"),
+			 button("Step out",  "up"),
+			 button("Retry",     "retry"),
+			 button("Abort",     "abort")));
+
+      this.closest(".trill_on_swish")
+          .find(".tabbed")
+          .trigger("trace-location", prompt);
+
+      this.prologRunner('setState', "wait-debug");
+    },
+
+    /**
      * set the placeholder of the input field.  This is normally
      * done from the pengine's onprompt handler
      * @param {String} p the new placeholder
@@ -420,15 +503,53 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
     },
 
     /**
+     * Support arbitrary jQuery requests from Prolog
+     */
+    jQuery: function(prompt) {
+      var request = prompt.data;
+      var receiver;
+
+      if ( typeof(request.selector) == "string" ) {
+	receiver = $(request.selector);
+      } else if ( typeof(request.selector) == "object" ) {
+	switch(request.selector.root) {
+	  case "this":	root = this; break;
+	  case "trill_on_swish":	root = this.closest(".trill_on_swish"); break;
+	}
+	if ( request.selector.sub == "" ) {
+	  receiver = root;
+	} else {
+	  receiver = root.find(request.selector.sub);
+	}
+      }
+
+      console.log(receiver);
+      var result = receiver[request.method].apply(receiver, request.arguments);
+      console.log(result);
+
+      prompt.pengine.respond(Pengine.stringify(result));
+    },
+
+    /**
      * send a response (to pengine onprompt handler) to the
      * pengine and add the response to the dialogue as
      * `div class="response">`
      * @param {String} s plain-text response
      */
-    respond: function(s) {
+    respond: function(text) {
       var data = this.data('prologRunner');
-      addAnswer(this, $.el.div({class:"response"}, s));
+
+      if ( data.wait_for == "term" ) {
+	s = termNoFullStop(text);
+	if ( s == "" )
+	  return null;
+      } else {
+	s = Pengine.stringify(text+"\n");
+      }
+
+      addAnswer(this, $.el.div({class:"response"}, text));
       data.prolog.respond(s);
+      return this;
     },
 
     /**
@@ -501,8 +622,10 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 	  var elem = $(this);
 	  var data = elem.data('prologRunner');
 
-	  if ( elem.prologRunner('alive') )
+	  if ( elem.prologRunner('alive') ) {
+	    $(".prolog-editor").trigger('pengine-died', data.prolog.id);
 	    data.prolog.destroy();
+	  }
 	});
 	this.remove();
 
@@ -514,8 +637,8 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
     /**
      * Provide help on running a query
      */
-     trill_on_swish_help: function() {
-       $(".trill_on_swish-event-receiver").trigger("trill_on_swish_help", {file:"runner.html"});
+     help: function() {
+       $(".trill_on_swish-event-receiver").trigger("help", {file:"runner.html"});
      },
 
     /**
@@ -552,6 +675,98 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
       return this;
     },
 
+    /**
+     * Download query results as CSV.
+     * @param {Object} [options]
+     * @param {String} [options.projection] holds the Prolog projection
+     * variables, separated by commas, e.g., `"X,Y"`
+     * @param {String} [options.format="prolog"] holds a string that
+     * defines the variation of the CSV format, e.g., `"prolog"` or
+     * `"rdf"`
+     * @param {String|Number} [options.limit] defines the max number of
+     * results.
+     * @param {Boolean} [options.distinct] requests only distinct
+     * results.
+     */
+    downloadCSV: function(options) {
+      var elem = this;
+      var data = this.data('prologRunner');
+      var vars = [];
+
+      options = options||{};
+
+      if ( options.projection ) {
+	var formel;
+	var format = options.format||"prolog";
+	var query = data.query.query.replace(/\.\s*$/,"");
+
+	function attr(name,value) {
+	  return $.el.input({type:"hidden", name:name, value:value});
+	}
+
+	if ( options.distinct )
+	  query = "distinct(["+options.projection+"],("+query+"))";
+	if ( options.limit ) {
+	  var limit = parseInt(options.limit.replace(/[ _]/g,""));
+
+	  if ( typeof(limit) == "number" ) {
+	    query = "limit("+limit+",("+query+"))";
+	  } else {
+	    alert("Not an integer: ", options.limit);
+	    return false;
+	  }
+	}
+
+	formel = $.el.form({ method:"POST",
+                             action:config.http.locations.pengines+"/create",
+			     target:"_blank"
+		           },
+			   attr("format", "csv"),
+			   attr("chunk", "100000000"),
+			   attr("application", "trill_on_swish"),
+			   attr("ask", query),
+			   attr("src_text", data.query.source),
+			   attr("template", format+"("+options.projection+")"));
+	$("body").append(formel);
+	formel.submit();
+	$(formel).remove();
+      } else {
+	this.find("span.query span.cm-var").each(function() {
+	  var name = $(this).text();
+	  if ( vars.indexOf(name) < 0 )
+	    vars.push(name);
+        });
+
+
+	function infoBody() {
+	  var formel = $.el.form(
+            {class:"form-horizontal"},
+	    form.fields.projection(vars.join(",")),
+	    form.fields.csvFormat(config.trill_on_swish.csv_formats,
+				  preferences.getVal("csvFormat")),
+	    form.fields.limit("10 000", false),
+	    form.fields.buttons(
+	      { label: "Download CSV",
+		action: function(ev, params) {
+		  ev.preventDefault();
+		  if ( config.trill_on_swish.csv_formats.length > 1 )
+		    preferences.setVal("csvFormat", params.format);
+		  elem.prologRunner('downloadCSV', params);
+
+		  return false;
+		}
+	      }));
+	  this.append(formel);
+	}
+
+	form.showDialog({ title: "Download query results as CSV",
+			  body:  infoBody
+		        });
+      }
+
+      return this;
+      },
+
   /**
    * @param {String} state defines the new state of the pengine.
    * Known states are:
@@ -560,6 +775,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
    *   - "running"    - Pengine is running
    *   - "wait-next"  - Pengine produced a non-deterministic answer
    *   - "wait-input" - Pengine waits for input
+   *   - "wait-debug" - Pengine waits for for debugger reply
    *   - "true"       - Pengine produced the last answer
    *   - "false"      - Pengine failed
    *   - "error"      - Pengine raised an error
@@ -574,6 +790,9 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
    setState: function(state) {
      var data = this.data('prologRunner');
 
+     if ( !data )
+       return;
+
      if ( data.prolog.state != state ) {
        var stateful = this.find(".show-state");
 
@@ -585,8 +804,10 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
        } else if ( state == "wait-input" ) {
 	 this.find("input").focus();
        }
-       if ( !aliveState(state) )
+       if ( !aliveState(state) ) {
+	 $(".prolog-editor").trigger('pengine-died', data.prolog.id);
 	 data.prolog.destroy();
+       }
      }
      if ( state == "wait-next" || state == "true" ) {
        var runners = RS(this);
@@ -609,7 +830,8 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 
    /**
     * @returns {Boolean} true if the related pengine is alive.  That
-    * means it has state `"running"`, `"wait-next"` or `"wait-input"`
+    * means it has state `"running"`, `"wait-next"`, `"wait-input"` or
+    * `"wait-debug"`
     */
    alive: function() {
      return aliveState(this.prologRunner('getState'));
@@ -637,6 +859,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
     { case "running":
       case "wait-next":
       case "wait-input":
+      case "wait-debug":
 	return true;
       default:
 	return false;
@@ -648,7 +871,7 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 
     for(i=0; i<projection.length; i++)
       tds.push($.el.th({class:"pl-pvar"}, projection[i]));
-    tds.push($.el.th({class:"answer-nth"}, "No"));
+    tds.push($.el.th({class:"answer-nth"}, ""));
 
     var table = $.el.table({class:"prolog-answers"},
 			   $.el.tbody($.el.tr.apply(this, tds)));
@@ -662,11 +885,29 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 		 *   HANDLE PROLOG CALLBACKS	*
 		 *******************************/
 
+  function breakpoints(runner) {
+    var data = runner.data(pluginName);
+
+    return $(runner).parents(".trill_on_swish").trill_on_swish('breakpoints', data.prolog.id);
+  }
+
   function handleCreate() {
     var elem = this.pengine.options.runner;
-    var data = elem.data('prologRunner');
+    var data = elem.data(pluginName);
+    var options = {};
+    var bps;
 
-    this.pengine.ask("parse,query_expand("+termNoFullStop(data.query.query)+")");
+    if ( data.query.editor )
+      $(data.query.editor).prologEditor('pengine', {add: this.pengine.id});
+
+    if ( (bps = breakpoints(elem)) )
+      options.breakpoints = Pengine.stringify(bps);
+    if ( data.chunk )
+      options.chunk = data.chunk;
+
+    this.pengine.ask("'$trill_on_swish wrapper'((" +
+		     "parse,query_expand("+termNoFullStop(data.query.query)+")" +
+		     "))", options);
     elem.prologRunner('setState', "running");
   }
 
@@ -704,7 +945,23 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
 
   function handlePrompt() {
     var elem   = this.pengine.options.runner;
-    var prompt = this.data ? this.data : "Please enter a Prolog term";
+    var data   = elem.data('prologRunner');
+    var prompt = this.data || "Please enter a Prolog term";
+
+    data.wait_for = "term";
+
+    if ( typeof(prompt) == "object" ) {
+      if ( prompt.type == "trace" ) {
+	return elem.prologRunner('trace', this);
+      } else if ( prompt.type == "jQuery" ) {
+	return elem.prologRunner('jQuery', this);
+      } else if ( prompt.type == "console" ) {
+	prompt = prompt.prompt || "console> ";
+	data.wait_for = "line";
+      } else {
+	prompt = JSON.stringify(prompt);
+      }
+    }
 
     elem.prologRunner('setPrompt', prompt);
     elem.prologRunner('setState', "wait-input");
@@ -843,5 +1100,13 @@ define([ "jquery", "config", "tos_cm/lib/codemirror", "answer", "laconic" ],
     ul.on("click", "a", function() { runMenu(this); } );
 
     return menu;
+  }
+
+  function glyphButton(glyph, title) {
+    var btn = $.el.a({href:"#", class:"close btn btn-link btn-sm",
+		      title:title},
+		     $.el.span({class:"glyphicon glyphicon-"+glyph}));
+
+    return btn;
   }
 });

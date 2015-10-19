@@ -15,9 +15,9 @@
 :- use_module(library(pengines)).
 %:- use_module(library(tries)).
 %:- load_foreign_files(['cplint-swi'],[],init_my_predicates).
-%:-use_foreign_library(bddem,install).
+:-use_foreign_library(bddem,install).
 
-:- use_foreign_library(foreign(bddem),install).
+%:- use_foreign_library(foreign(bddem),install).
 
 :- thread_local %get_var_n/5
         rule_n/1,
@@ -105,7 +105,7 @@ instanceOf(Class,Ind,Expl):-
     	Expl = ["IRIs not existent"],!
   ).
 
-instanceOf(_,_,_):-
+instanceOf(_,_,['Inconsistent ABox']):-
   write('Inconsistent ABox').
 
 instanceOf(Class,Ind):-
@@ -119,8 +119,8 @@ instanceOf(Class,Ind):-
   apply_all_rules((ABox0,Tabs),(ABox1,Tabs1)),!,
   clash((ABox1,Tabs1),_),!.
 
-instanceOf(_,_):-
-  write('Inconsistent ABox').
+%instanceOf(_,_):-
+%  write('Inconsistent ABox').
 
 unsat(Concept,Expl):-
   retractall(ind(_)),
@@ -133,7 +133,7 @@ unsat(Concept,Expl):-
   find_expls(L,[],Expl),
   Expl \= [].
 
-unsat(_,_):-
+unsat(_,['Inconsistent ABox']):-
   write('Inconsistent ABox').
 
 unsat(Concept):-
@@ -146,8 +146,8 @@ unsat(Concept):-
   apply_all_rules((ABox0,Tabs),(ABox1,Tabs1)),!,
   clash((ABox1,Tabs1),_),!.
 
-unsat(_):-
-  write('Inconsistent ABox').
+%unsat(_):-
+%  write('Inconsistent ABox').
 
 inconsistent_theory(Expl):-
   retractall(ind(_)),
@@ -165,8 +165,8 @@ inconsistent_theory:-
   apply_all_rules((ABox,Tabs),(ABox1,Tabs1)),!,
   clash((ABox1,Tabs1),_),!.
 
-inconsistent_theory:-
-  write('Inconsistent!').
+%inconsistent_theory:-
+%  write('Inconsistent!').
 
 prob_instanceOf(Class,Ind,P):-
   ( check_query_args([Class,Ind]) ->
@@ -1976,6 +1976,7 @@ compute_prob_ax1([Prob1 | T],Prob):-
   compute_prob_ax1(T,Prob0),
   Prob is Prob1 + Prob0 - (Prob1*Prob0).  
 /************************/
+
 
 
 

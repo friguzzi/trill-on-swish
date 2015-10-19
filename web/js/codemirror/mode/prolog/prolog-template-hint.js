@@ -96,12 +96,12 @@
     }
   }
 
-  PrologHint.prototype.hint = function(tos_cm, data, completion) {
+  PrologHint.prototype.hint = function(cm, data, completion) {
     var template = new CodeMirror.templatesHint.Template(this);
-    template.insert(tos_cm, data);
+    template.insert(cm, data);
   };
 
-  function hintsFor(tos_cm, state, options) {
+  function hintsFor(cm, state, options) {
     var text = state.token.string;
     var results = [];
     var myTemplates = templates;
@@ -110,15 +110,14 @@
       return str.slice(0, start.length) == start;
     }
 
-    if ( tos_cm._hintTemplateMarker ) {
+    if ( cm._hintTemplateMarker ) {
       if ( text == "\u2630" )
 	text = "";
-      myTemplates = tos_cm._hintTemplateMarker._templates;
+      myTemplates = cm._hintTemplateMarker._templates;
     }
 
     var symbol = text.length > 0 && !text.match(/\w/);
 
-    //console.log(myTemplates);
     if ( myTemplates ) {
       for(var i=0; i<myTemplates.length; i++) {
 	var templ = myTemplates[i];
@@ -147,9 +146,9 @@
 
     if ( results.length == 0 ) {	/* Include AnyWord hinting completions */
       var anyword = CodeMirror.hint.anyword;
-      var opts = (text==""&&tos_cm._hintTemplateMarker) ?
+      var opts = (text==""&&cm._hintTemplateMarker) ?
 		  { word: /[A-Z][A-Za-z0-9_]*/ } : options;
-      var anyhint = anyword(tos_cm, opts);
+      var anyhint = anyword(cm, opts);
       for(var i=0; i<anyhint.list.length; i++)
 	results.push(new PrologHint(anyhint.list[i]));
     }
@@ -160,20 +159,20 @@
            };
   }
 
-  function getHints(tos_cm, callback, options) {
-    var state = getState(tos_cm);
-    console.log(state);
-    var data  = hintsFor(tos_cm, state, options);
+  function getHints(cm, callback, options) {
+    var state = getState(cm);
+  //console.log(state);
+    var data  = hintsFor(cm, state, options);
     CodeMirror.attachContextInfo(data);
     callback(data);
   }
   getHints.async = true;
 
-  function getState(tos_cm) {
-    var cur = tos_cm.getCursor();
-    var token = tos_cm.getTokenAt(cur);
-//  var enriched = tos_cm.getEnrichedToken(token);
-    var inner = CodeMirror.innerMode(tos_cm.getMode(), token.state);
+  function getState(cm) {
+    var cur = cm.getCursor();
+    var token = cm.getTokenAt(cur);
+//  var enriched = cm.getEnrichedToken(token);
+    var inner = CodeMirror.innerMode(cm.getMode(), token.state);
     if (inner.mode.name != "prolog") {
       return null;
     }
