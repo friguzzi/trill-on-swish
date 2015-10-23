@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/index.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/help/about.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/help/help.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/help/runner.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/help/beware.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/help/background.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/help/caveats.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/help/query.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/tos_example/biopax-level3.owl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/tos_example/BRCA.owl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/tos_example/DBPedia.owl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/tos_example/people+pets.owl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill.lamping.unife.it/trill_on_swish/tos_example/vicodi-ontology.owl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+</urlset>
