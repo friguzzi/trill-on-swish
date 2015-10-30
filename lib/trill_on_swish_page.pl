@@ -114,13 +114,15 @@ trill_on_swish_reply1(Options) :-
 trill_on_swish_reply1(Options) :-
 	reply_html_page(
 	    trill_on_swish(main),
-	    [ title('TRILL on SWISH -- SWI-Prolog for SHaring'),
+	    [ title('TRILL on SWISH -- Probabilistic Semantic Web'),
 	      link([ rel('shortcut icon'),
 		     href('/icons/favicon.ico')
 		   ]),
 	      link([ rel('apple-touch-icon'),
 		     href('/icons/swish-touch-icon.png')
-		   ])
+		   ]),
+	     meta([name('msvalidate.01'),
+	      content('A9C78799EC9EDC7CE041CB7CD8E2D76E')])
 	    ],
 	    \trill_on_swish_page(Options)).
 
