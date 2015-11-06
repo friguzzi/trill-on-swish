@@ -492,7 +492,7 @@ define([ "cm/lib/codemirror",
      * the content of the editor.
      */
     print: function(src) {
-      var pre = $.el.pre({class:"cm-s-neo"});
+      var pre = $.el.pre({class:"cm-s-default"});
 
       if ( !src ) src = this.prologEditor('getSource');
 
@@ -518,7 +518,7 @@ define([ "cm/lib/codemirror",
 		     });
       
       } else {*/
-	      $.ajax({ url: "/trill_on_swish/js/codemirror/theme/neo.css", //prolog.css",
+	      $.ajax({ url: "/trill_on_swish/css/neo.css", //prolog.css",
 		       dataType: "text",
 		       success: function(data) {
 			 printWithIframe($.el.div($.el.style(data),
