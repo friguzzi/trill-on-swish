@@ -1,0 +1,17 @@
+<div class="notebook">
+
+<div class="nb-cell markdown">
+# Welcome to SWISH
+
+You are reading a SWISH _notebook_.  A notebook is a mixture of _text_, _programs_ and _queries_.  This notebook gives an overview of example programs shipped with SWISH.
+
+- *Examples*
+  - [Biopax](example/biopaxLevel3.owl) models metabolic pathways ([Home Page](http://www.biopax.org/)).
+  - [BRCA](example/BRCA.owl) models risk factor of breast cancer, from Klinov, P., Parsia, B.: _Optimization and evaluation of reasoning in probabilistic
+    description logic: Towards a systematic approach_. In: International Semantic Web Conference. LNCS, vol. 5318, pp. 213-228. Springer (2008).
+  - [DBPedia](example/DBPedia.owl) is an extract of the DBPedia ontology, it contains structured information from Wikipedia ([Home Page](http://dbpedia.org/)).
+  - [people+pets](example/peoplePets.owl) is inpired by the people+pets ontology from Patel-Schneider, P, F., Horrocks, I., and Bechhofer, S. 2003. _Tutorial  on OWL_. The knowledge base indicates that the individuals that own an animal which is a pet are nature lovers, from Zese, R.: _Reasoning with Probabilistic Logics_. ArXiv e-prints 1405.0915v3. Doctoral Consortium of the 30th International Conference on Logic Programming (ICLP 2014), July 19-22, Vienna, Austria.
+  - [Vicodi](example/vicodi.owl) is an extract of the Vicodi knowledge base that contains information on European history ([Home Page](http://www.vicodi.org/)).
+</div>
+
+</div>
