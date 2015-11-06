@@ -518,7 +518,7 @@ define([ "cm/lib/codemirror",
 		     });
       
       } else {*/
-	      $.ajax({ url: "/trill_on_swish/css/neo.css", //prolog.css",
+	      $.ajax({ url: "/trill_on_swish/css/print.css", //prolog.css",
 		       dataType: "text",
 		       success: function(data) {
 			 printWithIframe($.el.div($.el.style(data),
