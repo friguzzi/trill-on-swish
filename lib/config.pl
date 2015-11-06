@@ -55,7 +55,7 @@
 
 swish_reply_config(Request) :-
 	option(path(Path), Request),
-	file_base_name(Path, 'swish_config.json'),
+	file_base_name(Path, 'trill_on_swish_config.json'),
 	json_config(JSON),
 	reply_json(JSON).
 

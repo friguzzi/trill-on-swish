@@ -63,7 +63,7 @@ define([ "cm/lib/codemirror",
       save: false,
       theme: "prolog",
       matchBrackets: true,
-      textHover: true,
+      textHover: false,
       prologKeys: true,
       matchTags: false,
       extraKeys: {
@@ -607,7 +607,7 @@ define([ "cm/lib/codemirror",
      */
     refreshHighlight: function() {
       var data = this.data(pluginName);
-      data.cm.serverAssistedHighlight(true);
+      //data.cm.serverAssistedHighlight(true);
       return this;
     },
 
@@ -730,7 +730,8 @@ define([ "cm/lib/codemirror",
 	  if ( exl ) {
 	    for(var j=0; j<exl.length; j++) {
 	      var ex = exl[j].replace(/^ *\?-\s*/, "")
-			     .replace(/\s*$/, "");
+			     .replace(/\s*$/, "")
+			     .replace(/\\'/g,"'");
 	      exlist.push(ex);
 	    }
 	  }
@@ -877,10 +878,10 @@ define([ "cm/lib/codemirror",
   }; // methods
 
   tabbed.tabTypes.program = {
-    dataType: "pl",
+    dataType: "owl",
     typeName: "program",
     label: "Program",
-    contentType: "text/x-prolog",
+    contentType: "text/x-html",
     order: 100,
     create: function(dom) {
       $(dom).addClass("prolog-editor")

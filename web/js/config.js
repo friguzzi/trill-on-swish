@@ -51,7 +51,7 @@ function setCachedConfig(config) {
 
 if ( !config ) {
   if ( !(config = getCachedConfig()) ) {
-    $.ajax("swish_config.json",
+    $.ajax("trill_on_swish_config.json",
 	   { dataType: "json",
 	     async: false,
 	     success: function(data) {

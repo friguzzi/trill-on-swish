@@ -211,7 +211,7 @@ var tabbed = {
 	}
 
 	function isStoreSrc() {
-	  var prefix = "zzzzzzswish://";
+	  var prefix = "zzzzzztrill_on_swish://";
 	  if ( file.startsWith(prefix) )
 	    return file.slice(prefix.length);
 	}
@@ -333,7 +333,7 @@ var tabbed = {
       { close_button = glyphicon("remove", "xclose");
 	$(close_button).attr("title", "Close tab");
       }
-      type = type||"pl";
+      type = type||"owl";
 
       var a1 = $.el.a({class:"compact", href:"#"+id, "data-id":id},
 		      $.el.span({class:"tab-icon type-icon "+type}),

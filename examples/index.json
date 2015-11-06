@@ -1,9 +1,11 @@
 // list of examples, represented as a JSON list
 
 [
-{ "file":"biopax-level3.owl",             "title":"Biopax" },
-{ "file":"BRCA.owl",                      "title":"BRCA" },
-{ "file":"DBPedia.owl",                   "title":"DBPedia" },
-{ "file":"people+pets.owl",               "title":"people+pets" },
-{ "file":"vicodi-ontology.owl",           "title":"Vicodi" },
+{ "file":"examples.swinb",	"title":"Example programs" },
+"--",
+{ "file":"biopaxLevel3.owl",	"title":"Biopax" },
+{ "file":"BRCA.owl",		"title":"BRCA" },
+{ "file":"DBPedia.owl",		"title":"DBPedia" },
+{ "file":"peoplePets.owl",	"title":"people+pets" },
+{ "file":"vicodi.owl",		"title":"Vicodi" },
 ]

@@ -29,7 +29,7 @@ define([ "jquery",
 	 "c3"
        ], function($, config, preferences, history, modal) {
 
-preferences.setDefault("semantic-highlighting", true);
+preferences.setDefault("semantic-highlighting", false);
 preferences.setDefault("emacs-keybinding", false);
 
 (function($) {

@@ -6,6 +6,10 @@
   background-image: url("../icons/pl.png");
 }
 
+.type-icon.owl {
+  background-image: url("../icons/owl.png");
+}
+
 .type-icon.swinb {
   background-image: url("../icons/swinb.png");
 }

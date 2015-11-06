@@ -728,9 +728,10 @@ var cellTypes = {
     setAttr("tabled");
     setAttr("chunk");
     setAttr("run");
-
+    
     options = $.extend({}, options,
-      { role: "query",
+      { mode: "prolog",
+        role: "query",
 	sourceID: function() {
 	  return cell.nbCell('programs').prologEditor('getSourceID');
 	},
@@ -738,7 +739,7 @@ var cellTypes = {
 	  cell.nbCell('run');
 	}
       });
-
+      
     this.append($.el.div($.el.div({class:"nb-cell-buttons"},
       {class:"btn-group nb-cell-buttons",role:"group"},
       glyphButton("wrench", "settings", "Settings",

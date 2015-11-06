@@ -26,6 +26,7 @@ http://www.swi-prolog.org/download/swish/swish-bower-components.zip.
 Unpack the zip file, maintaining the directory structure, from the swish
 root directory to create the directory web/bower_components.
 
+Last updated: Jun 28, 2015: Added D3.js and C3.js
 
 ### Get the latest SWI-Prolog
 
@@ -37,8 +38,7 @@ you            need            the             [nightly            build
 system    from    the     current      git     development    repository
 [swipl-devel.git](https://github.com/SWI-Prolog/swipl-devel).
 
-Nov 6, 2014: release 7.1.26 fully supports the current SWISH.
-
+Jul 5, 2015: SWI-Prolog 7.3.4 supports SWISH completely.
 
 ## Running SWISH
 
