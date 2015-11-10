@@ -291,6 +291,21 @@ swish_page(Options) -->
 
 swish_navbar(Options) -->
 	swish_resources,
+	html(div([id('navbarhelp'),style('height:23px;margin: 10px 5px;text-align:center;')],
+	[span([style('color:darkblue')],['TRILL']),
+	span([style('color:maroon')],[' on ']),
+	span([style('color:darkblue')],['SWI']),
+	span([style('color:maroon')],['SH']),
+	' is a web application for a Javascript-enabled browser',
+	' which embeds the tableau reasoner TRILL.',
+	&(nbsp), &(nbsp),
+	a([href('/help/about.html'),target('_blank')],['About']),
+	&(nbsp), &(nbsp),
+	a([href('/help/help.html'),target('_blank')],['Help']),
+	&(nbsp), &(nbsp),
+	a([id('dismisslink'),href('')],['Dismiss'])
+	])
+	),
 	html(nav([ class([navbar, 'navbar-default']),
 		   role(navigation)
 		 ],

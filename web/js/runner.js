@@ -698,7 +698,7 @@ define([ "jquery", "config", "preferences",
       if ( options.projection ) {
 	var formel;
 	var format = options.format||"prolog";
-	var query = data.query.query.replace(/\.\s*$/,"");
+	var query = "parse,query_expand(" + data.query.query.replace(/\.\s*$/,"")+ ")";
 
 	function attr(name,value) {
 	  return $.el.input({type:"hidden", name:name, value:value});

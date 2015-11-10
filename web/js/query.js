@@ -268,16 +268,16 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
       switch ( wrapper ) {
         case "Aggregate (count all)":
 	  return wrapQuery("aggregate_all(count, ", ", Count)");
-        case "Order by":
+        /*case "Order by":
 	  return wrapQuery("order_by(["+order(vars)+"], ", ")");
         case "Distinct":
-	  return wrapQuery("distinct(["+vars.join(",")+"], ", ")");
+	  return wrapQuery("distinct(["+vars.join(",")+"], ", ")");*/
         case "Limit":
 	  return wrapQuery("limit(10, ", ")");
         case "Time":
 	  return wrapQuery("time(", ")");
-        case "Debug (trace)":
-	  return wrapQuery("trace, ", "");
+        /*case "Debug (trace)":
+	  return wrapQuery("trace, ", "");*/
 	default:
 	  alert("Unknown wrapper: \""+wrapper+"\"");
       }
@@ -384,13 +384,13 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
     var cls = "aggregate";
     var list = options.aggregates ||
       [ "Aggregate (count all)",
-	"--",
+	/*"--",
 	"Order by",
-	"Distinct",
+	"Distinct",*/
 	"Limit",
 	"--",
-	"Time",
-	"Debug (trace)"
+	"Time"/*,
+	"Debug (trace)"*/
       ];
     var ul;
 

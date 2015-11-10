@@ -2,18 +2,13 @@
 
 <html>
   <head>
-  <title>Caveats of the web version of SWI-Prolog</title>
+  <title>Caveats of the web version of TRILL and SWI-Prolog</title>
   </head>
   <body>
-<h2>Table of Contents</h2>
-                <ul>
-                    <li><a href="#sandboxing">Sandboxing</a></li>
-                    <li><a href="#io">Input and output</a></li>
-		</ul>
 
 <h2 id="sandboxing">Sandboxing</h2>
 <p>
-SWISH cannot provide unrestricted access to Prolog because Prolog gives
+TRILL on SWISH cannot provide unrestricted access to Prolog because Prolog gives
 unrestricted access to the operating system.  Therefore, SWISH examines
 each goal on safety before execution.  This process unfolds the call-tree
 and verifies all called predicates against a whitelist.  It fails on three
@@ -22,8 +17,7 @@ occasions:
 
   <ul>
     <li>If insufficient information is available to decide what
-        will be called.  E.g., <code>?- read(X), call(X).</code>
-	Such errors are raised as <em>instantiation errors</em>.
+        will be called. Such errors are raised as <em>instantiation errors</em>.
     <li>If a predicate is found that is not whitelisted.  Such
         errors are raised as <em>permission errors</em>
     <li>If a called predicate is not defined.  Such errors are
@@ -37,7 +31,7 @@ Note that the whitelist is incomplete, i.e., there are many
 predicates that can be considered safe that are not on the list.
 Please report such omissions as bugs.
 </p>
-		<h2 id="io">Input and output</h2>
+<!--		<h2 id="io">Input and output</h2>
 <p>
 Normal read and write do not work in the web environment.  A number
 of normal Prolog predicates are redefined to provide basic I/O.  Other
@@ -52,6 +46,6 @@ server's console.
     <li>format/1, format/2
     <li>message_hook/3, redirecting all system messages.
   </ul>
-
+-->
 </body>
 </html>
