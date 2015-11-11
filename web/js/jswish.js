@@ -64,8 +64,12 @@ preferences.setDefault("emacs-keybinding", false);
 	}
       },
       "Edit":
-      { "Clear messages": function() {
+      { /*"Clear messages": function() {
 	  menuBroadcast("clearMessages");
+	},*/
+	"Edit with WebProtégé": function() {           //funzione aggiunta
+	  //window.open("http://127.0.0.1:8080/webprotege/");
+	  menuBroadcast("dialog", {title: "Coming Soon!",	body:  "We are working to allow the use of WebProtégé as editor of knowledge bases. The update date rapidly approaches!" });
 	},
 	"Changes": "--",
 	"View changes": function() {
