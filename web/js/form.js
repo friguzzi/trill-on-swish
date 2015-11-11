@@ -215,19 +215,19 @@ define([ "jquery", "config", "laconic", "tagmanager" ],
       limit: function(limit, distinct) {
 	var elem =
 	$.el.div({class:"form-group"},
-		 label("name", "Distinct | limit"),
+		 label("name", "Limit"),
 		 $.el.div({class:"col-xs-10"},
-			  $.el.div({class:"input-group"},
+			  /*$.el.div({class:"input-group"},
 				   $.el.span({class:"input-group-addon",
 				              title:"If checked only return distinct results"
 				             },
 					     checkbox("distinct",
 						      { checked: distinct
-						      })),
+						      })),*/
 				   textInput("limit",
 					     {placeholder:"Maximum result count (blank for unlimited)",
 					      title:"Limit results",
-					      value:limit}))));
+					      value:limit}))); //));
 	return elem;
       },
 

@@ -60,7 +60,7 @@ trill_on_swish:term_expansion(:- include(FileIn), Expansion) :-
 		          'trill_on_swish included'(File),
 		          (:- include(stream(Id, Stream, [close(true)])))
 			],
-	    setting(web_storage:directory, Store),
+	    setting(trill_on_swish_web_storage:directory, Store),
 	    add_extension(File, FileExt),
 	    catch(gitty_data(Store, FileExt, Data, _Meta), _, fail),
 	    atom_concat('trill_on_swish://', FileExt, Id),
@@ -109,7 +109,7 @@ prolog_colour:term_colours((:- include(File)),
 			   ]) :-
 	debug(include, 'Classifying ~p', [File]),
 	(   atomic(File),
-	    setting(web_storage:directory, Store),
+	    setting(trill_on_swish_web_storage:directory, Store),
 	    add_extension(File, FileExt),
 	    catch(gitty_commit(Store, FileExt, _Meta), _, fail)
 	->  atom_concat('trill_on_swish://', FileExt, Id),
@@ -129,7 +129,7 @@ prolog_colour:term_colours((:- include(File)),
 
 prolog:xref_open_source(File, Stream) :-
 	atom_concat('trill_on_swish://', Name, File),
-	setting(web_storage:directory, Store),
+	setting(trill_on_swish_web_storage:directory, Store),
 	catch(gitty_data(Store, Name, Data, _Meta), _, fail),
 	open_string(Data, Stream).
 

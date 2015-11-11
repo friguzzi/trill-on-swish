@@ -543,7 +543,7 @@ prolog_clause:open_source(File, Stream) :-
 	pengine_property(Pengine, source(File, Source)),
 	open_string(Source, Stream).
 prolog_clause:open_source(File, Stream) :-
-	atom_concat('trill_on_trill_on_swish://', GittyFile, File), !,
+	atom_concat('trill_on_swish://', GittyFile, File), !,
 	storage_file(GittyFile, Data, _Meta),
 	open_string(Data, Stream).
 

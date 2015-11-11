@@ -56,7 +56,7 @@ two sources:
 % make example(File) find the example data
 user:file_search_path(example, trill_on_swish(examples)).
 % make SWISH serve /example/File as example(File).
-trill_on_swish_config:source_alias(example, [access(read), search('*.{pl,swinb}')]).
+trill_on_swish_config:source_alias(example, [access(read), search('*.{owl,swinb}')]).
 
 :- http_handler(trill_on_swish(list_examples),
 		list_examples, [id(swish_examples)]).
@@ -101,7 +101,7 @@ index_json(HREF, Dir, JSON) :-
 	read_file_to_json(File, JSON0),
 	maplist(add_href(HREF), JSON0, JSON).
 index_json(HREF, Dir, JSON) :-
-	string_concat(Dir, "/*.pl", Pattern),
+	string_concat(Dir, "/*.owl", Pattern),
 	expand_file_name(Pattern, Files),
 	maplist(ex_file_json(HREF), Files, JSON).
 
@@ -144,7 +144,7 @@ storage_examples(List) :-
 storage_examples([]).
 
 gitty_example(json{title:Title, file:File, type:"store"}) :-
-	setting(web_storage:directory, Store),
+	setting(trill_on_swish_web_storage:directory, Store),
 	gitty_file(Store, File, _),
 	gitty_commit(Store, File, Meta),
 	Meta.get(example) == true,

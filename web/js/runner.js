@@ -303,7 +303,7 @@ define([ "jquery", "config", "preferences",
 	    {class:"runner-title ui-widget-header"},
 	    closeButton(),
 	    iconizeButton(),
-	    csvButton(),
+	    //csvButton(),
 	    stateButton(),
 	    qspan));
 	} else {

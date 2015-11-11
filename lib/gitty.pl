@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(gitty,
+:- module(trill_on_swish_gitty,
 	  [ gitty_file/3,		% +Store, ?Name, ?Hash
 	    gitty_create/5,		% +Store, +Name, +Data, +Meta, -Commit
 	    gitty_update/5,		% +Store, +Name, +Data, +Meta, -Commit

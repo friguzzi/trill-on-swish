@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(web_storage,
+:- module(trill_on_swish_web_storage,
 	  [ storage_file/1,			% ?File
 	    storage_file/3			% +File, -Data, -Meta
 	  ]).
@@ -59,7 +59,7 @@ their own version.
 
 :- setting(directory, atom, storage, 'The directory for storing files.').
 
-:- http_handler(trill_on_swish('p/'), web_storage, [ id(web_storage), prefix ]).
+:- http_handler(trill_on_swish('tos/'), web_storage, [ id(web_storage), prefix ]).
 
 %%	web_storage(+Request) is det.
 %
