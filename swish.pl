@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(swish_app,
+:- module(trill_on_swish_app,
 	  [
 	  ]).
 :- use_module(library(pengines)).
@@ -51,7 +51,7 @@
 		 *	       PATHS		*
 		 *******************************/
 
-user:file_search_path(swish_web, swish(web)).
+user:file_search_path(swish_web, trill_on_swish(web)).
 user:file_search_path(js,        swish_web(js)).
 user:file_search_path(css,       swish_web(css)).
 user:file_search_path(icons,     swish_web(icons)).
@@ -82,8 +82,8 @@ http:location(swish, root(.), [priority(-100)]).
 		 *******************************/
 
 :- multifile
-	swish_config:config/2,
-	swish_config:source_alias/2.
+	trill_on_swish_config:config/2,
+	trill_on_swish_config:source_alias/2.
 
 %%	swish_config:config(?Config, ?Value) is nondet.
 %
@@ -114,15 +114,15 @@ http:location(swish, root(.), [priority(-100)]).
 %	  loaded.
 
 % Allow other code to overrule the defaults from this file.
-term_expansion(swish_config:config(Config, _Value), []) :-
-	clause(swish_config:config(Config, _), _).
+term_expansion(trill_on_swish_config:config(Config, _Value), []) :-
+	clause(trill_on_swish_config:config(Config, _), _).
 
-swish_config:config(show_beware,        true).
-swish_config:config(tabled_results,     false).
-swish_config:config(application,        swish).
-swish_config:config(csv_formats,        [prolog]).
-swish_config:config(community_examples, false).
-swish_config:config(public_access,      false).
+trill_on_swish_config:config(show_beware,        true).
+trill_on_swish_config:config(tabled_results,     false).
+trill_on_swish_config:config(application,        swish).
+trill_on_swish_config:config(csv_formats,        [prolog]).
+trill_on_swish_config:config(community_examples, false).
+trill_on_swish_config:config(public_access,      false).
 
 %%	swish_config:source_alias(Alias, Options) is nondet.
 %
@@ -144,10 +144,10 @@ swish_config:config(public_access,      false).
 	pengines:prepare_module/3.
 
 :- pengine_application(swish).
-:- use_module(swish:lib/render).
-:- use_module(swish:lib/trace).
-:- use_module(swish:lib/jquery).
-:- use_module(swish:library(pengines_io)).
+:- use_module(trill_on_swish:lib/render).
+:- use_module(trill_on_swish:lib/trace).
+:- use_module(trill_on_swish:lib/jquery).
+:- use_module(trill_on_swish:library(pengines_io)).
 pengines:prepare_module(Module, swish, _Options) :-
 	pengines_io:pengine_bind_io_to_html(Module).
 
@@ -160,10 +160,10 @@ pengines:prepare_module(Module, swish, _Options) :-
 
 % load rendering modules
 
-:- use_module(swish(lib/render/sudoku),	  []).
-:- use_module(swish(lib/render/chess),	  []).
-:- use_module(swish(lib/render/table),	  []).
-:- use_module(swish(lib/render/codes),	  []).
-:- use_module(swish(lib/render/svgtree),  []).
-:- use_module(swish(lib/render/graphviz), []).
-:- use_module(swish(lib/render/c3),	  []).
+:- use_module(trill_on_swish(lib/render/sudoku),	  []).
+:- use_module(trill_on_swish(lib/render/chess),	  []).
+:- use_module(trill_on_swish(lib/render/table),	  []).
+:- use_module(trill_on_swish(lib/render/codes),	  []).
+:- use_module(trill_on_swish(lib/render/svgtree),  []).
+:- use_module(trill_on_swish(lib/render/graphviz), []).
+:- use_module(trill_on_swish(lib/render/c3),	  []).
