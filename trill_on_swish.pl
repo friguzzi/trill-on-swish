@@ -51,21 +51,21 @@
 		 *	       PATHS		*
 		 *******************************/
 
-user:file_search_path(swish_web, trill_on_swish(web)).
-user:file_search_path(js,        swish_web(js)).
-user:file_search_path(css,       swish_web(css)).
-user:file_search_path(icons,     swish_web(icons)).
+user:file_search_path(trill_on_swish_web, trill_on_swish(web)).
+user:file_search_path(js,        trill_on_swish_web(js)).
+user:file_search_path(css,       trill_on_swish_web(css)).
+user:file_search_path(icons,     trill_on_swish_web(icons)).
 
 set_swish_path :-
-	absolute_file_name(swish('swish.pl'), _,
+	absolute_file_name(trill_on_swish('swish.pl'), _,
 			   [file_errors(fail), access(read)]), !.
 set_swish_path :-
 	prolog_load_context(directory, Dir),
-	asserta(user:file_search_path(swish, Dir)).
+	asserta(user:file_search_path(trill_on_swish, Dir)).
 
 :- set_swish_path.
 
-http:location(swish, root(.), [priority(-100)]).
+http:location(trill_on_swish, root(.), [priority(-100)]).
 
 
 		 /*******************************
@@ -119,7 +119,7 @@ term_expansion(trill_on_swish_config:config(Config, _Value), []) :-
 
 trill_on_swish_config:config(show_beware,        true).
 trill_on_swish_config:config(tabled_results,     false).
-trill_on_swish_config:config(application,        swish).
+trill_on_swish_config:config(application,        trill_on_swish).
 trill_on_swish_config:config(csv_formats,        [prolog]).
 trill_on_swish_config:config(community_examples, false).
 trill_on_swish_config:config(public_access,      false).
@@ -143,12 +143,12 @@ trill_on_swish_config:config(public_access,      false).
 :- multifile
 	pengines:prepare_module/3.
 
-:- pengine_application(swish).
+:- pengine_application(trill_on_swish).
 :- use_module(trill_on_swish:lib/render).
 :- use_module(trill_on_swish:lib/trace).
 :- use_module(trill_on_swish:lib/jquery).
 :- use_module(trill_on_swish:library(pengines_io)).
-pengines:prepare_module(Module, swish, _Options) :-
+pengines:prepare_module(Module, trill_on_swish, _Options) :-
 	pengines_io:pengine_bind_io_to_html(Module).
 
 % Libraries that are nice to have in SWISH, but cannot be loaded

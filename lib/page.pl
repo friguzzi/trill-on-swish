@@ -632,7 +632,7 @@ swish_resource(Type, ID) :-
 
 alt(js,  'trill_on_swish-min',     trill_on_swish_web('js/trill_on_swish-min.js')) :-
 	\+ debugging(nominified).
-alt(js,  'swish',         trill_on_swish_web('js/swish.js')).
+alt(js,  'trill_on_swish',         trill_on_swish_web('js/trill_on_swish.js')).
 alt(css, 'trill_on_swish-min.css', trill_on_swish_web('css/trill_on_swish-min.css')) :-
 	\+ debugging(nominified).
 alt(css, 'swish.css',     trill_on_swish_web('css/swish.css')).

@@ -20,4 +20,11 @@ server(Port) :-
 	http_server(http_dispatch,
 		    [ port(Port),
 		      workers(16)
-		    ]).
+		    ]),
+	thread_get_message(stop).
+		    
+
+:- on_signal(hup, _, hup).
+
+hup(_Signal) :-
+        thread_send_message(main, stop).
