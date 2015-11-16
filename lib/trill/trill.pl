@@ -15,9 +15,9 @@
 :- use_module(library(pengines)).
 %:- use_module(library(tries)).
 %:- load_foreign_files(['cplint-swi'],[],init_my_predicates).
-:-use_foreign_library(bddem,install).
+%:-use_foreign_library(bddem,install).
 
-%:- use_foreign_library(foreign(bddem),install).
+:- use_foreign_library(foreign(bddem),install).
 
 :- thread_local %get_var_n/5
         rule_n/1,
@@ -1065,14 +1065,14 @@ blocked(Ind,(ABox,T)):-
 
 check_block(Ind,(ABox,(T,RBN,RBR))):-
   blockable(Ind,(ABox,(T,RBN,RBR))),
-  transpose(T,T1),
+  transpose_ugraph(T,T1),
   ancestor(Ind,T,A),
   neighbours(Ind,T1,N),
   check_block1(Ind,A,N,(ABox,(T1,RBN,RBR))),!.
   
 check_block(Ind,(ABox,(T,RBN,RBR))):-
   blockable(Ind,(ABox,(T,RBN,RBR))),
-  transpose(T,T1),
+  transpose_ugraph(T,T1),
   neighbours(Ind,T1,N),
   check_block2(N,(ABox,(T,RBN,RBR))),!.
   
@@ -1099,7 +1099,7 @@ check_block2([H|Tail],(ABox,(T,RBN,RBR))):-
 
 %---------------
 indirectly_blocked(Ind,(ABox,(T,RBN,RBR))):-
-  transpose(T,T1),
+  transpose_ugraph(T,T1),
   neighbours(Ind,T1,N),
   member(A,N),
   blocked(A,(ABox,(T,RBN,RBR))),!.
@@ -1363,7 +1363,7 @@ remove_node_to_table(S,T0,T1):-
 merge_tabs(X,Y,(T0,RBN0,RBR0),(T,RBN,RBR)):-
   (neighbours(X,T0,LSX0)->assign(LSX0,LSX);assign([],LSX)),
   (neighbours(Y,T0,LSY0)->assign(LSY0,LSY);assign([],LSY)),
-  transpose(T0,TT),
+  transpose_ugraph(T0,TT),
   (neighbours(X,TT,LPX0)->assign(LPX0,LPX);assign([],LPX)),
   (neighbours(Y,TT,LPY0)->assign(LPY0,LPY);assign([],LPY)),
   flatten([X,Y],L0),
@@ -1380,7 +1380,7 @@ remove_nodes(X,Y,Tabs0,Tabs):-
 
 remove_node(X,(T0,RBN0,RBR0),(T,RBN,RBR)):-
   (neighbours(X,T0,LS0)->assign(LS0,LS);assign([],LS)),
-  transpose(T0,TT),
+  transpose_ugraph(T0,TT),
   (neighbours(X,TT,LP0)->assign(LP0,LP);assign([],LP)),
   remove_node1(X,LS,RBN0,RBR0,RBN1,RBR1),
   remove_node2(X,LP,RBN1,RBR1,RBN,RBR),
@@ -1644,7 +1644,7 @@ min_length([H|T],MP):-
  
 */
 ancestor(Ind,T,AN):-
-  transpose(T,T1),
+  transpose_ugraph(T,T1),
   ancestor1([Ind],T1,[],AN).
 
 ancestor1([],_,A,A).

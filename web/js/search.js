@@ -361,7 +361,7 @@ define([ "jquery", "config", "typeahead" ],
 						 showAllMatches: true
 					       });
 		} else if ( datum.alias !== undefined ) {
-		  var url = encodeURI("/"+datum.alias+
+		  var url = encodeURI("/trill_on_swish/"+datum.alias+
 				      "/"+datum.file+
 				      "."+datum.ext);
 		  var play = { url:url, line:datum.line };

@@ -6,7 +6,7 @@ JQ=jquery.jsdoc
 CONF=conf.json
 MAIN=trill_on_swish.js
 
-all:	doc min require.js
+all:	min require.js
 
 doc::	$(CONF) $(JQ) $(JS)
 	-jsdoc -p -c $(CONF) $(JQ) $(JS)

@@ -134,7 +134,7 @@ swish_reply2(_, Options) :-
 swish_reply2(_, Options) :-
 	reply_html_page(
 	    trill_on_swish(main),
-	    [ title('TRILL on SWISH -- SWI-Prolog for SHaring'),
+	    [ title('TRILL on SWISH -- Probabilistic Reasoner for Description Logics in Prolog'),
 	      link([ rel('shortcut icon'),
 		     href('/icons/favicon.ico')
 		   ]),
@@ -291,7 +291,7 @@ swish_page(Options) -->
 
 swish_navbar(Options) -->
 	swish_resources,
-	html(div([id('navbarhelp'),style('height:23px;margin: 10px 5px;text-align:center;')],
+	html(div([id('navbarhelp'),style('height:23px;margin: 10px 5px;text-align:center;overflow-y: scroll;')],
 	[span([style('color:darkblue')],['TRILL']),
 	span([style('color:maroon')],[' on ']),
 	span([style('color:darkblue')],['SWI']),
