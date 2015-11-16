@@ -10,7 +10,7 @@ trill_on_swish-min.css: $(CSS)
 	cleancss -o $@ $(MAIN)
 	swipl css-inline.pl $@
 
-trill_on_swish-min.css.gz: swish-min.css
+trill_on_swish-min.css.gz: trill_on_swish-min.css
 	gzip < $< > $@
 
 clean::
