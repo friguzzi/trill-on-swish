@@ -87,7 +87,7 @@ logged_in(_Request, _User) :-
 
 %pengines:not_sandboxed(_User, _Application).
 
-pengines:authentication_hook(_Request, _Application, anonymous) :-
+pengines:authentication_hook(_Request, _Application, anonymous) :- !.
 
 pengines:not_sandboxed(_User, _Application).
 
