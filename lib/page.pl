@@ -139,7 +139,7 @@ swish_reply2(_, Options) :-
 		     href('/icons/favicon.ico')
 		   ]),
 	      link([ rel('apple-touch-icon'),
-		     href('/icons/swish-touch-icon.png')
+		     href('/icons/trill-touch-icon.png')
 		   ])
 	    ],
 	    \swish_page(Options)).
