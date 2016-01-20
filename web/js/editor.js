@@ -525,7 +525,7 @@ define([ "cm/lib/codemirror",
 						  pre));
 		       },
 		       error: function(jqXHDR) {
-			 modal.ajaxError(jqXHR);
+			 modal.ajaxError(jqXHDR);
 		       }
 		     });
       //}

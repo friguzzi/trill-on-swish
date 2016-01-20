@@ -523,10 +523,8 @@ define([ "jquery", "config", "preferences",
 	}
       }
 
-      console.log(receiver);
       var result = receiver[request.method].apply(receiver, request.arguments);
-      console.log(result);
-
+      
       prompt.pengine.respond(Pengine.stringify(result));
     },
 

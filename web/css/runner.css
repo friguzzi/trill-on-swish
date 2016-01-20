@@ -134,7 +134,7 @@ div.runner-title > button:hover {
 
 span.runner-state.idle,
 span.runner-state.wait-next,
-span.runner-state.wait-input { background-image: url("../icons/logo.png");    }
+span.runner-state.wait-input { background-image: url("../icons/red_bird.svg");    }
 span.runner-state.wait-debug { background-image: url("../icons/debug.png");   }
 span.runner-state.running    { background-image: url("../icons/running.gif"); }
 span.runner-state.true,

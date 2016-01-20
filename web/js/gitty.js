@@ -30,7 +30,7 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 	data.commits[meta.commit] = meta;
 	data.commit  = meta.commit;
 	data.editor  = options.editor;
-
+	
 	function tab(label, active, id, disabled) {
 	  var attrs = {role:"presentation"};
 	  var classes = [];
@@ -180,12 +180,13 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 	  var row = elem.find("tr.success");
 	  if ( row.length == 1 ) {
 	    var commit = row.data('commit');
-
+	    
 	    if ( data.commits[commit].symbolic == "HEAD" )
 	      file = data.commits[commit].name;
 	    else
 	      file = commit;
-
+	      
+	    
 	    elem.parents(".trill_on_swish").trill_on_swish('playFile', file);
 	    $("#ajaxModal").modal('hide');
 	  }
