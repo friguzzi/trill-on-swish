@@ -27,41 +27,34 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_gitty,
-	  [ gitty_open/2,		% +Store, +Options
-	    gitty_close/1,		% +Store
-
-	    gitty_file/3,		% +Store, ?Name, ?Hash
+:- module(trill_on_swish_gitty_bdb,
+	  [ gitty_file/3,		% +Store, ?Name, ?Hash
 	    gitty_create/5,		% +Store, +Name, +Data, +Meta, -Commit
 	    gitty_update/5,		% +Store, +Name, +Data, +Meta, -Commit
 	    gitty_commit/3,		% +Store, +Name, -Meta
 	    gitty_data/4,		% +Store, +Name, -Data, -Meta
 	    gitty_history/4,		% +Store, +Name, -History, +Options
 	    gitty_hash/2,		% +Store, ?Hash
-
 	    gitty_reserved_meta/1,	% ?Key
+	    gitty_close/1,		% +Store
 
 	    gitty_diff/4,		% +Store, ?Start, +End, -Diff
 
 	    data_diff/3,		% +String1, +String2, -Diff
 	    udiff_string/2		% +Diff, -String
 	  ]).
+:- use_module(library(zlib)).
 :- use_module(library(sha)).
 :- use_module(library(lists)).
 :- use_module(library(apply)).
 :- use_module(library(option)).
 :- use_module(library(process)).
 :- use_module(library(debug)).
-:- use_module(library(error)).
-:- use_module(library(filesex)).
+:- use_module(library(dcg/basics)).
+:- use_module(library(memfile)).
+:- use_module(library(bdb)).
 
-:- if(exists_source(library(bdb))).
-:- use_module(gitty_driver_bdb, []).
-:- endif.
-:- use_module(gitty_driver_files, []).
-
-
-/** <module> Single-file GIT like version system
+/** <module> Single-file GIT like version system, BDB version
 
 This library provides a first implementation  of a lightweight versioned
 file store with dynamic meta-data. The   store  is partly modelled after
@@ -84,63 +77,81 @@ The key =commit= is reserved and returned   as  part of the meta-data of
 the newly created (gitty_create/5) or updated object (gitty_update/5).
 */
 
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+The BDB database file contains two databases:
+
+  - =heads= maps a file name to the hash of the last object
+  - =objects= contains the object blobs.
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+
 :- dynamic
-	gitty_store_type/2.		% +Store, -Module
+	bdb_env/2,			% Store, Env
+	bdb_db/3.			% Store, Database, Handle
+:- volatile
+	bdb_env/2,
+	bdb_db/3.
 
-%%	gitty_open(+Store, +Options) is det.
+
+bdb_handle(Store, Database, Handle) :-
+	bdb_db(Store, Database, Handle), !.
+bdb_handle(Store, Database, Handle) :-
+	with_mutex(gitty_bdb, bdb_handle_sync(Store, Database, Handle)).
+
+bdb_handle_sync(Store, Database, Handle) :-
+	bdb_db(Store, Database, Handle), !.
+bdb_handle_sync(Store, Database, Handle) :-
+	bdb_store(Store, Env),
+	db_types(Database, KeyType, ValueType),
+	bdb_open(Database, update, Handle,
+		 [ environment(Env),
+		   key(KeyType),
+		   value(ValueType)
+		 ]),
+	asserta(bdb_db(Store, Database, Handle)).
+
+db_types(heads,   atom, atom).		% Name --> Hash
+db_types(objects, atom, c_blob).	% Hash --> Blob
+
+%%	bdb_store(+Store, -Env) is det.
 %
-%	Open a gitty store according to Options.  Defined
-%	options are:
-%
-%	  - driver(+Driver)
-%	  Backend driver to use.  One of =files= or =bdb=.  When
-%	  omitted and the store exists, the current store is
-%	  examined.  If the store does not exist, the default
-%	  is =files=.
+%	Get the BDB environment for Store.
 
-gitty_open(Store, Options) :-
-	(   exists_directory(Store)
-	->  true
-	;   existence_error(directory, Store)
-	),
-	(   option(driver(Driver), Options)
-	->  true
-	;   default_driver(Store, Driver)
-	),
-	set_driver(Store, Driver).
+bdb_store(Store, Env) :-
+	bdb_env(Store, Env), !.
+bdb_store(Store, Env) :-
+	with_mutex(gitty_bdb, bdb_store_sync(Store, Env)).
 
-default_driver(Store, Driver) :-
-	directory_file_path(Store, ref, RefDir),
-	exists_directory(RefDir), !,
-	Driver = files.
-default_driver(Store, Driver) :-
-	directory_file_path(Store, heads, RefDir),
-	exists_file(RefDir), !,
-	Driver = bdb.
-default_driver(_, files).
+bdb_store_sync(Store, Env) :-
+	bdb_env(Store, Env), !.
+bdb_store_sync(Store, Env) :-
+	ensure_directory(Store),
+	bdb_init(Env,
+		 [ home(Store),
+		   create(true),
+		   thread(true),
+		   init_txn(true)
+		 ]),
+	asserta(bdb_env(Store, Env)).
 
-set_driver(Store, Driver) :-
-	must_be(atom, Store),
-	(   driver_module(Driver, Module)
-	->  retractall(gitty_store_type(Store, _)),
-	    asserta(gitty_store_type(Store, Module))
-	;   domain_error(gitty_driver, Driver)
-	).
-
-driver_module(files, gitty_driver_files).
-driver_module(bdb,   gitty_driver_bdb).
-
-store_driver_module(Store, Module) :-
-	atom(Store), !,
-	gitty_store_type(Store, Module).
+ensure_directory(Dir) :-
+	exists_directory(Dir), !.
+ensure_directory(Dir) :-
+	make_directory(Dir).
 
 %%	gitty_close(+Store) is det.
 %
-%	Close access to the Store.
+%	Close the BDB environment associated with a gitty store
 
 gitty_close(Store) :-
-	store_driver_module(Store, M),
-	M:gitty_close(Store).
+	with_mutex(gitty_bdb, gitty_close_sync(Store)).
+
+gitty_close_sync(Store) :-
+	(   retract(bdb_env(Store, Env))
+	->  bdb_close_environment(Env)
+	;   true
+	).
+
 
 %%	gitty_file(+Store, ?File, ?Head) is nondet.
 %
@@ -148,8 +159,11 @@ gitty_close(Store) :-
 %	revision.
 
 gitty_file(Store, Head, Hash) :-
-	store_driver_module(Store, M),
-	M:gitty_file(Store, Head, Hash).
+	bdb_handle(Store, heads, H),
+	(   nonvar(Head)
+	->  bdb_get(H, Head, Hash)
+	;   bdb_enum(H, Head, Hash)
+	).
 
 %%	gitty_create(+Store, +Name, +Data, +Meta, -Commit) is det.
 %
@@ -183,7 +197,7 @@ gitty_update(Store, Name, Data, Meta, CommitRet) :-
 	gitty_file(Store, Name, OldHead),
 	(   _{previous:OldHead} >:< Meta
 	->  true
-	;   throw(error(gitty(commit_version(Name, OldHead, Meta.previous)), _))
+	;   throw(error(gitty(commit_version(OldHead, Meta.previous)), _))
 	),
 	load_plain_commit(Store, OldHead, OldMeta),
 	get_time(Now),
@@ -217,8 +231,23 @@ gitty_update(Store, Name, Data, Meta, CommitRet) :-
 %	       by someone else.
 
 gitty_update_head(Store, Name, OldCommit, NewCommit) :-
-	store_driver_module(Store, Module),
-	Module:gitty_update_head(Store, Name, OldCommit, NewCommit).
+	bdb_store(Store, Env),
+	bdb_transaction(
+	    Env,
+	    gitty_update_head_sync(Store, Name, OldCommit, NewCommit)).
+
+gitty_update_head_sync(Store, Name, OldCommit, NewCommit) :-
+	bdb_handle(Store, heads, BDB),
+	(   OldCommit == (-)
+	->  (   bdb_get(BDB, Name, _)
+	    ->	throw(error(gitty(file_exists(Name),_)))
+	    ;	bdb_put(BDB, Name, NewCommit)
+	    )
+	;   (   bdb_get(BDB, Name, OldCommit)
+	    ->	bdb_put(BDB, Name, NewCommit)
+	    ;	throw(error(gitty(not_at_head(Name, OldCommit)), _))
+	    )
+	).
 
 %%	gitty_data(+Store, +NameOrHash, -Data, -Meta) is semidet.
 %
@@ -249,8 +278,8 @@ load_commit(Store, Hash, Meta) :-
 	).
 
 load_plain_commit(Store, Hash, Meta) :-
-	store_driver_module(Store, Module),
-	Module:load_plain_commit(Store, Hash, Meta).
+	load_object(Store, Hash, String),
+	term_string(Meta, String, []).
 
 %%	gitty_history(+Store, +NameOrHash, -History, +Options) is det.
 %
@@ -325,17 +354,33 @@ list_prefix(N, [H|T0], [H|T]) :-
 %	to GC.
 
 save_object(Store, Data, Type, Hash) :-
+	sha_new_ctx(Ctx0, []),
 	size_in_bytes(Data, Size),
 	format(string(Hdr), '~w ~d\u0000', [Type, Size]),
-	sha_new_ctx(Ctx0, []),
 	sha_hash_ctx(Ctx0, Hdr, Ctx1, _),
 	sha_hash_ctx(Ctx1, Data, _, HashBin),
 	hash_atom(HashBin, Hash),
-	store_object(Store, Hash, Hdr, Data).
+	compress_string(Hdr, Data, Object),
+	bdb_handle(Store, objects, BDB),
+	bdb_put(BDB, Hash, Object).
 
-store_object(Store, Hash, Hdr, Data) :-
-	store_driver_module(Store, Module),
-	Module:store_object(Store, Hash, Hdr, Data).
+compress_string(Header, Data, String) :-
+	setup_call_cleanup(
+	    new_memory_file(MF),
+	    ( setup_call_cleanup(
+		  open_memory_file(MF, write, Out, [encoding(utf8)]),
+		  setup_call_cleanup(
+		      zopen(Out, OutZ, [ format(gzip),
+					 close_parent(false)
+				       ]),
+		      format(OutZ, '~s~s', [Header, Data]),
+		    close(OutZ)),
+		  close(Out)),
+	      memory_file_to_string(MF, String, octet)
+	    ),
+	    free_memory_file(MF)),
+	asserta(data(Header, Data, String)).
+
 
 size_in_bytes(Data, Size) :-
 	setup_call_cleanup(
@@ -345,21 +390,6 @@ size_in_bytes(Data, Size) :-
 	    ),
 	    close(Out)).
 
-
-%%	fsck_object(+Store, +Hash) is semidet.
-%
-%	Test the integrity of object Hash in Store.
-
-:- public fsck_object/2.
-fsck_object(Store, Hash) :-
-	load_object(Store, Hash, Data, Type, Size),
-	format(string(Hdr), '~w ~d\u0000', [Type, Size]),
-	sha_new_ctx(Ctx0, []),
-	sha_hash_ctx(Ctx0, Hdr, Ctx1, _),
-	sha_hash_ctx(Ctx1, Data, _, HashBin),
-	hash_atom(HashBin, Hash).
-
-
 %%	load_object(+Store, +Hash, -Data) is det.
 %%	load_object(+Store, +Hash, -Data, -Type, -Size) is det.
 %
@@ -368,24 +398,51 @@ fsck_object(Store, Hash) :-
 load_object(Store, Hash, Data) :-
 	load_object(Store, Hash, Data, _, _).
 load_object(Store, Hash, Data, Type, Size) :-
-	store_driver_module(Store, Module),
-	Module:load_object(Store, Hash, Data, Type, Size).
+	bdb_handle(Store, objects, BDB),
+	bdb_get(BDB, Hash, Blob),
+	setup_call_cleanup(
+	    open_string(Blob, In),
+	    setup_call_cleanup(
+		zopen(In, InZ, [ format(gzip),
+				 close_parent(false)
+			       ]),
+		( set_stream(InZ, encoding(utf8)),
+		  read_object(InZ, Data, Type, Size)
+		),
+		close(InZ)),
+	    close(In)).
+
+read_object(In, Data, Type, Size) :-
+	get_code(In, C0),
+	read_hdr(C0, In, Hdr),
+	phrase((nonblanks(TypeChars), " ", integer(Size)), Hdr),
+	atom_codes(Type, TypeChars),
+	read_string(In, _, Data).
+
+read_hdr(C, In, [C|T]) :-
+	C > 0, !,
+	get_code(In, C1),
+	read_hdr(C1, In, T).
+read_hdr(_, _, []).
 
 %%	gitty_hash(+Store, ?Hash) is nondet.
 %
 %	True when Hash is an object in the store.
 
 gitty_hash(Store, Hash) :-
-	store_driver_module(Store, Module),
-	Module:gitty_hash(Store, Hash).
+	bdb_handle(Store, objects, BDB),
+	(   nonvar(Hash)
+	->  bdb_get(BDB, Hash, _)
+	;   bdb_enum(BDB, Hash, _)
+	).
 
 %%	delete_object(+Store, +Hash)
 %
 %	Delete an existing object
 
 delete_object(Store, Hash) :-
-	store_driver_module(Store, Module),
-	Module:delete_object(Store, Hash).
+	bdb_handle(Store, objects, BDB),
+	bdb_del(BDB, Hash, _).
 
 %%	gitty_reserved_meta(?Key) is nondet.
 %
@@ -396,32 +453,13 @@ gitty_reserved_meta(time).
 gitty_reserved_meta(data).
 gitty_reserved_meta(previous).
 
-		 /*******************************
-		 *	    FSCK SUPPORT	*
-		 *******************************/
 
-:- public
-	delete_object/2,
-	delete_head/2,
-	set_head/3.
+:- multifile
+	prolog:error_message//1.
 
-%%	delete_head(+Store, +Head) is det.
-%
-%	Delete Head from the administration.  Used if the head is
-%	inconsistent.
-
-delete_head(Store, Head) :-
-	store_driver_module(Store, Module),
-	Module:delete_head(Store, Head).
-
-%%	set_head(+Store, +File, +Head) is det.
-%
-%	Register Head as the Head hash for File, removing possible
-%	old head.
-
-set_head(Store, File, Head) :-
-	store_driver_module(Store, Module),
-	Module:set_head(Store, File, Head).
+prolog:error_message(gitty(not_at_head(Name, _OldCommit))) -->
+	[ 'Gitty: cannot update head for "~w" because it was \c
+	   updated by someone else'-[Name] ].
 
 
 		 /*******************************
@@ -739,19 +777,3 @@ longest(L1, L2, Longest) :-
 	->  Longest = L1
 	;   Longest = L2
 	).
-
-		 /*******************************
-		 *	      MESSAGES		*
-		 *******************************/
-:- multifile
-	prolog:error_message//1.
-
-prolog:error_message(gitty(not_at_head(Name, _OldCommit))) -->
-	[ 'Gitty: cannot update head for "~w" because it was \c
-	   updated by someone else'-[Name] ].
-prolog:error_message(gitty(file_exists(Name))) -->
-	[ 'Gitty: File exists: ~p'-[Name] ].
-prolog:error_message(gitty(commit_version(Name, _Head, _Previous))) -->
-	[ 'Gitty: ~p: cannot update (modified by someone else)'-[Name] ].
-
-

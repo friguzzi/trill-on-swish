@@ -92,6 +92,7 @@ pengines:authentication_hook(_Request, _Application, anonymous) :- !.
 pengines:not_sandboxed(_User, _Application).
 
 
+%%	swish_config:verify_write_access(+Request, +File, +Options)
 
 %%	trill_on_swish_config:verify_write_access(+Request, +File, +Options)
 

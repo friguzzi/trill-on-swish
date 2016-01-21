@@ -190,8 +190,7 @@ define([ "cm/lib/codemirror",
 	  copyData("url");
 	  copyData("title");
 	  copyData("meta");
-	  if ( storage.meta && storage.meta.path )
-	    storage.type = "filesys";
+	  copyData("st_type");
 
 	  data.cm = CodeMirror.fromTextArea(ta, options);
 	} else {
@@ -612,6 +611,16 @@ define([ "cm/lib/codemirror",
     },
 
     /**
+     * Refresh the editor.  This is often needed if it is resized.
+     */
+    refresh: function() {
+      var data = this.data(pluginName);
+      if ( data )
+	data.cm.refresh();
+      return this;
+    },
+
+    /**
      * Remove all inline messages from the editor
      */
     clearMessages: function() {
@@ -645,7 +654,7 @@ define([ "cm/lib/codemirror",
       if ( file.startsWith(prefix) ) {
 	var store = this.data("storage");
 
-	if ( file.slice(prefix.length) == store.file )
+	if ( store && file.slice(prefix.length) == store.file )
 	  return true;
       }
 
@@ -883,9 +892,9 @@ define([ "cm/lib/codemirror",
     label: "Program",
     contentType: "text/x-html",
     order: 100,
-    create: function(dom) {
+    create: function(dom, options) {
       $(dom).addClass("prolog-editor")
-            .prologEditor({save:true})
+            .prologEditor($.extend({save:true}, options))
 	    .prologEditor('makeCurrent');
     }
   };

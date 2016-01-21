@@ -26,7 +26,8 @@ define([ "jquery",
 	 "term",
 	 "laconic",
 	 "d3",
-	 "c3"
+	 "c3",
+	 "svg-pan-zoom"
        ], function($, config, preferences, history, modal) {
 
 preferences.setDefault("semantic-highlighting", false);
@@ -273,11 +274,11 @@ preferences.setDefault("emacs-keybinding", false);
 
 		 if ( typeof(source) == "string" ) {
 		   msg = { data: source };
-		   msg.type = "external";
+		   msg.st_type = "external";
 		 } else if ( typeof(source) == "object" &&
 			     typeof(source.data) == "string" ) {
 		   msg = source;
-		   msg.type = "filesys";
+		   msg.st_type = "filesys";
 		 } else {
 		   alert("Invalid data");
 		   return;
@@ -384,6 +385,7 @@ preferences.setDefault("emacs-keybinding", false);
     prologSource: function() {
       var list = [];
       var src;
+
       if ( (src=$(".prolog-editor").prologEditor('getSource', "source")) )
 	list.push(src);
       if ( (src=$(".background.prolog.source").text()) )

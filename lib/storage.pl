@@ -61,6 +61,17 @@ their own version.
 
 :- http_handler(trill_on_swish('tos/'), web_storage, [ id(web_storage), prefix ]).
 
+:- initialization open_gittystore.
+
+open_gittystore :-
+	setting(directory, Dir),
+	(   exists_directory(Dir)
+	->  true
+	;   make_directory(Dir)
+	),
+	gitty_open(Dir, []).
+
+
 %%	web_storage(+Request) is det.
 %
 %	Restfull HTTP handler to store data on behalf of the client in a
@@ -236,7 +247,8 @@ storage_get(Request, Format) :-
 
 storage_get(trill_on_swish, Dir, _, FileOrHash, Request) :-
 	gitty_data(Dir, FileOrHash, Code, Meta),
-	swish_reply([code(Code),file(FileOrHash),meta(Meta)], Request).
+	swish_reply([code(Code),file(FileOrHash),st_type(gitty),meta(Meta)],
+		    Request).
 storage_get(raw, Dir, _, FileOrHash, _Request) :-
 	gitty_data(Dir, FileOrHash, Code, Meta),
 	file_mime_type(Meta.name, MIME),

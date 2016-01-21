@@ -42,6 +42,7 @@
 :- use_module(lib/include).
 :- use_module(lib/csv).
 :- use_module(lib/examples).
+:- use_module(lib/profiles).
 :- use_module(lib/highlight).
 :- use_module(lib/markdown).
 :- use_module(lib/template_hint, []).
@@ -57,7 +58,7 @@ user:file_search_path(css,       trill_on_swish_web(css)).
 user:file_search_path(icons,     trill_on_swish_web(icons)).
 
 set_swish_path :-
-	absolute_file_name(trill_on_swish('swish.pl'), _,
+	absolute_file_name(trill_on_swish('trill_on_swish.pl'), _,
 			   [file_errors(fail), access(read)]), !.
 set_swish_path :-
 	prolog_load_context(directory, Dir),
@@ -147,9 +148,13 @@ trill_on_swish_config:config(public_access,      false).
 :- use_module(trill_on_swish:lib/render).
 :- use_module(trill_on_swish:lib/trace).
 :- use_module(trill_on_swish:lib/jquery).
+:- use_module(swish:lib/swish_debug).
 :- use_module(trill_on_swish:library(pengines_io)).
 pengines:prepare_module(Module, trill_on_swish, _Options) :-
 	pengines_io:pengine_bind_io_to_html(Module).
+
+% Additional sandboxing rules.
+:- use_module(lib/flags).
 
 % Libraries that are nice to have in SWISH, but cannot be loaded
 % because they use directives that are considered unsafe.  We load
@@ -157,6 +162,7 @@ pengines:prepare_module(Module, trill_on_swish, _Options) :-
 
 :- use_module(library(clpfd), []).
 :- use_module(library(clpb), []).
+:- use_module(lib/swish_chr, []).
 
 % load rendering modules
 
@@ -167,3 +173,4 @@ pengines:prepare_module(Module, trill_on_swish, _Options) :-
 :- use_module(trill_on_swish(lib/render/svgtree),  []).
 :- use_module(trill_on_swish(lib/render/graphviz), []).
 :- use_module(trill_on_swish(lib/render/c3),	  []).
+:- use_module(trill_on_swish(lib/render/url),	  []).

@@ -60,11 +60,13 @@ trill_on_swish:term_expansion(:- include(FileIn), Expansion) :-
 		          'trill_on_swish included'(File),
 		          (:- include(stream(Id, Stream, [close(true)])))
 			],
+	    '$push_input_context'(trill_on_swish_include),
 	    setting(trill_on_swish_web_storage:directory, Store),
 	    add_extension(File, FileExt),
 	    catch(gitty_data(Store, FileExt, Data, _Meta), _, fail),
 	    atom_concat('trill_on_swish://', FileExt, Id),
-	    open_string(Data, Stream)
+	    open_string(Data, Stream),
+	    '$pop_input_context'
 	).
 
 add_extension(File, FileExt) :-

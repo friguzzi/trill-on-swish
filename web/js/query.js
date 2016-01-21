@@ -70,7 +70,7 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
 				prologQuery: function(q) {
 				  elem.queryEditor('run', q, tableSelected());
 				}
-		              }).set;
+		              });
 
 	if ( typeof(data.examples) == "object" &&
 	     data.examples[0] &&

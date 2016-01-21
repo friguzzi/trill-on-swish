@@ -10,10 +10,10 @@
  * @author Jan Wielemaker, J.Wielemaker@vu.nl
  */
 
-define([ "jquery", "config", "tabbed", "form",
+define([ "jquery", "config", "tabbed", "form", "preferences",
 	 "laconic", "runner", "storage", "sha1"
        ],
-       function($, config, tabbed, form) {
+       function($, config, tabbed, form, preferences) {
 
 var cellTypes = {
   "program":  { label:"Program" },
@@ -29,8 +29,11 @@ var cellTypes = {
   var methods = {
     /**
      * Initialize a Prolog Notebook.
+     * @param {Object} options
+     * @param {String} [options.value] provides the initial content
      */
     _init: function(options) {
+      options = options||{};
       return this.each(function() {
 	var elem = $(this);
 	var storage = {};		/* storage info */
@@ -109,7 +112,9 @@ var cellTypes = {
 
 					/* restore content */
 	var content = elem.find(".notebook-data");
-	if ( content.length > 0 ) {
+	if ( options.value ) {
+	  elem.notebook('value', options.value);
+	} else if ( content.length > 0 ) {
 	  function copyData(name) {
 	    var value = content.data(name);
 	    if ( value ) {
@@ -121,6 +126,7 @@ var cellTypes = {
 	  copyData("url");
 	  copyData("title");
 	  copyData("meta");
+	  copyData("st_type");
 
 	  elem.notebook('value', content.text());
 	  content.remove();
@@ -224,15 +230,24 @@ var cellTypes = {
      */
     active: function(cell, focus) {
       if ( cell ) {
-	var current = this.find(".nb-content").children(".nb-cell.active");
+	var current = this.find(".nb-content .nb-cell.active");
+
+	function removeNotForQuery(elem) {
+	  elem.find(".nb-content .nb-cell.not-for-query")
+	      .removeClass("not-for-query");
+	}
 
 	if ( cell.length == 1 )
 	{ if ( !(current.length == 1 && cell[0] == current[0]) ) {
+	    removeNotForQuery(this);
 	    current.nbCell('active', false);
 	    cell.nbCell('active', true);
 	    if ( focus )
 	      cell.focus();
 	  }
+	} else
+	{ removeNotForQuery(this);
+	  current.nbCell('active', false);
 	}
       }
     },
@@ -312,15 +327,20 @@ var cellTypes = {
 
     /**
      * Set or get the state of this notebook as a string.
+     * @param {Object} options
+     * @param {Boolean} [options.skipEmpty=false] if `true`, do not save
+     *		        empty cells.
      * @param [String] val is an HTML string that represents
      * the notebook state.
      */
-    value: function(val) {
+    value: function(val, options) {
+      options = options||{};
+
       if ( val == undefined ) {
 	var dom = $.el.div({class:"notebook"});
 	this.find(".nb-cell").each(function() {
 	  cell = $(this);
-	  if ( !cell.nbCell('isEmpty') )
+	  if ( !(options.skipEmpty && cell.nbCell('isEmpty')) )
 	    $(dom).append(cell.nbCell('saveDOM'));
 	});
 
@@ -427,8 +447,8 @@ var cellTypes = {
     label: "Notebook",
     contentType: "text/x-prolog-notebook",
     order: 200,
-    create: function(dom) {
-      $(dom).notebook();
+    create: function(dom, options) {
+      $(dom).notebook(options);
     }
   };
 
@@ -521,6 +541,12 @@ var cellTypes = {
 	switch( data.type ) {
 	  case "program":
 	    this.find(".editor").prologEditor('makeCurrent');
+	    break;
+	  case "query":
+	    this.closest(".notebook")
+                .find(".nb-cell.program")
+                .not(this.nbCell("program_cells"))
+                .addClass("not-for-query");
 	    break;
 	}
       } else if ( this.length > 0 ) {
@@ -644,14 +670,45 @@ var cellTypes = {
     },
 
     /**
-     * Currently simply returns the preceeding program cell.
-     * @return {jQuery} set of prologEditor elements that form the
+     * Change the editor of a program cell to fixed (one line) height
+     */
+    singleline: function() {
+      this.toggleClass("singleline");
+      this.find(".editor").prologEditor('refresh');
+      glyphButtonGlyph(this, "singleline",
+		       this.hasClass("singleline")
+				? "triangle-left"
+				: "triangle-bottom");
+      this.find("a[data-action=singleline]").blur();
+      return this;
+    },
+
+    /**
+     * Toggle a program fragment to be background/non-background
+     */
+    background: function() {
+      this.toggleClass("background");
+      this.find("a[data-action=background]").blur();
+      return this;
+    },
+
+    /**
+     * Returns all program cells in current notebook that are loaded
+     * for executing the receiving query.
+     * @return {jQuery} set of nbCell elements that form the
      * sources for the receiving query cell.
      */
-    programs: function() {
+    program_cells: function() {
       var data = this.data(pluginName);
+      var programs = this.closest(".notebook")
+	                 .find(".nb-cell.program.background")
+			 .add(this.prevAll(".program").first());
+      return programs;
+    },
 
-      return this.prevAll(".program").first().find(".editor");
+    programs: function() {
+      var cells = this.nbCell('program_cells');
+      return cells.find(".editor");
     },
 
     isEmpty: function() {
@@ -702,13 +759,27 @@ var cellTypes = {
   }
 
   methods.type.program = function(options) {	/* program */
-    var editor;
+    var editor, bg;
 
     options = options||{};
     options.autoCurrent = false;
 
     this.html("");
-    this.append(editor=$.el.div({class:"editor"}));
+
+    var buttons = $.el.div(
+      {class:"btn-group nb-cell-buttons", role:"group"},
+      glyphButton("triangle-bottom", "singleline", "Show only first line",
+		  "default", "xs"),
+      bg=glyphButton("cloud", "background", "Use as background program",
+		     "success", "xs"));
+    this.append(buttons,
+		editor=$.el.div({class:"editor with-buttons"}));
+    if ( options.background )
+    { this.addClass("background");
+    }
+    if ( options.singleline )
+    { this.nbCell('singleline');
+    }
     $(editor).prologEditor(options);
   }
 
@@ -719,6 +790,9 @@ var cellTypes = {
     this.html("");
 
     options = options||{};
+    if ( options.tabled == undefined )
+      options.tabled = preferences.getVal("tabled_results");
+
     function setAttr(name) {
       if ( options[name] != undefined ) {
 	cell.data(name, ""+options[name]);
@@ -728,7 +802,7 @@ var cellTypes = {
     setAttr("tabled");
     setAttr("chunk");
     setAttr("run");
-    
+
     options = $.extend({}, options,
       { mode: "prolog",
         role: "query",
@@ -739,17 +813,19 @@ var cellTypes = {
 	  cell.nbCell('run');
 	}
       });
-      
-    this.append($.el.div($.el.div({class:"nb-cell-buttons"},
-      {class:"btn-group nb-cell-buttons",role:"group"},
+
+    var buttons = $.el.div(
+      {class:"btn-group nb-cell-buttons", role:"group"},
       glyphButton("wrench", "settings", "Settings",
 		  "default", "xs"),
       glyphButton("play", "run",       "Run query",
-		  "primary", "xs"))));
+		  "primary", "xs"));
 
-    this.append($.el.div({class:"query"},
+    this.append(buttons,
+		$.el.div({class:"query with-buttons"},
 			 $.el.span({class:"prolog-prompt"}, "?-"),
 			 editor=$.el.div({class:"editor query"})));
+
     $(editor).prologEditor(options);
     this.addClass("runnable");
   }
@@ -838,16 +914,24 @@ var cellTypes = {
       }
     }
 
-    $.get(config.http.locations.markdown,
-	  { text: markdownText
-	  },
-	  function(data) {
-	    cell.html(data);
-	    cell.removeClass("runnable");
-	    cell.data('markdownText', markdownText);
-	    cell.on("dblclick", makeEditable);
-	    cell.on("click", "a", followLink);
-	  });
+    function setHTML(data) {
+      cell.html(data);
+      cell.removeClass("runnable");
+      cell.data('markdownText', markdownText);
+      cell.on("dblclick", makeEditable);
+      cell.on("click", "a", followLink);
+    }
+
+    if ( markdownText.trim() != "" )
+    { $.ajax({ type: "POST",
+	       url: config.http.locations.markdown,
+	       data: markdownText,
+	       contentType: "text/plain; charset=UTF-8",
+	       success: setHTML
+	     });
+    } else
+    { setHTML("");
+    }
   };
 
   methods.run.program = function() {		/* program */
@@ -887,16 +971,33 @@ var cellTypes = {
   };
 
   methods.saveDOM.program = function() {	/* program */
-    return $.el.div({class:"nb-cell program"}, cellText(this));
+    var cell = this;
+    var dom = $.el.div({class:"nb-cell program"}, cellText(this));
+
+    function copyClassAttr(name) {
+      if ( cell.hasClass(name) ) {
+	$(dom).attr("data-"+name, true);
+      }
+    }
+
+    copyClassAttr("background");
+    copyClassAttr("singleline");
+
+    return dom;
   };
 
   methods.saveDOM.query = function() {		/* query */
     var cell = this;
     var dom  = $.el.div({class:"nb-cell query"}, cellText(this));
 
+    function isDefault(name, value) {
+      if ( name == 'tabled' && (!value || value == "false") ) return true;
+      return false;
+    }
+
     function copyAttr(name) {
       var value;
-      if ( (value=cell.data(name)) ) {
+      if ( (value=cell.data(name)) && !isDefault(name,value) ) {
 	$(dom).attr("data-"+name, value);
       }
     }
@@ -917,7 +1018,19 @@ var cellTypes = {
   };
 
   methods.restoreDOM.program = function(dom) {	/* program */
-    methods.type.program.call(this, {value:dom.text().trim()});
+    var opts = { value:dom.text().trim() };
+
+    function getAttr(name) {
+      var value;
+      if ( (value=dom.data(name)) ) {
+	opts[name] = value;
+      }
+    }
+
+    getAttr("background");
+    getAttr("singleline");
+
+    methods.type.program.call(this, opts);
   };
 
   methods.restoreDOM.query = function(dom) {	/* query */
@@ -936,6 +1049,8 @@ var cellTypes = {
     getAttr("tabled");
     getAttr("chunk");
     getAttr("run");
+    if ( opts.tabled == undefined )
+      opts.tabled = false;
 
     methods.type.query.call(this, opts);
   };
@@ -949,7 +1064,19 @@ var cellTypes = {
   };
 
   methods.changeGen.program = function() {	/* program */
-    return sha1(cellText(this));
+    var text = "";
+    var cell = this;
+
+    function addClassAttr(name, key) {
+      if ( cell.hasClass(name) )
+	text += key;
+    }
+
+    addClassAttr("background", "B");
+    addClassAttr("singleline", "S");
+
+    text += "V"+cellText(this);
+    return sha1(text);
   };
 
   methods.changeGen.query = function() {	/* query */
@@ -1079,6 +1206,14 @@ function glyphButton(glyph, action, title, style, size) {
 		   $.el.span({class:"glyphicon glyphicon-"+glyph}));
 
   return btn;
+}
+
+function glyphButtonGlyph(elem, action, glyph) {
+  var span = elem.find("a[data-action="+action+"] > span.glyphicon");
+
+  span.removeClass(function(i,s) {
+    return s.match(/glyphicon-[-a-z]*/g).join(" ");
+  }).addClass("glyphicon-"+glyph);
 }
 
 function sep() {

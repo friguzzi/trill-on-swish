@@ -353,10 +353,10 @@ define([ "jquery", "config", "preferences",
 	    src: ":- use_module(library(trill_on_swish/trill/trill)).\n\
 	          :- use_module(library(trill_on_swish/translate_rdf)).\n\
 	          :- use_module(library(pengines)).\n\
-	          parse:- \n\
+	          owl_in_runner:parse:- \n\
 	             pengine_self(M),\n\
-		     set_prolog_flag(M:unknwon,fail),\n\
-		     load_owl('"+
+	             set_prolog_flag(M:unknwon,fail),\n\
+	             translate_rdf:load_owl('"+
 	    	     query.source+"')." ,
 	    destroy: false,
 	    format: 'json-html',
@@ -696,7 +696,7 @@ define([ "jquery", "config", "preferences",
       if ( options.projection ) {
 	var formel;
 	var format = options.format||"prolog";
-	var query = "parse,query_expand(" + data.query.query.replace(/\.\s*$/,"")+ ")";
+	var query = "owl_in_runner:parse,translate_rdf:query_expand(" + data.query.query.replace(/\.\s*$/,"")+ ")";
 
 	function attr(name,value) {
 	  return $.el.input({type:"hidden", name:name, value:value});
@@ -904,7 +904,7 @@ define([ "jquery", "config", "preferences",
       options.chunk = data.chunk;
 
     this.pengine.ask("'$trill_on_swish wrapper'((" +
-		     "parse,query_expand("+termNoFullStop(data.query.query)+")" +
+		     "owl_in_runner:parse,translate_rdf:query_expand("+termNoFullStop(data.query.query)+")" +
 		     "))", options);
     elem.prologRunner('setState', "running");
   }

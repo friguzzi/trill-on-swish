@@ -75,28 +75,41 @@
 { display: inline;
 }
 
-.nb-cell.active, .nb-cell.active.query > .query
+.nb-cell.active, .nb-cell.active > .with-buttons
 { border: 1px solid #888;
+}
+
+.nb-cell.singleline div.editor
+{ height: 2em;
+}
+
+.nb-cell.singleline .CodeMirror-hscrollbar
+{ height: 0px;
 }
 
 .nb-cell .CodeMirror
 { border-radius: 5px;
 }
 
-.nb-cell-buttons
-{ text-align: right;
-  width: 100%;
+.nb-cell .nb-cell-buttons
+{ display: inline-block;
+  float: right;
 }
 
-.nb-cell.query
+.nb-cell.background span.glyphicon-cloud
+{ color: #bef;
+}
+
+.nb-cell.query, .nb-cell.program
 { border: 0px;
   background: transparent;
 }
 
-.nb-cell.query > .query
+.nb-cell > .with-buttons
 { background-color: #eee;
   border: 1px solid #ccc;
   border-radius: 5px;
+  width: calc(100% - 50px);
 }
 
 .nb-cell .prolog-prompt
@@ -114,6 +127,10 @@
 
 .nb-cell.program, .nb-cell.query
 { margin-bottom: 1em;
+}
+
+.nb-cell.not-for-query
+{ opacity: 0.5;
 }
 
 .nb-placeholder

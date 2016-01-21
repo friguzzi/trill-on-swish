@@ -46,10 +46,13 @@ define([ "jquery", "preferences", "laconic" ],
 	}
 
 	elem.on("click", "a", function(ev) { runMenu(this, ev); } );
-	$("a#dismisslink").click(function(){ var el; el=document.getElementById("navbarhelp"); el.style.position = "absolute"; el.style.left="-9999px"; 
-	document.getElementById("content").style.height= "calc(100% - 55px)"; 
-	$(window).trigger('resize');
-	return false;});
+	$("a#dismisslink").click(function(){ 
+      var el; el=document.getElementById("navbarhelp");
+      el.style.position = "absolute";
+      el.style.left="-9999px"; 
+	  document.getElementById("content").style.height= "calc(100% - 55px)"; 
+	  $(window).trigger('resize');
+	  return false;});
       });
     },
 

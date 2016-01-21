@@ -57,15 +57,39 @@ trill_on_swish_log(create(Pengine, Application, Options0)) :-
 	format_time(string(HDate), '%+', Now),
 	http_log('/*~s*/ pengine(~3f, ~q).~n',
 		 [HDate, Now, create(Pengine, Application, Options)]).
+trill_on_swish_log(send(Pengine, Event)) :-
+	get_time(Now),
+	format_time(string(HDate), '%+', Now),
+	http_log('/*~s*/ pengine(~3f, ~q).~n',
+		 [HDate, Now, send(Pengine, Event)]).
 
 :- dynamic
-	text_hash/2.
+	text_hash/3,
+	gc_text_hash_time/1.
 
 hash_option(src_text(Text), src_text(Result)) :- !,
-	(   text_hash(Text, Hash)
+	(   text_hash(Text, _, Hash)
 	->  Result = Hash
 	;   variant_sha1(Text, Hash),
-	    assert(text_hash(Text, Hash)),
+	    get_time(Now),
+	    assert(text_hash(Text, Now, Hash)),
+	    gc_text_hash,
 	    Result = Hash-Text
 	).
 hash_option(Option, Option).
+
+gc_text_hash :-
+	gc_text_hash_time(Last),
+	get_time(Now),
+	Now - Last < 900, !.
+gc_text_hash :-
+	get_time(Now),
+	retractall(gc_text_hash_time(_)),
+	asserta(gc_text_hash_time(Now)),
+	Before is Now - 3600,
+	(   text_hash(Text, Time, Hash),
+	    Time < Before,
+	    retractall(text_hash(Text, Time, Hash)),
+	    fail
+	;   true
+	).

@@ -5,6 +5,11 @@
   <title>Caveats of the web version of TRILL and SWI-Prolog</title>
   </head>
   <body>
+<!--h2>Table of Contents</h2>
+                <ul>
+                    <li>Sandboxing</li>
+                    <li>Input and output/li>
+		</ul-->
 
 <h2 id="sandboxing">Sandboxing</h2>
 <p>
@@ -17,7 +22,8 @@ occasions:
 
   <ul>
     <li>If insufficient information is available to decide what
-        will be called. Such errors are raised as <em>instantiation errors</em>.
+        will be called.  E.g., <code>?- read(X), call(X).</code>
+	Such errors are raised as <em>instantiation errors</em>.
     <li>If a predicate is found that is not whitelisted.  Such
         errors are raised as <em>permission errors</em>
     <li>If a called predicate is not defined.  Such errors are
