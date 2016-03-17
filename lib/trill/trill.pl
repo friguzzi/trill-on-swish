@@ -1884,7 +1884,7 @@ compute_prob(Expl,Prob):-
   retractall(na(_,_)),
   retractall(rule_n(_)),
   assert(rule_n(0)),
-  init_test(_,Env),
+  init_test(0,Env),
   build_bdd(Env,Expl,BDD),
   ret_prob(Env,BDD,Prob),
   end_test(Env), !.
