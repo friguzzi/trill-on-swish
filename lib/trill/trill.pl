@@ -13,6 +13,9 @@
 :- use_module(library(ugraphs)).
 :- use_module(library(rbtrees)).
 :- use_module(library(pengines)).
+
+:- use_module(library(dif)).
+
 %:- use_module(library(tries)).
 %:- load_foreign_files(['cplint-swi'],[],init_my_predicates).
 %:-use_foreign_library(bddem,install).
@@ -27,11 +30,18 @@
 %:-['trillProbComputation'].
 
 :- thread_local
-	ind/1.
+	ind/1
+	exp_found/1..
 
 %:- yap_flag(unknown,fail).
 :- multifile
 	owl2_model:axiom/1,
+ 	owl2_model:class/1,
+ 	owl2_model:annotationProperty/1,
+  	owl2_model:namedIndividual/1,
+  	owl2_model:objectProperty/1,
+  	owl2_model:dataProperty/1,
+ 	owl2_model:transitiveProperty/1,
         owl2_model:classAssertion/2,
         owl2_model:propertyAssertion/3,
         owl2_model:subPropertyOf/2,
@@ -92,14 +102,15 @@ sub_class(Class,SupClass):-
 
 instanceOf(Class,Ind,Expl):-
   ( check_query_args([Class,Ind]) ->
-	retractall(ind(_)),
+	retractall(exp_found(_)),
+  	retractall(ind(_)),
   	assert(ind(1)),
   	build_abox((ABox,Tabs)),
   	\+ clash((ABox,Tabs),_),!,
   	add(ABox,(classAssertion(complementOf(Class),Ind),[]),ABox0),
   	%findall((ABox1,Tabs1),apply_rules_0((ABox0,Tabs),(ABox1,Tabs1)),L),
   	findall((ABox1,Tabs1),apply_all_rules((ABox0,Tabs),(ABox1,Tabs1)),L),
-  	find_expls(L,[],Expl),
+  	find_expls(L,Expl),
   	Expl \= []
     ;
     	Expl = ["IRIs not existent"],!
@@ -123,6 +134,7 @@ instanceOf(Class,Ind):-
 %  write('Inconsistent ABox').
 
 unsat(Concept,Expl):-
+  retractall(exp_found(_)),
   retractall(ind(_)),
   assert(ind(2)),
   build_abox((ABox,Tabs)),
@@ -130,7 +142,7 @@ unsat(Concept,Expl):-
   add(ABox,(classAssertion(Concept,1),[]),ABox0),
   %findall((ABox1,Tabs1),apply_rules_0((ABox0,Tabs),(ABox1,Tabs1)),L),
   findall((ABox1,Tabs1),apply_all_rules((ABox0,Tabs),(ABox1,Tabs1)),L),
-  find_expls(L,[],Expl),
+  find_expls(L,Expl),
   Expl \= [].
 
 unsat(_,['Inconsistent ABox']):-
@@ -150,11 +162,12 @@ unsat(Concept):-
 %  write('Inconsistent ABox').
 
 inconsistent_theory(Expl):-
+  retractall(exp_found(_)),
   retractall(ind(_)),
   assert(ind(1)),
   build_abox((ABox,Tabs)),
   findall((ABox1,Tabs1),apply_all_rules((ABox,Tabs),(ABox1,Tabs1)),L),
-  find_expls(L,[],Expl),
+  find_expls(L,Expl),
   Expl \= [].
 
 inconsistent_theory:-
@@ -212,12 +225,30 @@ prob_inconsistent_theory(P):-
   all_inconsistent_theory(Exps),
   compute_prob(Exps,P).
 
-find_expls([],Expl,Expl).
+find_expls([],[]).
 
-find_expls([ABox|T],Expl0,Expl):-
+find_expls([ABox|_T],E):-
   clash(ABox,E),
-  append(Expl0,E,Expl1),
-  find_expls(T,Expl1,Expl).
+  findall(Exp,exp_found(Exp),Expl),
+  not_already_found(Expl,E),
+  assert(exp_found(E)).
+
+find_expls([_ABox|T],Expl):-
+  \+ length(T,0),
+  find_expls(T,Expl).
+
+not_already_found([],_E):-!.
+
+not_already_found([H|_T],E):-
+  subset(H,E),!,
+  fail.
+  
+not_already_found([H|_T],E):-
+  subset(E,H),!,
+  retract(exp_found(H)).
+
+not_already_found([_H|T],E):-
+  not_already_found(T,E).
 
 
 all_sub_class(Class,SupClass,LE):-
@@ -260,7 +291,7 @@ clash((ABox,_),Expl):-
   member(Y,LS),
   member(X,LD),
   member(Y,LD),
-  X\==Y,
+  dif(X,Y),
   append(Expl1,Expl2,Expl).
 
 clash((ABox,_),Expl):-
@@ -317,34 +348,33 @@ make_expl(Ind,S,[H|T],Expl1,ABox,[Expl2|Expl]):-
 % -------------
 % rules application
 % -------------
-apply_all_rules(ABox0,ABox2):-
-  apply_nondet_rules([or_rule,max_rule],
-                  ABox0,ABox1), 
+apply_all_rules(ABox0,ABox):-
+  apply_det_rules([o_rule,and_rule,unfold_rule,add_exists_rule,forall_rule,forall_plus_rule,exists_rule,min_rule],ABox0,ABox1),
   (ABox0=ABox1 -> 
-  ABox2=ABox1;
-  apply_all_rules(ABox1,ABox2)).
+  ABox=ABox1;
+  apply_all_rules(ABox1,ABox)).
   
-apply_det_rules([],ABox,ABox).
+apply_det_rules([],ABox0,ABox):-
+  apply_nondet_rules([or_rule,max_rule],ABox0,ABox).
+  
+apply_det_rules([H|_],ABox0,ABox):-
+  %C=..[H,ABox,ABox1],
+  call(H,ABox0,ABox),!.
 
-apply_det_rules([H|_],ABox,ABox1):-
-  C=..[H,ABox,ABox1],
-  call(C),!.
-
-apply_det_rules([_|T],ABox,ABox1):-
-  apply_det_rules(T,ABox,ABox1).
+apply_det_rules([_|T],ABox0,ABox):-
+  apply_det_rules(T,ABox0,ABox).
 
 
-apply_nondet_rules([],ABox,ABox1):-
-  apply_det_rules([o_rule,and_rule,unfold_rule,add_exists_rule,forall_rule,forall_plus_rule,exists_rule,min_rule],ABox,ABox1).
+apply_nondet_rules([],ABox,ABox).
 
-apply_nondet_rules([H|_],ABox,ABox1):-
-  C=..[H,ABox,L],
-  call(C),
-  member(ABox1,L),
-  ABox \= ABox1,!.
+apply_nondet_rules([H|_],ABox0,ABox):-
+  %C=..[H,ABox,L],
+  call(H,ABox0,L),!,
+  member(ABox,L),
+  dif(ABox0,ABox).
 
-apply_nondet_rules([_|T],ABox,ABox1):-
-  apply_nondet_rules(T,ABox,ABox1).
+apply_nondet_rules([_|T],ABox0,ABox):-
+  apply_nondet_rules(T,ABox0,ABox).
   
 
 
@@ -400,17 +430,20 @@ scan_and_list([_C|T],Ind,Expl,ABox0,Tabs0,ABox,Mod):-
 or_rule((ABox0,Tabs0),L):-
   find((classAssertion(unionOf(LC),Ind),Expl),ABox0),
   \+ indirectly_blocked(Ind,(ABox0,Tabs0)),
-  findall((ABox1,Tabs0),scan_or_list(LC,Ind,Expl,ABox0,Tabs0, ABox1),L),
+  length(LC,NClasses),
+  findall((ABox1,Tabs0),scan_or_list(LC,NClasses,Ind,Expl,ABox0,Tabs0, ABox1),L),
   L\=[],!.
 
 %---------------
-scan_or_list([],_Ind,_Expl,ABox,_Tabs,ABox).
+scan_or_list([C],1,Ind,Expl,ABox, Tabs, [(classAssertion(C,Ind),Expl)|ABox]):-
+  absent(classAssertion(C,Ind),Expl,(ABox,Tabs)),!.
 
-scan_or_list([C|_T],Ind,Expl,ABox, Tabs, [(classAssertion(C,Ind),Expl)|ABox]):-
+scan_or_list([C|_T],_NClasses,Ind,Expl,ABox, Tabs, [(classAssertion(C,Ind),Expl)|ABox]):-
   absent(classAssertion(C,Ind),Expl,(ABox,Tabs)).
 
-scan_or_list([_C|T],Ind,Expl,ABox0,Tabs, ABox):-
-  scan_or_list(T,Ind,Expl,ABox0, Tabs,ABox).
+scan_or_list([_C|T],NClasses,Ind,Expl,ABox0,Tabs, ABox):-
+  NC is NClasses - 1,
+  scan_or_list(T,NC,Ind,Expl,ABox0, Tabs,ABox).
 /* ***************+ */
 
 /*
@@ -642,7 +675,7 @@ find_sub_sup_class(C,D,equivalentClasses(L)):-
   Name:equivalentClasses(L),
   member(C,L),
   member(D,L),
-  C\==D.
+  dif(C,D).
   
 /*******************
  managing the concept (C subclassOf Thing)
@@ -878,7 +911,7 @@ scan_max_list(S,SN,Ind,Expl,ABox0,Tabs0,ABox,Tabs):-
 
 %--------------------
 check_individuals_not_equal(X,Y,ABox):-
-  X\==Y,
+  dif(X,Y),
   \+ same_ind([X],Y,ABox).
 %--------------------
 individual_class_C([],_,_,[]).
@@ -901,7 +934,7 @@ o_rule((ABox0,Tabs0),([(sameIndividual(LI),ExplC)|ABox],Tabs)):-
   find((classAssertion(oneOf([C]),X),ExplX),ABox0),
   find((classAssertion(oneOf([D]),Y),ExplY),ABox0),
   containsCommon(C,D),
-  X\==Y,
+  dif(X,Y),
   notDifferentIndividuals(X,Y,ABox0),
   nominal(C,(ABox0,Tabs0)),
   indAsList(X,LX),
@@ -1311,7 +1344,7 @@ remove_node_to_tree(P,S,O,RB0,RB1):-
   rb_lookup((S,O),V,RB0),
   member(P,V),
   remove(V,P,V1),
-  V1\==[],
+  dif(V1,[]),
   rb_update(RB0,(S,O),V1,RB1).
 
 remove_node_to_tree(P,S,O,RB0,RB1):-
@@ -1336,7 +1369,7 @@ remove_role_to_tree(P,S,O,RB0,RB1):-
   rb_lookup(P,V,RB0),
   member((S,O),V),
   delete(V,(S,O),V1),
-  V1\==[],
+  dif(V1,[]),
   rb_update(RB0,P,V1,RB1).
 
 remove_role_to_tree(P,S,O,RB0,RB1):-
@@ -1442,7 +1475,7 @@ merge_all([],ABox,Tabs,ABox,Tabs).
 
 merge_all([(sameIndividual(H),Expl)|T],ABox0,Tabs0,ABox,Tabs):-
   find_same(H,ABox0,L,ExplL),
-  L\==[],!,
+  dif(L,[]),!,
   merge_all1(H,L,ABox0,Tabs0,ABox1,Tabs1),
   flatten([H,L],L0),
   list_to_set(L0,L1),
@@ -1704,7 +1737,7 @@ s_neighbours1(Ind1,[(Ind1,Y)|T],[Y|T1]):-
   s_neighbours1(Ind1,T,T1).
 
 s_neighbours1(Ind1,[(X,_Y)|T],T1):-
-  X\==Ind1,
+  dif(X,Ind1),
   s_neighbours1(Ind1,T,T1).
   
 s_neighbours2(_,[],[],_).
@@ -1724,14 +1757,14 @@ same_ind(SN,H,_ABox):-
   member(H,SI),
   member(H2,SI),
   member(H2,SN),
-  H\==H2.
+  dif(H,H2).
 
 same_ind(SN,H,ABox):-
   find((sameIndividual(SI),_),ABox),
   member(H,SI),
   member(H2,SI),
   member(H2,SN),
-  H\==H2.
+  dif(H,H2).
 
 /* ************* */
 
@@ -1755,7 +1788,7 @@ s_predecessors1(Ind1,[(Y,Ind1)|T],[Y|T1]):-
   s_predecessors1(Ind1,T,T1).
 
 s_predecessors1(Ind1,[(_X,Y)|T],T1):-
-  Y\==Ind1,
+  dif(Y,Ind1),
   s_predecessors1(Ind1,T,T1).
 
 s_predecessors2(_,[],[],_).
@@ -1884,7 +1917,9 @@ compute_prob(Expl,Prob):-
   retractall(na(_,_)),
   retractall(rule_n(_)),
   assert(rule_n(0)),
-  init_test(0,Env),
+  get_trill_current_module(Name),
+  findall(1,Name:annotationAssertion('https://sites.google.com/a/unife.it/ml/disponte#probability',_,_),NAnnAss),length(NAnnAss,NV),
+  init_test(NV,Env),
   build_bdd(Env,Expl,BDD),
   ret_prob(Env,BDD,Prob),
   end_test(Env), !.
@@ -2010,4 +2045,3 @@ sandbox:safe_primitive(trill:inconsistent_theory(_)).
 sandbox:safe_primitive(trill:prob_inconsistent_theory(_)).
 sandbox:safe_primitive(trill:load_theory(_)).
 sandbox:safe_primitive(trill:check_query_args(_)).
-
