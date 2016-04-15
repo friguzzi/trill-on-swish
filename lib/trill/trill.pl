@@ -596,8 +596,16 @@ unfold_rule((ABox0,Tabs),([(classAssertion(D,Ind),[complementOf(C)|Expl])|ABox],
 add_nominal(D,Ind,ABox0,ABox):-
   ((D = oneOf(_),
     \+ member(nominal(Ind),ABox0))
-    ->
-   ABox = [nominal(Ind)|ABox0]
+    *->
+   (
+      ABox1 = [nominal(Ind)|ABox0],
+      (member((classAssertion('Thing',Ind),_E),ABox1)
+      ->
+      ABox = ABox1
+      ;
+      ABox = [(classAssertion('Thing',Ind),[])|ABox1]
+      )
+    )
     ;
    ABox = ABox0
   ).
@@ -1241,7 +1249,7 @@ add_nominal_list(ABox0,(T,_,_),ABox):-
 
 prepare_nom_list([],[]).
 
-prepare_nom_list([H|T],[(nominal(H))|T1]):-
+prepare_nom_list([H|T],[(nominal(H)),(classAssertion('Thing',H),[])|T1]):-
   prepare_nom_list(T,T1).
 %--------------
 
@@ -1321,7 +1329,7 @@ add_edge_to_tabl(_R,Ind1,Ind2,T0,T0):-
   graph_edge(Ind1,Ind2,T0),!.
 
 add_edge_to_tabl(_R,Ind1,Ind2,T0,T1):-
-  add_edges(T0,Ind1-Ind2,T1).
+  add_edges(T0,[Ind1-Ind2],T1).
 
 /*
   check for an edge
@@ -1330,7 +1338,7 @@ graph_edge(Ind1,Ind2,T0):-
   edges(T0, Edges),
   member(Ind1-Ind2, Edges),!.
 
-graph_edge(_,_,_).
+%graph_edge(_,_,_).
 
 /* 
   remove edge from tableau
