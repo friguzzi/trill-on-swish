@@ -7,8 +7,8 @@
  * @requires jquery
  */
 
-define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
-       function(config, preferences) {
+define([ "config", "preferences", "links", "jquery", "laconic", "bootstrap" ],
+       function(config, preferences, links) {
 
 (function($) {
   var pluginName = 'swishModal';
@@ -23,7 +23,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
       return this.each(function() {
 	var elem = $(this);
 
-	elem.addClass("trill_on_swish-event-receiver");
+	elem.addClass("swish-event-receiver");
 	elem.on("help", function(ev, data) {
 	  elem.swishModal('showHelp', data);
 	});
@@ -38,6 +38,10 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 	});
 	elem.on("error", function(ev, data) { /* still needed? */
 	  elem.swishModal('show', data);
+	});
+	elem.on("alert", function(ev, str) {
+	  var icon = "<span class='glyphicon glyphicon-warning-sign'></span>";
+	  elem.swishModal('show', {title: icon, body:str});
 	});
 	elem.on("ajaxError", function(ev, jqXHR) {
 	  elem.swishModal('showAjaxError', jqXHR);
@@ -172,6 +176,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
       }
       $(title).html(options.title);
       $(modalel).modal({show: true})
+		.on("click", "a", links.followLink)
 	        .on("shown.bs.modal", initTagsManagers)
 	        .on("hidden.bs.modal", function() {
 		  $(this).remove();
@@ -209,7 +214,7 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
      * which the feedback window is added.
      */
     feedback: function(options) {
-      var win = $.el.div({class:"feedback"});
+      var win = $.el.div({class:"feedback "+options.type||""});
       $(win).html(options.html);
 
       $(options.owner||"body").append(win);
@@ -236,7 +241,6 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 	    var id = input.attr("data-notagain");
 	    preferences.setNotAgain(id);
 	  }
-	  modalel.modal({show:false});
 	});
 
     return button;
@@ -309,10 +313,13 @@ define([ "config", "preferences", "jquery", "laconic", "bootstrap" ],
 
   return {
     ajaxError: function(jqXHR) {
-      $(".trill_on_swish-event-receiver").trigger("ajaxError", jqXHR);
+      $(".swish-event-receiver").trigger("ajaxError", jqXHR);
     },
     feedback: function(options) {
-      $(".trill_on_swish-event-receiver").trigger("feedback", options);
+      $(".swish-event-receiver").trigger("feedback", options);
+    },
+    alert: function(options) {
+      $(".swish-event-receiver").trigger("alert", options);
     }
   };
 });

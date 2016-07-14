@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_logging,
+:- module(swish_logging,
 	  [
 	  ]).
 :- use_module(library(http/http_log)).
@@ -46,18 +46,18 @@ and just `Hash` for subsequent occurrences.
   ==
 */
 
-:- setting(trill_on_swish:logging, boolean, true,
+:- setting(swish:logging, boolean, true,
 	   "Enable/disable logging of SWISH query execution").
 
-:- listen(pengine(Action), trill_on_swish_log(Action)).
+:- listen(pengine(Action), swish_log(Action)).
 
-trill_on_swish_log(create(Pengine, Application, Options0)) :-
+swish_log(create(Pengine, Application, Options0)) :-
 	maplist(hash_option, Options0, Options),
 	get_time(Now),
 	format_time(string(HDate), '%+', Now),
 	http_log('/*~s*/ pengine(~3f, ~q).~n',
 		 [HDate, Now, create(Pengine, Application, Options)]).
-trill_on_swish_log(send(Pengine, Event)) :-
+swish_log(send(Pengine, Event)) :-
 	get_time(Now),
 	format_time(string(HDate), '%+', Now),
 	http_log('/*~s*/ pengine(~3f, ~q).~n',

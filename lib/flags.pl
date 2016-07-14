@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_flags, []).
+:- module(swish_flags, []).
 
 :- multifile
 	sandbox:safe_primitive/1.

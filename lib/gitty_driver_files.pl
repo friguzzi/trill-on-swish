@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_gitty_driver_files,
+:- module(gitty_driver_files,
 	  [ gitty_close/1,		% +Store
 	    gitty_file/3,		% +Store, ?Name, ?Hash
 

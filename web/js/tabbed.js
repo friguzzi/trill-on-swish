@@ -58,6 +58,17 @@ var tabbed = {
 	elem.on("trace-location", function(ev, prompt) {
 	  elem.tabbed('showTracePort', prompt);
 	});
+	elem.on("data-is-clean", function(ev, clean) {
+	  var tab = $(ev.target).closest(".tab-pane");
+	  var a   = elem.tabbed('navTab', tab.attr('id'));
+
+	  if ( a )
+	  { if ( clean )
+	      a.removeClass("data-dirty");
+	    else
+	      a.addClass("data-dirty");
+	  }
+	});
       });
     },
 
@@ -116,7 +127,7 @@ var tabbed = {
 			/* Handle tab-switching */
       $(ul).on("shown.bs.tab", "a", function(ev) {
 	var newContentID  = $(ev.target).data("id");
-	$("#"+newContentID+" .trill_on_swish-event-receiver").trigger("activate-tab");
+	$("#"+newContentID+" .swish-event-receiver").trigger("activate-tab");
       });
 
       if ( this.tabbed('navContent').children().length == 0 ) {
@@ -151,15 +162,26 @@ var tabbed = {
     },
 
     /**
-     * Add a new tab from the provided source
+     * Add a new tab from the provided source.  If there is a _select_
+     * (new) tab, open the data in this tab.
      */
     tabFromSource: function(src) {
-      var tab = this.tabbed('newTab', $("<span></span>"));
-      if ( typeof(src) == "object" )
-	delete src.newTab;
-      if ( !this.tabbed('setSource', tab, src) ) {
-	this.tabbed('removeTab', tab.attr("id"));
+      var select = this.find("div.tabbed-select");
+      if ( select.length > 0 ) {
+	var tab = $(select[0]).closest(".tab-pane");
+	this.tabbed('show', tab.attr("id"));
+	if ( typeof(src) == "object" )
+	  delete src.newTab;
+	this.tabbed('setSource', tab, src);
+      } else {
+	var tab = this.tabbed('newTab', $("<span></span>"));
+	if ( typeof(src) == "object" )
+	  delete src.newTab;
+	if ( !this.tabbed('setSource', tab, src) ) {
+	  this.tabbed('removeTab', tab.attr("id"));
+	}
       }
+
       return this;
     },
 
@@ -214,7 +236,7 @@ var tabbed = {
 	}
 
 	function isStoreSrc() {
-	  var prefix = "trill_on_swish://";
+	  var prefix = "swish://";
 	  if ( file.startsWith(prefix) )
 	    return file.slice(prefix.length);
 	}
@@ -229,8 +251,8 @@ var tabbed = {
 			.storage('match', {file:store});
 
 	  if ( !editors ) {
-	    this.closest(".trill_on_swish")
-	        .trill_on_swish('playFile',
+	    this.closest(".swish")
+	        .swish('playFile',
 		       { file: store,
 			 newTab: true,
 			 noHistory: true,
@@ -313,8 +335,8 @@ var tabbed = {
      * @param {String} id is the id of the tab to show.
      */
     show: function(id) {
-      var a = this.tabbed('navTabs').find("a[data-id='"+id+"']");
-      if ( a.length > 0 ) {
+      var a = this.tabbed('navTab', id);
+      if ( a ) {
 	a.tab('show');
 	return this;
       }
@@ -336,10 +358,12 @@ var tabbed = {
       { close_button = glyphicon("remove", "xclose");
 	$(close_button).attr("title", "Close tab");
       }
-      type = type||"owl";
+      type = type||"pl";
 
       var a1 = $.el.a({class:"compact", href:"#"+id, "data-id":id},
 		      $.el.span({class:"tab-icon type-icon "+type}),
+		      $.el.span({class:"tab-dirty",
+		                 title:"Tab is modified.  See File/Save and Edit/View changes"}),
 		      $.el.span({class:"tab-title"}, label),
 		      close_button);
       var li = $.el.li({role:"presentation"}, a1);
@@ -355,6 +379,14 @@ var tabbed = {
      */
     title: function(title, type) {
       var tab    = this.closest(".tab-pane");
+
+      /* if no tab, we might be in fullscreen mode */
+      if ( tab.length == 0 ) {
+	fsorg = this.data("fullscreen_origin");
+	if ( fsorg )
+	  tab = $(fsorg).closest(".tab-pane");
+      }
+
       var tabbed = tab.closest(".tabbed");
       var id     = tab.attr("id");
       var ul	 = tabbed.tabbed('navTabs');
@@ -409,9 +441,8 @@ var tabbed = {
 	var type    = $(ev.target).data('type');
 	var tab     = $(ev.target).closest(".tab-pane");
 	var content = $.el.div();
-	var options = tabbed.tabTypes[type];
+	var options = $.extend({}, tabbed.tabTypes[type]);
 	var profile = tab.find("label.active > input[name=profile]").val();
-	var options = {};
 
 	if ( profile ) {
 	  options.profile = profile;
@@ -426,11 +457,17 @@ var tabbed = {
 	tab.append(content);
 	tabbed.tabTypes[type].create(content, options);
       });
-      $(g).addClass("trill_on_swish-event-receiver");
-      $(g).on("source", function(ev, src) {
+      $(g).addClass("swish-event-receiver");
+      $(g).on("download save fileInfo print", function(ev) {
 	var tab = $(ev.target).closest(".tab-pane");
-	if ( tab.is(":visible") &&
-	     tab.closest(".tabbed").tabbed('setSource', tab, src) ) {
+	if ( tab.is(":visible") ) {
+	  var typelabel = { "download" : "you wish to download",
+			    "save"     : "you wish to save",
+			    "print"    : "you wish to print",
+			    "fileInfo" : "for which you want details"
+	  };
+
+	  modal.alert("Please activate the tab "+typelabel[ev.type]);
 	  ev.stopPropagation();
 	}
       });
@@ -469,20 +506,20 @@ var tabbed = {
     },
 
     profileForm: function() {
-      if ( config.trill_on_swish.profiles && config.trill_on_swish.profiles.length > 0 ) {
+      if ( config.swish.profiles && config.swish.profiles.length > 0 ) {
 	var def;
 
-	for(var i=0; i<config.trill_on_swish.profiles.length; i++) {
-	  delete config.trill_on_swish.profiles[i].active;
+	for(var i=0; i<config.swish.profiles.length; i++) {
+	  delete config.swish.profiles[i].active;
 	}
 
 	if ( (def=preferences.getVal("default-profile")) ) {
-	  for(var i=0; i<config.trill_on_swish.profiles.length; i++) {
-	    if ( config.trill_on_swish.profiles[i].value == def )
-	      config.trill_on_swish.profiles[i].active = true
+	  for(var i=0; i<config.swish.profiles.length; i++) {
+	    if ( config.swish.profiles[i].value == def )
+	      config.swish.profiles[i].active = true
 	  }
 	} else {
-	  config.trill_on_swish.profiles[0].active = true;
+	  config.swish.profiles[0].active = true;
 	}
 
 	var pform =
@@ -490,7 +527,7 @@ var tabbed = {
 	  {class:"tabbed-profile"},
 	  $.el.label({class: "tabbed-left"}, "based on"),
 	  $.el.div({class: "input-group select-profile"},
-		   form.fields.radio("profile", config.trill_on_swish.profiles)),
+		   form.fields.radio("profile", config.swish.profiles)),
 	  $.el.label({class: "tabbed-right"}, "profile"));
 
 	$(pform).on("click", function(ev) {
@@ -506,7 +543,7 @@ var tabbed = {
     },
 
     profileValue: function(name, ext) {
-      var url = config.http.locations.trill_on_swish + "profile/" + name + "." + ext;
+      var url = config.http.locations.swish + "profile/" + name + "." + ext;
       return $.ajax({ url: url,
 		      type: "GET",
 		      data: {format: "raw"},
@@ -522,6 +559,12 @@ var tabbed = {
      */
     navTabs: function() {
       return this.find("ul.nav-tabs").first();
+    },
+
+    navTab: function(id) {
+      var a = this.find("ul.nav-tabs").first().find("a[data-id='"+id+"']");
+      if ( a.length > 0 )
+	return a;
     },
 
     navContent: function() {
@@ -561,10 +604,10 @@ var tabbed = {
   }
 
   function profileObject(name) {
-    if ( config.trill_on_swish.profiles ) {
-      for(var i=0; i<config.trill_on_swish.profiles.length; i++) {
-	if ( config.trill_on_swish.profiles[i].value == name )
-	  return config.trill_on_swish.profiles[i];
+    if ( config.swish.profiles ) {
+      for(var i=0; i<config.swish.profiles.length; i++) {
+	if ( config.swish.profiles[i].value == name )
+	  return config.swish.profiles[i];
       }
     }
   }

@@ -163,7 +163,7 @@ define([ "jquery", "preferences", "laconic" ],
 	var cb = $($.el.input({type:"checkbox"}));
 
 	if ( options.preference !== undefined ) {
-	  cb.addClass("trill_on_swish-event-receiver");
+	  cb.addClass("swish-event-receiver");
 	  if ( preferences.getVal(options.preference) )
 	    cb.prop("checked", true);
 	  cb.on("click", function() {

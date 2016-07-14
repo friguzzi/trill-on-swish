@@ -5,6 +5,7 @@ This notebook uses the non probabilistic profile
 </div>
 
 <div class="nb-cell program" data-singleline="true">
+owl_rdf('
 &lt;?xml version="1.0"?&gt;<br />
 <br />
 &lt;!DOCTYPE rdf:RDF [<br />
@@ -34,6 +35,7 @@ This notebook uses the non probabilistic profile
      --&gt;<br />
 <br />
 &lt;/rdf:RDF&gt;
+').
 </div>
 
 <div class="nb-cell query">

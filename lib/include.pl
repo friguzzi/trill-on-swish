@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_include,
+:- module(swish_include,
 	  [
 	  ]).
 :- use_module(gitty).
@@ -50,21 +50,21 @@ We allow for hierarchical and circular includes.
 */
 
 
-trill_on_swish:term_expansion(:- include(FileIn), Expansion) :-
+swish:term_expansion(:- include(FileIn), Expansion) :-
 	atomic(FileIn),
 	atom_string(File, FileIn),
 	(   prolog_load_context(module, Module),
-	    clause(Module:'trill_on_swish included'(File), true)
+	    clause(Module:'swish included'(File), true)
 	->  Expansion = []
-	;   Expansion = [ (:- discontiguous('trill_on_swish included'/1)),
-		          'trill_on_swish included'(File),
+	;   Expansion = [ (:- discontiguous('swish included'/1)),
+		          'swish included'(File),
 		          (:- include(stream(Id, Stream, [close(true)])))
 			],
-	    '$push_input_context'(trill_on_swish_include),
-	    setting(trill_on_swish_web_storage:directory, Store),
+	    '$push_input_context'(swish_include),
+	    setting(web_storage:directory, Store),
 	    add_extension(File, FileExt),
 	    catch(gitty_data(Store, FileExt, Data, _Meta), _, fail),
-	    atom_concat('trill_on_swish://', FileExt, Id),
+	    atom_concat('swish://', FileExt, Id),
 	    open_string(Data, Stream),
 	    '$pop_input_context'
 	).
@@ -92,7 +92,7 @@ is_hash(Name) :-
 
 sandbox:safe_directive(M:include(stream(Id, Stream, [close(true)]))) :-
 	is_stream(Stream),
-	sub_atom(Id, 0, _, _, 'trill_on_swish://'),
+	sub_atom(Id, 0, _, _, 'swish://'),
 	prolog_load_context(module, M).
 
 
@@ -111,10 +111,10 @@ prolog_colour:term_colours((:- include(File)),
 			   ]) :-
 	debug(include, 'Classifying ~p', [File]),
 	(   atomic(File),
-	    setting(trill_on_swish_web_storage:directory, Store),
+	    setting(web_storage:directory, Store),
 	    add_extension(File, FileExt),
 	    catch(gitty_commit(Store, FileExt, _Meta), _, fail)
-	->  atom_concat('trill_on_swish://', FileExt, Id),
+	->  atom_concat('swish://', FileExt, Id),
 	    FileClass = file(Id)
 	;   FileClass = nofile
 	),
@@ -127,13 +127,46 @@ prolog_colour:term_colours((:- include(File)),
 
 :- multifile
 	prolog:xref_open_source/2,
-	prolog:xref_source_file/3.
+	prolog:xref_source_file/3,
+	prolog:xref_source_identifier/2,
+	prolog:xref_source_time/2.
+
+%%	prolog:xref_source_identifier(+Src, -Id) is semidet.
+%%	prolog:xref_open_source(+File, -Stream) is det.
+%%	prolog:xref_source_time(+File, -Modified) is det.
+%
+%	Map swish://file to a file from the gitty store.
+
+prolog:xref_source_identifier(Src, Id) :-
+	atom(Src),
+	sub_atom(Src, 0, _, _, 'swish://'), !,
+	Id = Src.
 
 prolog:xref_open_source(File, Stream) :-
-	atom_concat('trill_on_swish://', Name, File),
-	setting(trill_on_swish_web_storage:directory, Store),
+	atom(File),
+	atom_concat('swish://', Name, File),
+	setting(web_storage:directory, Store),
 	catch(gitty_data(Store, Name, Data, _Meta), _, fail),
 	open_string(Data, Stream).
 
+prolog:xref_source_time(File, Modified) :-
+	atom(File),
+	atom_concat('swish://', Name, File),
+	setting(web_storage:directory, Store),
+	catch(gitty_commit(Store, Name, Meta), _, fail),
+	Modified = Meta.get(time).
+
+%%	prolog:xref_source_file(+Term, -Path, +Options)
+%
+%	Deal with the above expansion for :- include(program) to support
+%	the cross-referencer.
+
 prolog:xref_source_file(stream(Id, _Stream, [close(true)]), Id, _).
+prolog:xref_source_file(File, Id, Options) :-
+	atom(File),
+	option(relative_to(Src), Options),
+	atom(Src),
+	sub_atom(Src, 0, _, _, 'swish://'),
+	add_extension(File, FileExt),
+	atom_concat('swish://', FileExt, Id).
 

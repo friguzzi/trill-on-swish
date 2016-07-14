@@ -27,12 +27,8 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_trace,
-/**/
-	  [ '$trill_on_swish wrapper'/1		% +Goal
-/*
-	  [ '$trill_on_swish wrapper'/2		% +Goal, -Residuals
-*/
+:- module(swish_trace,
+	  [ '$swish wrapper'/2		% +Goal, -Residuals
 	  ]).
 :- use_module(library(debug)).
 :- use_module(library(settings)).
@@ -51,21 +47,18 @@
 
 :- use_module(storage).
 
-:- if(current_setting(trill_on_swish:debug_info)).
-:- set_setting(trill_on_swish:debug_info, true).
+:- if(current_setting(swish:debug_info)).
+:- set_setting(swish:debug_info, true).
 :- endif.
 
 :- set_prolog_flag(generate_debug_info, false).
 
 :- meta_predicate
-	'$trill_on_swish wrapper'(0).
-/*
-	'$trill_on_swish wrapper'(0, -).
-*/
+	'$swish wrapper'(0, -).
 
 /** <module>
 
-Allow tracing pengine execution under trill_on_swish.
+Allow tracing pengine execution under SWISH.
 */
 
 :- multifile
@@ -139,9 +132,9 @@ wrapper_frame(Frame0, Frame) :-
 	parent_frame(Frame0, Frame),
 	prolog_frame_attribute(Frame, predicate_indicator, PI),
 	debug(trace, 'Parent: ~p', [PI]),
-	(   PI == trill_on_swish_call/1
+	(   PI == swish_call/1
 	->  true
-	;   PI == trill_on_swish_trace:trill_on_swish_call/1
+	;   PI == swish_trace:swish_call/1
 	), !.
 
 parent_frame(Frame, Frame).
@@ -184,26 +177,20 @@ strip_stack(error(Error, context(prolog_stack(S), Msg)),
 	nonvar(S).
 strip_stack(Error, Error).
 
-%%	'$trill_on_swish wrapper'(:Goal, -Residuals)
+%%	'$swish wrapper'(:Goal, -Residuals)
 %
-%	Wrap a trill_on_swish goal in '$trill_on_swish  wrapper'. This has two advantages:
-%	we can detect that the tracer is   operating  on a trill_on_swish goal by
+%	Wrap a SWISH goal in '$swish  wrapper'. This has two advantages:
+%	we can detect that the tracer is   operating  on a SWISH goal by
 %	inspecting the stack and we can  save/restore the debug state to
 %	deal with debugging next solutions.
 
-:- meta_predicate trill_on_swish_call(0).
+:- meta_predicate swish_call(0).
 
-/**/
-'$trill_on_swish wrapper'(Goal) :-
-	catch(trill_on_swish_call(Goal), E, throw(E)),
-	deterministic(Det),
-/*
-'$trill_on_swish wrapper'(Goal, '$residuals'(Residuals)) :-
-	catch(trill_on_swish_call(Goal), E, throw(E)),
+'$swish wrapper'(Goal, '$residuals'(Residuals)) :-
+	catch(swish_call(Goal), E, throw(E)),
 	deterministic(Det),
 	Goal = M:_,
 	residuals(M, Residuals),
-*/
 	(   tracing,
 	    Det == false
 	->  (   notrace,
@@ -215,13 +202,13 @@ strip_stack(Error, Error).
 	;   notrace
 	).
 
-trill_on_swish_call(Goal) :-
+swish_call(Goal) :-
 	Goal,
 	no_lco.
 
 no_lco.
 
-:- '$hide'(trill_on_swish_call/1).
+:- '$hide'(swish_call/1).
 :- '$hide'(no_lco/0).
 
 
@@ -330,12 +317,12 @@ frame_file(Frame, File) :-
 %%	pengine_file(+File) is semidet.
 %
 %	True if File is a Pengine controlled file. This is currently the
-%	main file (pengine://) and (trill_on_swish://) for included files.
+%	main file (pengine://) and (swish://) for included files.
 
 pengine_file(File) :-
 	sub_atom(File, 0, _, _, 'pengine://'), !.
 pengine_file(File) :-
-	sub_atom(File, 0, _, _, 'trill_on_swish://').
+	sub_atom(File, 0, _, _, 'swish://').
 
 %%	clause_position(+PC) is semidet.
 %
@@ -491,7 +478,7 @@ set_file_breakpoints(_Pengine, PFile, Text, Dict) :-
 	->  debug(trace(break), 'Pengine main source', []),
 	    maplist(set_pengine_breakpoint(File, File, Text), List)
 	;   source_file_property(PFile, includes(File, _Time)),
-	    atom_concat('trill_on_swish://', StoreFile, File)
+	    atom_concat('swish://', StoreFile, File)
 	->  debug(trace(break), 'Pengine included source ~p', [StoreFile]),
 	    storage_file(StoreFile, IncludedText, _Meta),
 	    maplist(set_pengine_breakpoint(PFile, File, IncludedText), List)
@@ -542,7 +529,7 @@ bp_by_file(Dict, File-Lines) :-
 add_breakpoint(PFile, PFile, Text, Line) :- !,
 	set_pengine_breakpoint(PFile, PFile, Text, Line).
 add_breakpoint(PFile, File, _Text, Line) :-
-	atom_concat('trill_on_swish://', Store, File), !,
+	atom_concat('swish://', Store, File), !,
 	storage_file(Store, Text, _Meta),
 	set_pengine_breakpoint(PFile, File, Text, Line).
 add_breakpoint(_, _, _, _Line).			% not in our files.
@@ -569,7 +556,7 @@ current_pengine_breakpoint(PFile, File-(Id-Line)) :-
 
 %%	prolog_clause:open_source(+File, -Stream) is semidet.
 %
-%	Open trill_on_swish non-file sources.
+%	Open SWISH non-file sources.
 
 :- multifile prolog_clause:open_source/2.
 
@@ -582,7 +569,7 @@ prolog_clause:open_source(File, Stream) :-
 	pengine_property(Pengine, source(File, Source)),
 	open_string(Source, Stream).
 prolog_clause:open_source(File, Stream) :-
-	atom_concat('trill_on_swish://', GittyFile, File), !,
+	atom_concat('swish://', GittyFile, File), !,
 	storage_file(GittyFile, Data, _Meta),
 	open_string(Data, Stream).
 
@@ -597,9 +584,10 @@ prolog_clause:open_source(File, Stream) :-
 
 exception_hook(Ex, Ex, _Frame, Catcher) :-
 	Catcher \== none,
+	Catcher \== 'C',
 	prolog_frame_attribute(Catcher, predicate_indicator, PI),
 	debug(trace(exception), 'Ex: ~p, catcher: ~p', [Ex, PI]),
-	PI == '$trill_on_swish wrapper'/1,
+	PI == '$swish wrapper'/1,
 	trace,
 	fail.
 
@@ -635,7 +623,7 @@ sandbox:safe_primitive(system:notrace).
 sandbox:safe_primitive(system:tracing).
 sandbox:safe_primitive(edinburgh:debug).
 sandbox:safe_primitive(system:deterministic(_)).
-sandbox:safe_primitive(trill_on_swish_trace:residuals(_,_)).
+sandbox:safe_primitive(swish_trace:residuals(_,_)).
 
 
 		 /*******************************

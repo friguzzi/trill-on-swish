@@ -63,6 +63,7 @@ _not_ see exactly the same UI for cooperation.  What about
 	  - Save, clearing name.
     - Indicate branch points in history?
       - Requires complete graph in memory.
+  - Re-map Control-S (google-docs ignores save)
 
 ## Login
 
@@ -82,23 +83,12 @@ _not_ see exactly the same UI for cooperation.  What about
 
 ## Tabbed editor
 
-  - Notebook
-    - Connect query to above source.				[OK]
-    - Multiple sources:
-      - Allow naming sources?
-      - Allow one source to include others in the same notebook?
-    - Avoid hyperlinks to destroy the page.
-      - show predicate links in a modal dialog
-        - /pldoc/man?predicate=member/2				[OK]
-	- other predicate links.
-      - Use `target=` for others.
   - Source search: pass number of items being searched and
     if there are too many hits, balance over files.
   - Set tab-width per source?
   - Debug (trace) through included files
     - Works, except for following the source.
   - Deal with files/line numbers over multiple files
-  - Jump to source for goals.
   - Staging
     Control-S (whatever) saves data to `staging area'.
     - In addition to HEAD, introduce STAGE (gitty solution)?
@@ -107,13 +97,20 @@ _not_ see exactly the same UI for cooperation.  What about
       - Make sure running includes the browser version.
         - Send list of modified tabs
 
+## Notebooks
+
+  - Save notebook/program as new profile?
+  - Collapsible sections?
+  - Move sections (or select multiple)
+  - Delete query from menu?  Better: undo for delete.
+
 ## SWISH as Prolog frontend for local usage
 
   - Deal with login
     - Limit to localhost.  Proposed by Douglas Miles:
       - Generate random initial URL
       - Fire on this URL
-      - Esablish session cookie
+      - Establish session cookie
       - Demand this cookie and destroy the initial URL
     - Shared/remote usage
       - Describe how to setup HTTPS.

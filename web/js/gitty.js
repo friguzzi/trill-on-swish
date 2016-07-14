@@ -186,7 +186,7 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 	    else
 	      file = commit;
 
-	    elem.parents(".trill_on_swish").trill_on_swish('playFile', file);
+	    elem.parents(".swish").swish('playFile', file);
 	    $("#ajaxModal").modal('hide');
 	  }
 	  return false;
@@ -207,7 +207,7 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 		   data.history = data.commit;
 		 },
 		 error: function(jqXHDR) {
-		   modal.ajaxError(jqXHR);
+		   modal.ajaxError(jqXHDR);
 		 }
 	       });
       });

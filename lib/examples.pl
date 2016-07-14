@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_examples, []).
+:- module(swish_examples, []).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_json)).
 :- use_module(library(http/json)).
@@ -50,15 +50,15 @@ two sources:
 
 :- multifile
 	user:file_search_path/2,
-	trill_on_swish_config:config/2,
-	trill_on_swish_config:source_alias/2.
+	swish_config:config/2,
+	swish_config:source_alias/2.
 
 % make example(File) find the example data
-user:file_search_path(example, trill_on_swish(examples)).
+user:file_search_path(example, swish(examples)).
 % make SWISH serve /example/File as example(File).
-trill_on_swish_config:source_alias(example, [access(read), search('*.{owl,swinb}')]).
+swish_config:source_alias(example, [access(read), search('*.{pl,swinb}')]).
 
-:- http_handler(trill_on_swish(list_examples),
+:- http_handler(swish(list_examples),
 		list_examples, [id(swish_examples)]).
 
 
@@ -83,7 +83,7 @@ list_examples(_Request) :-
 %	  - title:String
 
 example_files(AllExamples) :-
-	http_absolute_location(trill_on_swish(example), HREF, []),
+	http_absolute_location(swish(example), HREF, []),
 	findall(Index,
 		absolute_file_name(example(.), Index,
 				   [ access(read),
@@ -101,7 +101,7 @@ index_json(HREF, Dir, JSON) :-
 	read_file_to_json(File, JSON0),
 	maplist(add_href(HREF), JSON0, JSON).
 index_json(HREF, Dir, JSON) :-
-	string_concat(Dir, "/*.owl", Pattern),
+	string_concat(Dir, "/*.pl", Pattern),
 	expand_file_name(Pattern, Files),
 	maplist(ex_file_json(HREF), Files, JSON).
 
@@ -137,14 +137,14 @@ ex_file_json(HREF0, Path, json{file:File, href:HREF, title:Base}) :-
 %	Extract examples from the gitty store.
 
 storage_examples(List) :-
-	trill_on_swish_config:config(community_examples, true),
+	swish_config:config(community_examples, true),
 	findall(Ex, gitty_example(Ex), List1),
 	List1 \== [], !,
 	List = [json{type:"divider"}|List1].
 storage_examples([]).
 
 gitty_example(json{title:Title, file:File, type:"store"}) :-
-	setting(trill_on_swish_web_storage:directory, Store),
+	setting(web_storage:directory, Store),
 	gitty_file(Store, File, _),
 	gitty_commit(Store, File, Meta),
 	Meta.get(example) == true,

@@ -272,10 +272,12 @@ classification of tokens.
 		     "float": "number",
 		     "key": "atom",	/* TBD: or integer */
 		     "sep": "atom",	/* : in dict */
+		     "ext_quant": "atom", /* setof ^-symbol */
 
 		     "expanded": "expanded",
 		     "comment_string":"string",
 		     "identifier": "atom",
+		     "delimiter": "atom",
 		     "module": "atom",
 
 		     "head_exported": "atom",
@@ -338,6 +340,8 @@ classification of tokens.
 		     "brace_term_close": "brace_term_close",
 		     "neck": "neck",
 		     "fullstop": "fullstop",
+
+		     "string_terminal": "string",
 
 		     "html": "functor",
 		     "entity": "atom",
@@ -617,4 +621,42 @@ classification of tokens.
     return elem[0];
   }
 
+  /**
+   * @param {Object} token is an enriched token
+   * @returns {Array(Object)} is an array of source references.
+   */
+
+  CodeMirror.prototype.getTokenReferences = function(token) {
+    var result = [];
+
+    function setFile(obj, from) {
+      if ( from && from.indexOf("swish://") == 0 ) {
+	obj.file = from.substring(8);
+	return true;
+      }
+    }
+
+    switch(token.type) {
+      case "goal_local":
+	var obj = {
+	  title: "Source for "+token.text+"/"+token.arity,
+	  line:  token.line,
+	  regex: new RegExp("\\b"+RegExp.escape(token.text), "g"),
+	  showAllMatches: true
+	};
+	setFile(obj, token.file);
+	result.push(obj);
+	break;
+      case "file":
+	var obj = {};
+
+	if ( setFile(obj, token.path) ) {
+	  obj.title = "Included file " + obj.file;
+	  result.push(obj);
+	}
+        break;
+    }
+
+    return result;
+  }
 });

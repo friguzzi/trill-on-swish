@@ -44,7 +44,7 @@ define(["jquery", "preferences"],
     pop: function(e) {
       if ( e.state ) {
 	if ( e.state.meta && e.state.meta.name ) {
-	  $(".trill_on_swish").trill_on_swish('playFile', e.state.meta.name);
+	  $(".swish").swish('playFile', e.state.meta.name);
 	} else if ( e.state.location ) {
 	  window.location =  e.state.location;
 	}
@@ -89,7 +89,7 @@ define(["jquery", "preferences"],
     },
 
     openRecent: function(ev, doc) {
-      return history.openRecent[doc.type](ev, doc);
+      return history.openRecent[doc.st_type](ev, doc);
     },
 
     /**
@@ -115,7 +115,7 @@ define(["jquery", "preferences"],
    * Open recent "gitty" document
    */
   history.openRecent.gitty = function(ev, doc) {
-    $(ev.target).parents(".trill_on_swish").trill_on_swish('playFile', doc.id);
+    $(ev.target).parents(".swish").swish('playFile', doc.id);
   };
 
   window.onpopstate = history.pop;

@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_help, []).
+:- module(swish_help, []).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_server_files)).
 
@@ -38,8 +38,8 @@ This module serves help information for SWISH.
 @tbd	Server SWI-Prolog Markdown files.
 */
 
-:- http_handler(trill_on_swish(help), serve_files_in_directory(swish_help),
+:- http_handler(swish(help), serve_files_in_directory(swish_help),
 		[id(help),prefix]).
 
-user:file_search_path(swish_help, trill_on_swish(web/help)).
+user:file_search_path(swish_help, swish(web/help)).
 

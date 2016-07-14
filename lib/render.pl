@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_render,
+:- module(swish_render,
 	  [ use_rendering/1,		% +Renderer
 	    use_rendering/2,		% +Renderer, +Options
 
@@ -80,7 +80,7 @@ means it must call html//1 to generate HTML tokens).
 
 :- multifile user:file_search_path/2.
 
-user:file_search_path(render, trill_on_swish('lib/render')).
+user:file_search_path(render, swish('lib/render')).
 
 
 %%	use_rendering(+FileOrID)
@@ -90,7 +90,7 @@ user:file_search_path(render, trill_on_swish('lib/render')).
 %
 %	@see use_rendering/2.
 
-:- multifile user:term_expansion/2.
+:- multifile system:term_expansion/2.
 
 use_rendering(Rendering) :-
 	use_rendering(Rendering, []).
@@ -108,20 +108,24 @@ use_rendering(Rendering, Options) :-
 	->  true
 	;   existence_error(renderer, Renderer)
 	),
-	retractall(Into:'trill_on_swish renderer'(Renderer, _)),
-	assertz(Into:'trill_on_swish renderer'(Renderer, Options)).
+	retractall(Into:'swish renderer'(Renderer, _)),
+	assertz(Into:'swish renderer'(Renderer, Options)).
 
-user:term_expansion((:- use_rendering(Renderer)), Expanded) :-
+system:term_expansion((:- use_rendering(Renderer)), Expanded) :-
 	expand_rendering(Renderer, [], Expanded).
-user:term_expansion((:- use_rendering(Renderer, Options)), Expanded) :-
+system:term_expansion((:- use_rendering(Renderer, Options)), Expanded) :-
 	expand_rendering(Renderer, Options, Expanded).
 
 expand_rendering(Module:Renderer, Options,
-		 Module:'trill_on_swish renderer'(Renderer, Options)) :- !,
+		 [ (:- discontiguous(Module:'swish renderer'/2)),
+		   Module:'swish renderer'(Renderer, Options)
+		 ]) :- !,
 	must_be(atom, Module),
 	must_be(atom, Renderer).
 expand_rendering(Renderer, Options,
-		 'trill_on_swish renderer'(Renderer, Options)) :-
+		 [ (:- discontiguous('swish renderer'/2)),
+		   'swish renderer'(Renderer, Options)
+		 ]) :-
 	must_be(atom, Renderer).
 
 %%	pengines_io:binding_term(+Term, +Vars, +Options) is semidet.
@@ -148,8 +152,8 @@ pengines_io:binding_term(Term, Vars, Options) -->
 call_term_rendering(Module, Term, Vars, Options, Tokens) :-
 	State = state([]),
 	default_module(Module, Target),
-	current_predicate(Target:'trill_on_swish renderer'/2),
-	Target:'trill_on_swish renderer'(Name, RenderOptions),
+	current_predicate(Target:'swish renderer'/2),
+	Target:'swish renderer'(Name, RenderOptions),
 	atom(Name),
 	is_new(State, Name),
 	renderer(Name, RenderModule, _Comment),
@@ -220,6 +224,6 @@ register_renderer(Name, Comment) :-
 	throw(error(context_error(nodirective, register_renderer(Name, Comment)),
 		    _)).
 
-user:term_expansion((:- register_renderer(Name, Comment)),
-		    trill_on_swish_render:renderer(Name, Module, Comment)) :-
+system:term_expansion((:- register_renderer(Name, Comment)),
+		    swish_render:renderer(Name, Module, Comment)) :-
 	prolog_load_context(module, Module).

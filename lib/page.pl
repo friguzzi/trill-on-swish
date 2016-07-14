@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_page,
+:- module(swish_page,
 	  [ swish_reply/2,			% +Options, +Request
 	    swish_page//1,			% +Options
 
@@ -60,7 +60,6 @@
 
 :- use_module(config).
 :- use_module(help).
-:- use_module(form).
 :- use_module(search).
 
 /** <module> Provide the SWISH application as Prolog HTML component
@@ -70,15 +69,15 @@ grammer rules. This allows for server-side   generated  pages to include
 swish or parts of swish easily into a page.
 */
 
-http:location(pldoc, trill_on_swish(pldoc), [priority(100)]).
+http:location(pldoc, swish(pldoc), [priority(100)]).
 
-:- http_handler(trill_on_swish(.), swish_reply([]), [id(trill_on_swish), prefix]).
+:- http_handler(swish(.), swish_reply([]), [id(swish), prefix]).
 
 :- multifile
-	trill_on_swish_config:source_alias/2,
-	trill_on_swish_config:reply_page/1,
-	trill_on_swish_config:verify_write_access/3, % +Request, +File, +Options
-	trill_on_swish_config:authenticate/2.	    % +Request, -User
+	swish_config:source_alias/2,
+	swish_config:reply_page/1,
+	swish_config:verify_write_access/3, % +Request, +File, +Options
+	swish_config:authenticate/2.	    % +Request, -User
 
 %%	swish_reply(+Options, +Request)
 %
@@ -96,44 +95,47 @@ http:location(pldoc, trill_on_swish(pldoc), [priority(100)]).
 %	  - q(Query)
 %	  Use Query as the initial query.
 
-swish_reply(_Options, Request) :-
-	trill_on_swish_config:authenticate(Request, _User), % must throw to deny access
-	fail.
 swish_reply(Options, Request) :-
+	swish_config:authenticate(Request, User), !, % must throw to deny access
+	swish_reply2([user(User)|Options], Request).
+swish_reply(Options, Request) :-
+	swish_reply2(Options, Request).
+
+swish_reply2(Options, Request) :-
 	option(method(Method), Request),
-	Method \== get, !,
+	Method \== get, Method \== head, !,
 	swish_rest_reply(Method, Request, Options).
-swish_reply(_, Request) :-
+swish_reply2(_, Request) :-
 	serve_resource(Request), !.
-swish_reply(_, Request) :-
-	swish_reply_config(Request), !.
-swish_reply(SwishOptions, Request) :-
+swish_reply2(Options, Request) :-
+	swish_reply_config(Request, Options), !.
+swish_reply2(SwishOptions, Request) :-
 	Params = [ code(_,	 [optional(true)]),
 		   background(_, [optional(true)]),
 		   examples(_,   [optional(true)]),
 		   q(_,          [optional(true)]),
-		   format(_,     [oneof([trill_on_swish,raw,json]), default(trill_on_swish)])
+		   format(_,     [oneof([swish,raw,json]), default(swish)])
 		 ],
 	http_parameters(Request, Params),
 	params_options(Params, Options0),
 	merge_options(Options0, SwishOptions, Options1),
 	source_option(Request, Options1, Options2),
 	option(format(Format), Options2),
-	swish_reply2(Format, Options2).
+	swish_reply3(Format, Options2).
 
-swish_reply2(raw, Options) :-
+swish_reply3(raw, Options) :-
 	option(code(Code), Options), !,
 	format('Content-type: text/x-prolog~n~n'),
 	format('~s', [Code]).
-swish_reply2(json, Options) :-
+swish_reply3(json, Options) :-
 	option(code(Code), Options), !,
 	option(meta(Meta), Options, _{}),
 	reply_json_dict(json{data:Code, meta:Meta}).
-swish_reply2(_, Options) :-
-	trill_on_swish_config:reply_page(Options), !.
-swish_reply2(_, Options) :-
+swish_reply3(_, Options) :-
+	swish_config:reply_page(Options), !.
+swish_reply3(_, Options) :-
 	reply_html_page(
-	    trill_on_swish(main),
+	    swish(main),
 	    [ title('TRILL on SWISH -- Probabilistic Reasoner for Description Logics in Prolog'),
 	      link([ rel('shortcut icon'),
 		     href('/icons/rb_favicon.ico')
@@ -161,7 +163,7 @@ params_options([_|T0], T) :-
 
 source_option(_Request, Options0, Options) :-
 	option(code(Code), Options0),
-	option(format(trill_on_swish), Options0), !,
+	option(format(swish), Options0), !,
 	(   uri_is_global(Code)
 	->  Options = [url(Code),st_type(external)|Options0]
 	;   Options = Options0
@@ -185,7 +187,7 @@ source_option(_, Options, Options).
 %	exist, an HTTP 404 exception is returned.  Options:
 %
 %	  - alias(-Alias)
-%	    Get the trill_on_swish_config:source_alias/2 Alias name that
+%	    Get the swish_config:source_alias/2 Alias name that
 %	    was used to find File.
 
 source_file(Request, File, Options) :-
@@ -200,7 +202,7 @@ path_info_file(PathInfo, Path, Options) :-
 	sub_atom(PathInfo, B, _, A, /),
 	sub_atom(PathInfo, 0, B, _, Alias),
 	sub_atom(PathInfo, _, A, 0, File),
-	catch(trill_on_swish_config:source_alias(Alias, AliasOptions), E,
+	catch(swish_config:source_alias(Alias, AliasOptions), E,
 	      (print_message(warning, E), fail)),
 	Spec =.. [Alias,File],
 	http_safe_file(Spec, []),
@@ -248,7 +250,7 @@ source_metadata(Path, _Code, modified_since_loaded, true) :-
 	ModifiedWhenLoaded \== Modified.
 source_metadata(Path, _Code, module, Module) :-
 	file_name_extension(_, Ext, Path),
-	prolog_file_type(Ext, prolog),
+	user:prolog_file_type(Ext, prolog),
 	xref_public_list(Path, _, [module(Module)]).
 
 confirm_access(Path, Options) :-
@@ -262,13 +264,13 @@ eval_condition(loaded, Path) :-
 
 %%	serve_resource(+Request) is semidet.
 %
-%	Serve /trill_on_swish/Resource files.
+%	Serve /swish/Resource files.
 
 serve_resource(Request) :-
 	option(path_info(Info), Request),
 	resource_prefix(Prefix),
 	sub_atom(Info, 0, _, _, Prefix), !,
-	http_reply_file(trill_on_swish_web(Info), [], Request).
+	http_reply_file(swish_web(Info), [], Request).
 
 resource_prefix('css/').
 resource_prefix('help/').
@@ -342,7 +344,7 @@ pengine_logo(_Options) -->
 	},
 	html(a([href(HREF), class('pengine-logo')], &(nbsp))).
 swish_logo(_Options) -->
-	{ http_absolute_location(trill_on_swish(.), HREF, [])
+	{ http_absolute_location(swish(.), HREF, [])
 	},
 	html(a([href(HREF), class('swish-logo')], &(nbsp))).
 
@@ -367,8 +369,8 @@ swish_content(Options) -->
 	{ document_type(Type, Options)
 	},
 	swish_resources,
-	swish_config_hash,
-	html(div([id(content), class([container, trill_on_swish])],
+	swish_config_hash(Options),
+	html(div([id(content), class([container, swish])],
 		 [ div([class([tile, horizontal]), 'data-split'('50%')],
 		       [ div([ class([editors, tabbed])
 			     ],
@@ -385,17 +387,17 @@ swish_content(Options) -->
 		 ])).
 
 
-%%	swish_config_hash//
+%%	swish_config_hash(+Options)//
 %
 %	Set `window.swish.config_hash` to a  hash   that  represents the
 %	current configuration. This is used by   config.js  to cache the
 %	configuration in the browser's local store.
 
-swish_config_hash -->
-	{ swish_config_hash(Hash) },
+swish_config_hash(Options) -->
+	{ swish_config_hash(Hash, Options) },
 	js_script({|javascript(Hash)||
-		   window.trill_on_swish = window.trill_on_swish||{};
-		   window.trill_on_swish.config_hash = Hash;
+		   window.swish = window.swish||{};
+		   window.swish.config_hash = Hash;
 		   |}).
 
 
@@ -503,7 +505,7 @@ notebooks(swinb, Options) -->
 	  download_source(Spec, NoteBookText, Options),
 	  phrase(source_data_attrs(Options), Extra)
 	},
-	html(div([ class('notebook'),
+	html(div([ class('notebook fullscreen'),
 		   'data-label'('Notebook')		% Use file?
 		 ],
 		 [ pre([ class('notebook-data'),
@@ -604,15 +606,15 @@ swish_css --> html_post(head, \include_swish_css).
 include_swish_js -->
 	{ swish_resource(js, JS),
 	  swish_resource(rjs, RJS),
-	  http_absolute_location(trill_on_swish(js/JS), SwishJS, []),
-	  http_absolute_location(trill_on_swish(RJS),   SwishRJS, [])
+	  http_absolute_location(swish(js/JS), SwishJS, []),
+	  http_absolute_location(swish(RJS),   SwishRJS, [])
 	},
 	rjs_timeout(JS),
 	html(script([ src(SwishRJS),
 		      'data-main'(SwishJS)
 		    ], [])).
 
-rjs_timeout('trill_on_swish-min') --> !,
+rjs_timeout('swish-min') --> !,
 	js_script({|javascript||
 // Override RequireJS timeout, until main file is loaded.
 window.require = { waitSeconds: 0 };
@@ -622,7 +624,7 @@ rjs_timeout(_) --> [].
 
 include_swish_css -->
 	{ swish_resource(css, CSS),
-	  http_absolute_location(trill_on_swish(css/CSS), SwishCSS, [])
+	  http_absolute_location(swish(css/CSS), SwishCSS, [])
 	},
 	html(link([ rel(stylesheet),
 		    href(SwishCSS)
@@ -634,13 +636,13 @@ swish_resource(Type, ID) :-
 	;   absolute_file_name(File, _P, [file_errors(fail), access(read)])
 	), !.
 
-alt(js,  'trill_on_swish-min',     trill_on_swish_web('js/trill_on_swish-min.js')) :-
+alt(js,  'swish-min',     swish_web('js/swish-min.js')) :-
 	\+ debugging(nominified).
-alt(js,  'trill_on_swish',         trill_on_swish_web('js/trill_on_swish.js')).
-alt(css, 'trill_on_swish-min.css', trill_on_swish_web('css/trill_on_swish-min.css')) :-
+alt(js,  'swish',         swish_web('js/swish.js')).
+alt(css, 'swish-min.css', swish_web('css/swish-min.css')) :-
 	\+ debugging(nominified).
-alt(css, 'swish.css',     trill_on_swish_web('css/swish.css')).
-alt(rjs, 'js/require.js', trill_on_swish_web('js/require.js')) :-
+alt(css, 'swish.css',     swish_web('css/swish.css')).
+alt(rjs, 'js/require.js', swish_web('js/require.js')) :-
 	\+ debugging(nominified).
 alt(rjs, 'bower_components/requirejs/require.js', -).
 
@@ -674,7 +676,7 @@ read_data(media(Type,_), Request, Data, Meta) :-
 read_data(media(text/_,_), Request, Data, _{}) :-
 	http_read_data(Request, Data, [to(string)]).
 
-%%	trill_on_swish_config:verify_write_access(+Request, +File, +Options) is
+%%	swish_config:verify_write_access(+Request, +File, +Options) is
 %%	nondet.
 %
 %	Hook that verifies that the HTTP Request  may write to File. The
@@ -683,10 +685,10 @@ read_data(media(text/_,_), Request, Data, _{}) :-
 %	reply.  By default, the following options are passed:
 %
 %	  - alias(+Alias)
-%	    The trill_on_swish_config:source_alias/2 Alias used to find File.
+%	    The swish_config:source_alias/2 Alias used to find File.
 
 verify_write_access(Request, File, Options) :-
-	trill_on_swish_config:verify_write_access(Request, File, Options), !.
+	swish_config:verify_write_access(Request, File, Options), !.
 verify_write_access(Request, _File, _Options) :-
 	option(path(Path), Request),
 	throw(http_reply(forbidden(Path))).

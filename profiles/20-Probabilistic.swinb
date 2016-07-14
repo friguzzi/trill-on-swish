@@ -4,42 +4,8 @@
 This notebook uses the probabilistic profile
 </div>
 
-<div class="nb-cell program" data-singleline="true">
-&lt;?xml version="1.0"?&gt;<br />
-<br />
-&lt;!DOCTYPE rdf:RDF [<br />
-    &lt;!ENTITY owl "http://www.w3.org/2002/07/owl#" &gt;<br />
-    &lt;!ENTITY xsd "http://www.w3.org/2001/XMLSchema#" &gt;<br />
-    &lt;!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#" &gt;<br />
-    &lt;!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#" &gt;<br />
-]&gt;<br />
-<br />
-<br />
-&lt;rdf:RDF xmlns="http://here.the.IRI.of.your.ontology#"<br />
-     xml:base="http://here.the.IRI.of.your.ontology"<br />
-     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"<br />
-     xmlns:owl="http://www.w3.org/2002/07/owl#"<br />
-     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"<br />
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"&gt;<br />
-    &lt;owl:Ontology rdf:about="http://here.the.IRI.of.your.ontology"/&gt;<br />
-    <br />
-<br />
-<br />
-    &lt;!-- <br />
-    ///////////////////////////////////////////////////////////////////////////////////////<br />
-    //<br />
-    // Your Axioms Here<br />
-    //<br />
-    ///////////////////////////////////////////////////////////////////////////////////////<br />
-     --&gt;<br />
-<br />
-&lt;/rdf:RDF&gt;
-</div>
-
-<div class="nb-cell query">
-</div>
-
 <div class="nb-cell program" data-background="true" data-singleline="true">
+owl_rdf('
 &lt;?xml version="1.0"?&gt;<br />
 <br />
 &lt;!DOCTYPE rdf:RDF [<br />
@@ -78,6 +44,10 @@ This notebook uses the probabilistic profile
     &lt;owl:AnnotationProperty rdf:about="&amp;disponte;probability"/&gt;<br />
 <br />
 &lt;/rdf:RDF&gt;
+').
+</div>
+
+<div class="nb-cell query">
 </div>
 
 </div>

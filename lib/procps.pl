@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_procps,
+:- module(procps,
 	  [ procps_stat/1,		% -Stat
 	    procps_stat/2,		% +Pid, -Stat
 	    procps_thread_stat/2,	% ?Thread, -Stat

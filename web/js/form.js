@@ -9,8 +9,8 @@
  * @requires jquery
  */
 
-define([ "jquery", "config", "laconic", "tagmanager" ],
-       function($, config) {
+define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
+       function($, config, modal) {
   var form = {
     /**
      * Serialize a form as an object. The following normalizations are
@@ -68,8 +68,48 @@ define([ "jquery", "config", "laconic", "tagmanager" ],
       return obj;
     },
 
+    /**
+     * Provide feedback about problems with form elements
+     * @param form is the form to decorate
+     * @param error is a pengine error message created by lib/form.pl
+     */
+
+    formError: function(formel, error) {
+      formel.find(".has-error").removeClass("has-error");
+      formel.find(".help-block.with-errors").remove();
+
+      if ( error ) {
+	if ( error.code == "form_error" || error.code == "input_error" ) {
+	  errors = error.data.split("\n");
+	  for(var i=0; i<errors.length; i++) {
+	    var el = errors[i].split(/:\s*(.*)?/);
+
+	    form.fieldError(formel, el[0], el[1]);
+	  }
+	} else
+	{ modal.alert(error.data);
+	}
+      }
+    },
+
+    fieldError: function(form, field, msg) {
+      var input = form.find("input[name="+field+"]");
+
+      if ( input.length > 0 ) {
+	var group = input.closest(".form-group");
+
+	if ( input.parent().hasClass("input-group") )
+	  input = input.parent();
+
+	group.addClass("has-error");
+	input.after($.el.p({class:"help-block with-errors"}, msg));
+      } else
+      { alert("Missing value for "+field);
+      }
+    },
+
     showDialog: function(data) {
-      $(".trill_on_swish-event-receiver").trigger("dialog", data);
+      $(".swish-event-receiver").trigger("dialog", data);
     },
 
     /**
@@ -78,12 +118,12 @@ define([ "jquery", "config", "laconic", "tagmanager" ],
      * @param {any} [data] is the associated data
      */
     formBroadcast: function(event, data) {
-      $(".trill_on_swish-event-receiver").trigger(event, data);
+      $(".swish-event-receiver").trigger(event, data);
     },
 
     fields: {
       fileName: function(name, public, example, disabled) {
-	var labeltext = config.trill_on_swish.community_examples ? "Public | Example | name" : "Public | name"
+	var labeltext = config.swish.community_examples ? "Public | Example | name" : "Public | name"
 	var elem =
 	$.el.div({class:"form-group"},
 		 label("name", labeltext),
@@ -95,7 +135,7 @@ define([ "jquery", "config", "laconic", "tagmanager" ],
 					     checkbox("public",
 						      { checked: public
 						      })),
-				   config.trill_on_swish.community_examples ?
+				   config.swish.community_examples ?
 				   $.el.span({class:"input-group-addon",
 				              title:"If checked, add to examples menu"
 				             },
@@ -267,6 +307,30 @@ define([ "jquery", "config", "laconic", "tagmanager" ],
 	return elem;
       },
 
+      name: function(name, col) {
+	col = col||3;
+	var elem =
+	$.el.div({class:"form-group"},
+		 label("name", "Name", col),
+		 $.el.div({class:"col-xs-"+(12-col)},
+			  textInput("name",
+				    {placeholder:"Name",
+				     value:name})));
+	return elem;
+      },
+
+      filename: function(name, col) {
+	col = col||3;
+	var elem =
+	$.el.div({class:"form-group"},
+		 label("filename", "File name", col),
+		 $.el.div({class:"col-xs-"+(12-col)},
+			  textInput("filename",
+				    {placeholder:"File name",
+				     value:name})));
+	return elem;
+      },
+
       /**
        * @param {Object} options
        * @param {String} options.label is the label used for the
@@ -348,9 +412,79 @@ define([ "jquery", "config", "laconic", "tagmanager" ],
 	$.el.button(attrs,
 		    $.el.span({class:"glyphicon "+glyph}));
 	return elem;
+      },
+
+      /**
+       * Turn an icon into a dropdown button.
+       * @param {Object} options
+       * @param {Any}	 options.client is the `this` for the menu
+       *		 functions.
+       * @param {String} [options.divClass] additional class for the
+       * returned `div` element
+       * @param {String} [options.ulClass] additional class for the
+       * `ul` element that defines the menu.
+       * @param {Object} [options.actions] defines the menu items.
+       * this is passed to populateMenu()
+       * @returns {DIV} the downdown button
+       */
+      dropdownButton: function(icon, options) {
+	if ( !options ) options = {};
+	var cls     = options.divClass;
+	var ulClass = options.ulClass;
+
+	var dropdown = $.el.div(
+	  {class: "btn-group dropdown"+(cls?" "+cls:"")},
+	  $.el.button(
+	    {class:"dropdown-toggle",
+	     "data-toggle":"dropdown"},
+	    icon),
+	  $.el.ul({class:"dropdown-menu"+(ulClass?" "+ulClass:"")}));
+
+	if ( options.actions )
+	  form.widgets.populateMenu($(dropdown), options.client, options.actions);
+
+	return dropdown;
+      },
+
+      populateMenu: function(menu, client, actions) {
+	var ul = menu.find(".dropdown-menu");
+
+	function runMenu(a) {
+	  var action = $(a).data('action');
+
+	  if ( action )
+	    action.call(client, a);
+
+	  return false;
+	}
+
+	function addMenuItem(label, onclick) {
+	  if ( label.indexOf("--") == 0 ) {
+	    ul.append($.el.li({class:"divider"}));
+	  } else {
+	    var a = $.el.a(label);
+
+	    $(a).data('action', onclick);
+	    ul.append($.el.li(a));
+	  }
+	}
+
+	for(var a in actions) {
+	  if ( actions.hasOwnProperty(a) ) {
+	    addMenuItem(a, actions[a]);
+	  }
+	}
+
+	ul.on("click", "a", function() { runMenu(this); } );
+
+	return menu;
       }
     }
   };
+
+		 /*******************************
+		 *	     FUNCTIONS		*
+		 *******************************/
 
   function label(elemName, text, width) {
     width = width || 2;

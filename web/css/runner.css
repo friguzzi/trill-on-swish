@@ -92,19 +92,6 @@ div.runners-menu {
   z-index: 2000;
 }
 
-div.runners-menu button.dropdown-toggle {
-  background: none repeat scroll 0 0 transparent;
-  border: 0 none;
-  cursor: pointer;
-  padding: 0;
-  color: #000;
-  float: right;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 1;
-  opacity: 0.2;
-}
-
 div.runner-title button.dropdown-toggle {
   background: none repeat scroll 0 0 transparent;
   border: 0 none;
@@ -116,7 +103,7 @@ div.runner-title > button {
   background: none repeat scroll 0 0 transparent;
   border: 0 none;
   cursor: pointer;
-  padding: 0;
+  padding: 3px 0px;
   color: #000;
   float: right;
   font-size: 21px;
@@ -127,7 +114,10 @@ div.runner-title > button {
   margin-left: 5px;
 }
 
-div.runners-menu button.dropdown-toggle:hover,
+div.runner-title > button.rtb-toggleIconic
+{ padding: 8px 0px;
+}
+
 div.runner-title > button:hover {
   opacity: 0.8;
 }
@@ -143,14 +133,16 @@ span.runner-state.false      { background-image: url("../icons/dead.png");    }
 span.runner-state.error,
 span.runner-state.aborted    { background-image: url("../icons/error.png");   }
 
-div.controller.running    > div.running    { display:block; }
-div.controller.wait-next  > div.wait-next  { display:block; }
-div.controller.wait-input > div.wait-input { display:block; }
-div.controller > div                       { display:none;  }
+div.controller.running    > span.running    { display:inline; }
+div.controller.running    > span.sparklines { display:inline; }
+div.controller.wait-next  > span.sparklines { display:inline; }
+div.controller.wait-next  > span.wait-next  { display:inline; }
+div.controller.wait-input > span.wait-input { display:inline; }
+div.controller > span                       { display:none;  }
 
-div.wait-input button { float: right; box-sizing: border-box; }
-div.wait-input span   { display: block; overflow: hidden; }
-div.wait-input input  { width: 100%; box-sizing: border-box; }
+span.wait-input button { float: right; box-sizing: border-box; }
+span.wait-input span   { display: block; overflow: hidden; }
+span.wait-input input  { width: 100%; box-sizing: border-box; }
 
 /* print-message output */
 
@@ -187,7 +179,7 @@ td.answer-nth { color: #060; font-size: 80%; font-style: italic;
 /* The debugger */
 
 div.trace-buttons button > span { display: none; }
-div.trace-buttons button
+div.trace-buttons button, div.RIP
 { display: inline-block;
   width: 24px;
   height: 24px;
@@ -203,6 +195,9 @@ button.skip     { background-image: url("../icons/stepOver.png"); }
 button.up       { background-image: url("../icons/stepOut.png"); }
 button.retry    { background-image: url("../icons/retry.png"); }
 button.abort    { background-image: url("../icons/abort.png"); }
+
+div.RIP	{ background-image: url("../icons/rip.png");   }
+
 
 span.depth
 { display: inline-block;
@@ -230,4 +225,12 @@ div.prolog-exception
 { color: #f00;
   font-size: 80%;
   margin-left: 5em;
+}
+
+div.controller.running > span.sparklines { margin-left: 0.5em; }
+
+.jqstooltip {
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
 }

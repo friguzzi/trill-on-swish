@@ -55,7 +55,7 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
 				     tabled,
 				     runButton(data))));
 
-	elem.addClass("prolog-query-editor trill_on_swish-event-receiver");
+	elem.addClass("prolog-query-editor swish-event-receiver");
 	elem.append(content);
 
 	function tableSelected() {
@@ -63,7 +63,7 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
 	}
 
 	$(qediv).append(elem.children("textarea"))
-	        .prologEditor({ mode: "prolog", role: "query",
+	        .prologEditor({ role: "query",
 				sourceID: function() {
 				  return data.sourceID();
 				},
@@ -72,22 +72,27 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
 				}
 		              });
 
-	if ( typeof(data.examples) == "object" &&
-	     data.examples[0] &&
-	     !$(qediv).prologEditor('getSource', "query") )
-	  $(qediv).prologEditor('setSource', data.examples[0]);
+	elem.data(pluginName, data);
+
+	if ( !$(qediv).prologEditor('getSource', "query") )
+	{ if ( typeof(data.examples) == "object" ) {
+	    if ( data.examples[0] )
+	      $(qediv).prologEditor('setSource', data.examples[0]);
+	  } else {
+	    elem[pluginName]('setProgramEditor', $(data.editor), true);
+	  }
+	}
 
 	elem.on("current-program", function(ev, editor) {
 	  elem[pluginName]('setProgramEditor', $(editor));
 	});
 	elem.on("program-loaded", function(ev, editor) {
-	  if ( $(data.editor).data('prologEditor') == $(editor).data('prologEditor') ) {
+	  if ( $(data.editor).data('prologEditor') ==
+	       $(editor).data('prologEditor') ) {
 	    var exl = data.examples();
 	    elem.queryEditor('setQuery', exl && exl[0] ? exl[0] : "");
 	  }
 	});
-
-	elem.data(pluginName, data);
       });
     },
 
@@ -95,14 +100,17 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
      * @param {jQuery} editor has become the new current program
      * editor.  Update the examples and re-run the query highlighting.
      */
-    setProgramEditor: function(editor) {
+    setProgramEditor: function(editor, force) {
       var data = this.data(pluginName);
+
+      if ( data.editor == editor[0] && !force )
+	return this;
 
       data.editor = editor[0];
       if ( data.editor ) {
 	data.examples = function() {
 	  var exl    = editor.prologEditor('getExamples')||[];
-	  var global = editor.parents(".trill_on_swish").trill_on_swish('examples', true)||[];
+	  var global = editor.parents(".swish").swish('examples', true)||[];
 
 	  if ( $.isArray(global) )
 	  exl.concat(global);
@@ -127,7 +135,7 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
 	};
 
 	var exl = data.examples();
-	if ( exl && exl[0] ) {
+	if ( exl && exl[0] && this.queryEditor('isClean') ) {
 	  this.queryEditor('setQuery', exl[0]);
 	} else {
 	  editor.prologEditor('refreshHighlight');
@@ -135,6 +143,18 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
       } else
       { data.examples = "";
       }
+    },
+
+    /**
+     * @returns {jQuery} the associated program editor
+     */
+    getProgramEditor: function() {
+      var data = this.data(pluginName);
+
+      if ( data.editor )
+	return $(data.editor);
+      else
+	return $();
     },
 
     /**
@@ -210,9 +230,25 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
      * @param {String} query the new value of the query
      */
     setQuery: function(query) {
-      return this.find(".query")
-	         .prologEditor('setSource', query)
-		 .focus();
+      var data = this.data(pluginName);
+
+      data.cleanGen =
+	this.find(".query")
+	    .prologEditor('setSource', query)
+	    .focus()
+	    .prologEditor('changeGen');
+
+      return this;
+    },
+
+    isClean: function() {
+      var data = this.data(pluginName);
+
+      return ( !this.queryEditor('getQuery') ||
+	       ( data.cleanGen &&
+		 this.find(".query").prologEditor('isClean', data.cleanGen)
+	       )
+	     );
     },
 
     /**
@@ -220,67 +256,6 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
      */
     getQuery: function() {
       return this.find(".query").prologEditor('getSource', "query");
-    },
-
-    /**
-     * @param {String} [query] query to get the variables from
-     * @return {List.string} is a list of Prolog variables without
-     * duplicates
-     */
-
-    variables: function(query) {
-      var qspan = $.el.span({class:"query cm-s-prolog"});
-      var vars = [];
-
-      CodeMirror.runMode(query, "prolog", qspan);
-      $(qspan).find("span.cm-var").each(function() {
-	var name = $(this).text();
-	if ( vars.indexOf(name) < 0 )
-	  vars.push(name);
-      });
-
-      return vars;
-    },
-
-    /**
-     * Wrap current query in a solution modifier.
-     * TBD: If there is a selection, only wrap the selection
-     *
-     * @param {String} wrapper defines the type of wrapper to use.
-     */
-    wrapSolution: function(wrapper) {
-      var query = this.queryEditor('getQuery').replace(/\.\s*$/m, "");
-      var that = this;
-      var vars = this.queryEditor('variables', query);
-
-      function wrapQuery(pre, post) {
-	that.queryEditor('setQuery', pre + "("+query+")" + post + ".");
-	return that;
-      }
-
-      function order(l) {
-	var order = [];
-	for(var i=0; i<vars.length; i++)
-	  order.push("asc("+vars[i]+")");
-	return order.join(",");
-      }
-
-      switch ( wrapper ) {
-        case "Aggregate (count all)":
-	  return wrapQuery("aggregate_all(count, ", ", Count)");
-        /*case "Order by":
-	  return wrapQuery("order_by(["+order(vars)+"], ", ")");
-        case "Distinct":
-	  return wrapQuery("distinct(["+vars.join(",")+"], ", ")");*/
-        case "Limit":
-	  return wrapQuery("limit(10, ", ")");
-        case "Time":
-	  return wrapQuery("time(", ")");
-        /*case "Debug (trace)":
-	  return wrapQuery("trace, ", "");*/
-	default:
-	  alert("Unknown wrapper: \""+wrapper+"\"");
-      }
     },
 
     /**
@@ -299,10 +274,10 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
       q = $.trim(q);
 
       if ( !q ) {
-	$(".trill_on_swish-event-receiver").trigger("help", {file:"query.html"});
+	$(".swish-event-receiver").trigger("help", {file:"query.html"});
 	return this;
       }
-      $(".trill_on_swish-event-receiver").trigger("clearMessages");
+      $(".swish-event-receiver").trigger("clearMessages");
 
       var query = { query:q, editor: data.editor };
       if ( typeof(data.source) == "function" )
@@ -413,7 +388,7 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
     }
 
     $(dropup).on("click", "a", function() {
-      Q(this).queryEditor('wrapSolution', $(this).text());
+      Q(this).find(".query").prologEditor('wrapSolution', $(this).text());
     });
 
     return dropup;
@@ -443,7 +418,7 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
     var attr    = {type:"checkbox", name:"table"};
 
     if ( checked === undefined ) {
-      checked = config.trill_on_swish.tabled_results;
+      checked = config.swish.tabled_results;
     }
     if ( checked )
       attr.checked = "checked";

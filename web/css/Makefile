@@ -4,14 +4,14 @@ CSS=$(MAIN) \
 	navbar.css notebook.css pane.css runner.css \
 	tabbed.css term.css typeaheadjs.css types.css
 
-all:	trill_on_swish-min.css trill_on_swish-min.css.gz
+all:	swish-min.css swish-min.css.gz
 
-trill_on_swish-min.css: $(CSS)
-	cleancss -o $@ $(MAIN)
+swish-min.css: $(CSS)
+	cleancss --skip-restructuring -o $@ $(MAIN)
 	swipl css-inline.pl $@
 
-trill_on_swish-min.css.gz: trill_on_swish-min.css
+swish-min.css.gz: swish-min.css
 	gzip < $< > $@
 
 clean::
-	rm -f trill_on_swish-min.css trill_on_swish-min.css.gz
+	rm -f swish-min.css swish-min.css.gz

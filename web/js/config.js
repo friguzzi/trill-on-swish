@@ -29,21 +29,21 @@ var KEY = "SWISHCONFIG";
 var config;
 
 function getCachedConfig() {
-  if ( typeof(Storage) !== "undefined" && window.trill_on_swish.config_hash ) {
+  if ( typeof(Storage) !== "undefined" && window.swish.config_hash ) {
     var str;
 
     if ( (str = localStorage.getItem(KEY)) ) {
       value = JSON.parse(str);
-      if ( value.hash == window.trill_on_swish.config_hash )
+      if ( value.hash == window.swish.config_hash )
 	return value.config;
     }
   }
 }
 
 function setCachedConfig(config) {
-  if ( typeof(Storage) !== "undefined" && window.trill_on_swish.config_hash ) {
+  if ( typeof(Storage) !== "undefined" && window.swish.config_hash ) {
     localStorage.setItem(KEY, JSON.stringify(
-      { hash: window.trill_on_swish.config_hash,
+      { hash: window.swish.config_hash,
         config: config
       }));
   }
@@ -51,7 +51,7 @@ function setCachedConfig(config) {
 
 if ( !config ) {
   if ( !(config = getCachedConfig()) ) {
-    $.ajax("trill_on_swish_config.json",
+    $.ajax("swish_config.json",
 	   { dataType: "json",
 	     async: false,
 	     success: function(data) {

@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_ide,
+:- module(swish_ide,
 	  [ swish/0
 	  ]).
 :- use_module(library(http/thread_httpd)).
@@ -48,22 +48,22 @@ Open SWISH as an IDE for developing a local application.
 		 *******************************/
 
 :- multifile
-	trill_on_swish_config:config/2,			% Name, Value
-	trill_on_swish_config:source_alias/2,		% Alias, Options
-	trill_on_swish_config:verify_write_access/3,	% Request, File, Options
+	swish_config:config/2,			% Name, Value
+	swish_config:source_alias/2,		% Alias, Options
+	swish_config:verify_write_access/3,	% Request, File, Options
 	pengines:authentication_hook/3,		% Request, Application, User
 	pengines:not_sandboxed/2,		% User, Application
 	user:file_search_path/2.		% Alias, Path
 
 user:file_search_path(project, '.').
 
-trill_on_swish_config:config(show_beware,        false).
-trill_on_swish_config:config(community_examples, true).
+swish_config:config(show_beware,        false).
+swish_config:config(community_examples, true).
 
-trill_on_swish_config:source_alias(project, [access(both), search('*.pl')]).
-trill_on_swish_config:source_alias(library, []).
+swish_config:source_alias(project, [access(both), search('*.pl')]).
+swish_config:source_alias(library, []).
 
-trill_on_swish_config:verify_write_access(_Request, _File, _Options).
+swish_config:verify_write_access(_Request, _File, _Options).
 
 pengines:authentication_hook(_Request, swish, User) :-
 	current_user(User).

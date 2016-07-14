@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_web_storage,
+:- module(web_storage,
 	  [ storage_file/1,			% ?File
 	    storage_file/3			% +File, -Data, -Meta
 	  ]).
@@ -59,7 +59,7 @@ their own version.
 
 :- setting(directory, atom, storage, 'The directory for storing files.').
 
-:- http_handler(trill_on_swish('tos/'), web_storage, [ id(web_storage), prefix ]).
+:- http_handler(swish('p/'), web_storage, [ id(web_storage), prefix ]).
 
 :- initialization open_gittystore.
 
@@ -83,10 +83,17 @@ web_storage(Request) :-
 	option(method(Method), Request),
 	storage(Method, Request).
 
+:- multifile
+	swish_config:authenticate/2.
+
 storage(get, Request) :-
+	(   swish_config:authenticate(Request, User)
+	->  Options = [user(User)]
+	;   Options = []
+	),
 	http_parameters(Request,
-			[ format(Fmt,  [ oneof([trill_on_swish,raw,json,history,diff]),
-					 default(trill_on_swish),
+			[ format(Fmt,  [ oneof([swish,raw,json,history,diff]),
+					 default(swish),
 					 description('How to render')
 				       ]),
 			  depth(Depth, [ default(5),
@@ -106,7 +113,8 @@ storage(get, Request) :-
 	->  Format = diff(RelTo)
 	;   Format = Fmt
 	),
-	storage_get(Request, Format).
+	storage_get(Request, Format, Options).
+
 storage(post, Request) :-
 	http_read_json_dict(Request, Dict),
 	option(data(Data), Dict, ""),
@@ -220,13 +228,13 @@ meta_allowed(tags,	     list(string)).
 meta_allowed(description,    string).
 meta_allowed(commit_message, string).
 
-%%	storage_get(+Request, +Format) is det.
+%%	storage_get(+Request, +Format, +Options) is det.
 %
 %	HTTP handler that returns information a given gitty file.
 %
 %	@arg Format is one of
 %
-%	     - trill_on_swish
+%	     - swish
 %	     Serve file embedded in a SWISH application
 %	     - raw
 %	     Serve the raw file
@@ -238,14 +246,14 @@ meta_allowed(commit_message, string).
 %	     Reply with diff relative to RelTo.  Default is the
 %	     previous commit.
 
-storage_get(Request, trill_on_swish) :-
-	swish_reply_config(Request), !.
-storage_get(Request, Format) :-
+storage_get(Request, swish, Options) :-
+	swish_reply_config(Request, Options), !.
+storage_get(Request, Format, _) :-
 	setting(directory, Dir),
 	request_file_or_hash(Request, Dir, FileOrHash, Type),
 	storage_get(Format, Dir, Type, FileOrHash, Request).
 
-storage_get(trill_on_swish, Dir, _, FileOrHash, Request) :-
+storage_get(swish, Dir, _, FileOrHash, Request) :-
 	gitty_data(Dir, FileOrHash, Code, Meta),
 	swish_reply([code(Code),file(FileOrHash),st_type(gitty),meta(Meta)],
 		    Request).
@@ -301,7 +309,7 @@ authentity(Request) -->
 	pengines:authentication_hook/3.
 
 user(Request) -->
-	{ pengines:authentication_hook(Request, trill_on_swish, User),
+	{ pengines:authentication_hook(Request, swish, User),
 	  ground(User)
 	},
 	[ user-User ].
@@ -351,9 +359,9 @@ storage_file(File, Data, Meta) :-
 		 *******************************/
 
 :- multifile
-	trill_on_swish_search:typeahead/4.	% +Set, +Query, -Match, +Options
+	swish_search:typeahead/4.	% +Set, +Query, -Match, +Options
 
-%%	trill_on_swish_search:typeahead(+Set, +Query, -Match) is nondet.
+%%	swish_search:typeahead(+Set, +Query, -Match) is nondet.
 %
 %	Find files using typeahead  from  the   SWISH  search  box. This
 %	version defines the following sets:
@@ -366,7 +374,7 @@ storage_file(File, Data, Meta) :-
 %	@tbd caching?
 %	@tbd We should only demand public on public servers.
 
-trill_on_swish_search:typeahead(file, Query, FileInfo, _Options) :-
+swish_search:typeahead(file, Query, FileInfo, _Options) :-
 	setting(directory, Dir),
 	gitty_file(Dir, File, Head),
 	gitty_commit(Dir, Head, Meta),
@@ -393,7 +401,7 @@ meta_match_query(Query, Meta) :-
 	    \+ char_type(C, csym)
 	).
 
-trill_on_swish_search:typeahead(store_content, Query, FileInfo, Options) :-
+swish_search:typeahead(store_content, Query, FileInfo, Options) :-
 	limit(25, search_store_content(Query, FileInfo, Options)).
 
 search_store_content(Query, FileInfo, Options) :-

@@ -34,7 +34,7 @@ preferences.setDefault("semantic-highlighting", false);
 preferences.setDefault("emacs-keybinding", false);
 
 (function($) {
-  var pluginName = 'trill_on_swish';
+  var pluginName = 'swish';
 
   var defaults = {
     menu: {
@@ -57,27 +57,20 @@ preferences.setDefault("emacs-keybinding", false);
 	  menuBroadcast("download");
 	},
 	"Collaborate ...": function() {
-	  $("body").trill_on_swish('collaborate');
+	  $("body").swish('collaborate');
 	},
 	"Print group": "--",
 	"Print ...": function() {
-	  $(".prolog-editor").prologEditor('print');
+	  menuBroadcast("print");
 	}
       },
       "Edit":
-      { /*"Clear messages": function() {
+      { "Clear messages": function() {
 	  menuBroadcast("clearMessages");
-	},*/
-	"Edit with WebProtégé": function() {           //funzione aggiunta
-	  //window.open("http://127.0.0.1:8080/webprotege/");
-	  menuBroadcast("dialog", {title: "Coming Soon!",	body:  "We are working to allow the use of WebProtégé as editor of knowledge bases. The update date rapidly approaches!" });
 	},
 	"Changes": "--",
 	"View changes": function() {
 	  menuBroadcast("diff");
-	},
-	"Revert changes": function() {
-	  menuBroadcast("revert");
 	},
 	"Options": "--",
 	/*"Semantic highlighting": {
@@ -91,7 +84,7 @@ preferences.setDefault("emacs-keybinding", false);
 	}
       },
       "Examples": function(navbar, dropdown) {
-	$("body").trill_on_swish('populateExamples', navbar, dropdown);
+	$("body").swish('populateExamples', navbar, dropdown);
       },
       "Help":
       { "About ...": function() {
@@ -104,12 +97,15 @@ preferences.setDefault("emacs-keybinding", false);
 	"Runner ...": function() {
 	  menuBroadcast("help", {file:"runner.html"});
 	},
-	"Debugging ...": function() {
+	/*"Debugging ...": function() {
 	  menuBroadcast("help", {file:"debug.html"});
-	},
+	},*/
 	"Notebook ...": function() {
 	  menuBroadcast("help", {file:"notebook.html"});
 	},
+	/*"Editor ...": function() {
+	  menuBroadcast("help", {file:"editor.html"});
+	},*/
 	"Background": "--",
 	"Limitations ...": function() {
 	  menuBroadcast("help", {file:"beware.html"});
@@ -125,13 +121,13 @@ preferences.setDefault("emacs-keybinding", false);
   }; // defaults;
 
 
-  /** @lends $.fn.trill_on_swish */
+  /** @lends $.fn.swish */
   var methods = {
     /**
      * Initialise SWISH on the page. At this moment, a page can only
      * contain one SWISH application and swish is normally initialised
      * on the body.  This might change.
-     * @example $("body").trill_on_swish();
+     * @example $("body").swish();
      * {Object} options
      * {Boolean} options.show_beware If `true`, show a dialogue box
      * telling this is a limited version.
@@ -144,7 +140,7 @@ preferences.setDefault("emacs-keybinding", false);
       $("#search").search();
 
       options = options||{};
-      this.addClass("trill_on_swish");
+      this.addClass("swish");
 
       return this.each(function() {
 	var elem = $(this);
@@ -156,16 +152,15 @@ preferences.setDefault("emacs-keybinding", false);
 	data.runner = $(".prolog-runners").prologRunners();
 	data.query  = $(".prolog-query").queryEditor(
           { source:   function() {
-	      return elem.trill_on_swish('prologSource');
+	      return elem.swish('prologSource');
 	    },
 	    sourceID: function() {
 	      return editor.prologEditor('getSourceID');
 	    },
-	    examples: elem.trill_on_swish('examples'),
+	    examples: elem.swish('examples'),
 	    runner:   data.runner,
+	    editor:   editor[0]
 	  });
-
-	editor.prologEditor('makeCurrent');
 
 	$(".notebook").notebook();
 
@@ -184,7 +179,7 @@ preferences.setDefault("emacs-keybinding", false);
      *   - `saveProgram` -- save the current program
      *
      * This method triggers all elements of class
-     * `trill_on_swish-event-receiver`.
+     * `swish-event-receiver`.
      *
      * @param {String} name is the name of the trigger.
      * @param {Object|null} data provides additional data for the event.
@@ -212,10 +207,11 @@ preferences.setDefault("emacs-keybinding", false);
      * be used to highlight the Prolog port at the indicated location.
      */
     playFile: function(options) {
+      var elem = this;
       if ( typeof(options) == "string" )
 	options = {file:options};
 
-      /*var existing = this.find(".storage").storage('match', options);
+      var existing = this.find(".storage").storage('match', options);
       if ( existing && existing.storage('expose', "Already open") )
 	return this;				/* FIXME: go to line */
 
@@ -225,7 +221,7 @@ preferences.setDefault("emacs-keybinding", false);
 	       data: {format: "json"},
 	       success: function(reply) {
 		 reply.url = url;
-		 reply.type = "gitty";
+		 reply.st_type = "gitty";
 
 		 function copyAttrs(names) {
 		   for(var i=0; i<names.length; i++) {
@@ -241,7 +237,7 @@ preferences.setDefault("emacs-keybinding", false);
 			     "prompt"
 			   ]);
 
-		 menuBroadcast("source", reply);
+		 elem.swish('setSource', reply);
 	       },
 	       error: function(jqXHR) {
 		 modal.ajaxError(jqXHR);
@@ -261,6 +257,7 @@ preferences.setDefault("emacs-keybinding", false);
      * @param {Regex}   [options.search] Text searched for.
      */
     playURL: function(options) {
+      var elem = this;
       var existing = this.find(".storage").storage('match', options);
 
       if ( existing && existing.storage('expose', "Already open") )
@@ -300,13 +297,27 @@ preferences.setDefault("emacs-keybinding", false);
 			     "prompt"
 			   ]);
 
-		 menuBroadcast("source", msg);
+		 elem.swish('setSource', msg);
 	       },
 	       error: function(jqXHR) {
 		 modal.ajaxError(jqXHR);
 	       }
       });
     },
+
+    /**
+     * Open a source.  If we are in fullscreen mode and the current
+     * object cannot be opened by the current fullscreen node, we
+     * leave fullscreen mode and retry.  Called by playFile and playURL.
+     */
+    setSource: function(options) {
+      menuBroadcast("source", options);
+      if ( !this.find(".storage").storage('match', options) ) {
+	if ( this.swish('exitFullscreen') )
+	  menuBroadcast("source", options);
+      }
+    },
+
 
     /**
      * @param {Object} ex
@@ -344,7 +355,7 @@ preferences.setDefault("emacs-keybinding", false);
       that.off("examples-changed")
 	  .on("examples-changed", function() {
 	     $("#navbar").navbar('clearDropdown', dropdown);
-	     that.trill_on_swish('populateExamples', navbar, dropdown);
+	     that.swish('populateExamples', navbar, dropdown);
 	   });
       $.ajax(config.http.locations.swish_examples,
 	     { dataType: "json",
@@ -360,7 +371,7 @@ preferences.setDefault("emacs-keybinding", false);
 		   } else {
 		     var name = ex.file || ex.href;
 		     title = ex.title;
-		     options = that.trill_on_swish('openExampleFunction', ex);
+		     options = that.swish('openExampleFunction', ex);
 		     if ( name )
 		       options.typeIcon = name.split('.').pop();
 		   }
@@ -439,6 +450,45 @@ preferences.setDefault("emacs-keybinding", false);
     },
 
     /**
+     * Make DOM element fullscreen
+     * @param {DOM} node is the element to turn into fullscreen.
+     * Currently this only works for a notebook.
+     */
+    fullscreen: function(node) {
+      if ( !node.hasClass("fullscreen") ) {
+	var content = this.find(".container.swish");
+
+	node.addClass("fullscreen hamburger");
+	node.data("fullscreen_origin", node.parent()[0]);
+	$(content.children()[0]).hide();
+	content.append(node);
+      }
+
+      return this;
+    },
+
+    /**
+     * If some element is in fullscreen mode, revert
+     * back to tabbed mode.
+     * @return {Boolean} `true` if successful.
+     */
+    exitFullscreen: function() {
+      var content = this.find(".container.swish");
+      var node = $(content.children()[1]);
+
+      if ( node && node.hasClass("fullscreen") ) {
+	node.removeClass("fullscreen hamburger");
+	$(node.data("fullscreen_origin")).append(node);
+	$.removeData(node, "fullscreen_origin");
+	$(content.children()[0]).show();
+
+	return true;
+      }
+
+      return false;
+    },
+
+    /**
      * Open TogetherJS after lazy loading.
      */
     collaborate: function() {
@@ -456,11 +506,11 @@ preferences.setDefault("emacs-keybinding", false);
   /**
    * General actions on SWISH are sent as triggers.  Any part of
    * the interface that is interested in events should add the class
-   * `trill_on_swish-event-receiver` and listen to the events in which it is
+   * `swish-event-receiver` and listen to the events in which it is
    * interested.
    */
   function menuBroadcast(event, data) {
-    $(".trill_on_swish-event-receiver").trigger(event, data);
+    $(".swish-event-receiver").trigger(event, data);
   }
 
   /**
@@ -480,7 +530,7 @@ preferences.setDefault("emacs-keybinding", false);
   /**
    * Setup modal actions.  Subsequently, modal dialogue windows
    * are opened by using the trigger `help`.
-   * @example $("body").trill_on_swish('action', 'help', {file:"about.html"});
+   * @example $("body").swish('action', 'help', {file:"about.html"});
    */
   function setupModal() {
     if ( $("#modal").length == 0 ) {
@@ -518,7 +568,7 @@ preferences.setDefault("emacs-keybinding", false);
    * @param [...] Zero or more arguments passed to the jQuery `method`
    */
 
-  $.fn.trill_on_swish = function(method) {
+  $.fn.swish = function(method) {
     if ( methods[method] ) {
       return methods[method]
 	.apply(this, Array.prototype.slice.call(arguments, 1));

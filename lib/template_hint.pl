@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_template_hint,
+:- module(swish_template_hint,
 	  [ visible_predicate/3,	% ?PI, +Module, +Options
 	    predicate_template/2,	% +PI, -TemplateDict
 	    visible_predicate_templates/3 %  +Module, +Options, -Templates
@@ -500,8 +500,8 @@ file_type(Path, _, Type) :-
 	Type = directory.
 file_type(_, Name, Type) :-
 	file_name_extension(_, Ext, Name),
-	prolog_file_type(Ext, prolog),
-	\+ prolog_file_type(Ext, qlf),
+	user:prolog_file_type(Ext, prolog),
+	\+ user:prolog_file_type(Ext, qlf),
 	Type = prolog.
 
 %%	library_template_from(+From:list, -Template) is det.
@@ -577,7 +577,7 @@ imported_from(Module, FromModule) :-
 		 *******************************/
 
 swish_templates(Template) :-
-	setof(From, visible_lib(trill_on_swish, From), FromList),
+	setof(From, visible_lib(swish, From), FromList),
 	swish_templates(Template, [from(FromList)]).
 
 /*swish_templates(Template, Options) :-
@@ -585,7 +585,7 @@ swish_templates(Template) :-
 swish_templates(Template, _Options) :-
 	rendering_template(Template).
 /*swish_templates(Templates, Options) :-
-	visible_predicate_templates(trill_on_swish, Templates, Options).*/
+	visible_predicate_templates(swish, Templates, Options).*/
 
 %%	visible_lib(+Module, -Lib) is nondet.
 %
@@ -644,11 +644,11 @@ visible_lib(library(when)).
 		 *	    SWISH CONFIG	*
 		 *******************************/
 
-%%	trill_on_swish_config:config(-Name, -Styles) is det.
+%%	swish_config:config(-Name, -Styles) is det.
 %
-%	Provides the object `config.trill_on_swish.templates`, a JSON object that
+%	Provides the object `config.swish.templates`, a JSON object that
 %	provides the templates for hinting in CodeMirror.
 
-trill_on_swish_config:config(templates, Templates) :-
+swish_config:config(templates, Templates) :-
 	findall(Templ, swish_templates(Templ), Templates0),
 	flatten(Templates0, Templates).

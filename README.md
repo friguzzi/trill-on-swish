@@ -1,5 +1,16 @@
 # SWISH: A web based SWI-Prolog environment
 
+## Online version
+
+SWISH can be used to access [SWI-Prolog](http://www.swi-prolog.org) at
+the address below. We try to keep this server continuously online. You
+can use this server for playing, courses or sharing and discussing
+ideas. We have not yet dealt with scalable hosting nor with really
+reliable and scalable storage for saved programs. We hope to keep all
+your programs online for at least multiple years.
+
+  - http://swish.swi-prolog.org/
+
 ## Installation
 
 ### Get JavaScript requirements
@@ -17,6 +28,7 @@ Once you have `bower`, run the following from the toplevel of `swish` to
 get the dependencies:
 
     bower install
+    make src
 
 #### Download as zip
 
@@ -26,7 +38,7 @@ http://www.swi-prolog.org/download/swish/swish-bower-components.zip.
 Unpack the zip file, maintaining the directory structure, from the swish
 root directory to create the directory web/bower_components.
 
-Last updated: Jun 28, 2015: Added D3.js and C3.js
+Last updated: Apr 1, 2016: Added sparklines
 
 ### Get the latest SWI-Prolog
 
@@ -38,7 +50,7 @@ you            need            the             [nightly            build
 system    from    the     current      git     development    repository
 [swipl-devel.git](https://github.com/SWI-Prolog/swipl-devel).
 
-Jul 5, 2015: SWI-Prolog 7.3.4 supports SWISH completely.
+Apr 15, 2016: SWI-Prolog 7.3.20 supports SWISH completely.
 
 ## Running SWISH
 
@@ -54,24 +66,41 @@ http://swish.swi-prolog.org/
 
 ### Running SWISH without sandbox limitations
 
-By default, SWISH lets you only run _safe_  commands. If you want to use
-SWISH for unrestricted development, load the authentication module:
+By default, SWISH does not require the user   to  login but lets you run
+only _safe_ commands.  If  you  want   to  use  SWISH  for  unrestricted
+development, load the authentication module:
 
     ?- [lib/authenticate].
 
 Next, for first usage, you need  to   create  a user. The authentication
-module defines swish_add_user/3, which updates or  creates a file called
-`passwd`:
+module defines swish_add_user/0, which asks for   details about the user
+to be created and updates or  creates   a  file  called `passwd`. At the
+moment _Group_ and _E-Mail_ are stored, but not used.
 
-    ?- swish_add_user(guru, 'top secret', []).
+    ?- swish_add_user.
+    % Password file: /home/jan/src/prolog/swish/passwd (update)
+    User name: bob
+    Real name: Bob Hacker
+    Group:     user
+    E-Mail:    bob@hacker.org
+    Password:
+    (again):
+    true.
 
 If you now try to run a command in  SWISH, it will prompt for a user and
 password. After authentication you can run any Prolog predicate.
 
-**NOTE** Authentication uses plain HTTP   basic authentication. Only use
-this on trusted networks and do not  use   a  password  that you use for
-other sensitive services. If you want to  setup a public server this way
-you are strongly adviced to use HTTPS.
+**NOTE** Authentication uses HTTP _digest   authentication_  by default.
+This authentication method uses a   challenge-response  method to verify
+the password and ensures the credentials  change with every request such
+that old credentials cannot be re-used   by  an attacker. Unfortunately,
+the server stores the password as the   SHA1 hash created from the user,
+password and _realm_.  This  is   relatively  vulnerable  to brute-force
+attacks for anyone who gains access to the  password file due to the low
+computational overhead of SHA1. Also note   that  the exchanged commands
+and replies are not encrypted. Secure servers  should use HTTPS. This is
+supported by SWISH, but creating and   deploying the certificates can be
+rather involved.
 
 
 ## Design

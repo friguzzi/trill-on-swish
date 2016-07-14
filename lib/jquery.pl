@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_jquery,
+:- module(swish_jquery,
 	  [ jquery/3			% +Selector, +Request, -Reply
 	  ]).
 :- use_module(library(error)).
@@ -54,7 +54,7 @@ the SWISH interface.
 %	    =|$(Selector)|=.
 %	  - If the selector is this(SubSelector), it perform a jQuery
 %	    `find` using `SubSelector` on the Prolog runner.  Using
-%	  - If the selector is trill_on_swish(SubSelector), as above, but
+%	  - If the selector is swish(SubSelector), as above, but
 %	    starting at the SWISH plugin instance
 %
 %	@arg Function is a compound term  representing a JavaScript call.
@@ -89,6 +89,6 @@ map_selector(Selector, json{root:Name, sub:SubSelector}) :-
 	).
 
 root_selector(this) :- !.
-root_selector(trill_on_swish) :- !.
+root_selector(swish) :- !.
 root_selector(Selector) :-
 	domain_error(root_selector, Selector).

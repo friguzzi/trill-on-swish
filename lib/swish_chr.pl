@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_chr, []).
+:- module(swish_chr, []).
 :- use_module(library(chr), []).
 
 /** <module> Make CHR available in SWISH

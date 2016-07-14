@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_profiles, []).
+:- module(swish_profiles, []).
 :- use_module(library(lists)).
 :- use_module(library(readutil)).
 :- use_module(library(filesex)).
@@ -35,24 +35,24 @@
 
 :- multifile
 	user:file_search_path/2,
-	trill_on_swish_config:config/2,
-	trill_on_swish_config:source_alias/2.
+	swish_config:config/2,
+	swish_config:source_alias/2.
 
 % make profile(File) find the example data
-user:file_search_path(profile, trill_on_swish(profiles)).
+user:file_search_path(profile, swish(profiles)).
 % make SWISH serve /profile/File as profile(File).
-trill_on_swish_config:source_alias(profile, [access(read), search('*.{owl,swinb}')]).
+swish_config:source_alias(profile, [access(read), search('*.{pl,swinb}')]).
 
 		 /*******************************
 		 *	    SWISH CONFIG	*
 		 *******************************/
 
-%%	trill_on_swish_config:config(-Name, -Profiles) is det.
+%%	swish_config:config(-Name, -Profiles) is det.
 %
-%	Provides the object `config.trill_on_swish.profiles`, a  JSON object that
+%	Provides the object `config.swish.profiles`, a  JSON object that
 %	provides the available profiles.
 
-trill_on_swish_config:config(profiles, Profiles) :-
+swish_config:config(profiles, Profiles) :-
 	findall(Profile, swish_profile(Profile), Profiles0),
 	sort(value, =<, Profiles0, Profiles1),
 	join_profiles(Profiles1, Profiles).
@@ -83,7 +83,7 @@ swish_profile(profile{value:Name, type:Ext, label:Label, title:Title}) :-
 			     access(read),
 			     solutions(all)
 			   ]),
-	directory_file_path(Dir, '*.{owl,swinb}', Pattern),
+	directory_file_path(Dir, '*.{pl,swinb}', Pattern),
 	expand_file_name(Pattern, Files),
 	member(FilePath, Files),
 	file_base_name(FilePath, File),

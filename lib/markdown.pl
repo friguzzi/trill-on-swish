@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_markdown, []).
+:- module(swish_markdown, []).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_parameters)).
 :- use_module(library(http/http_client)).
@@ -48,7 +48,7 @@
 This module translates markdown cells for teh SWISH Notebook into HTML
 */
 
-:- http_handler(trill_on_swish(markdown), markdown, [id(markdown)]).
+:- http_handler(swish(markdown), markdown, [id(markdown)]).
 
 %%	markdown(+Request)
 %
@@ -115,21 +115,21 @@ prolog:doc_autolink_extension(swinb, notebook).
 %	  ```
 
 :- multifile
-	trill_on_swish_config:source_alias/2.
+	swish_config:source_alias/2.
 
 file(File, Options) -->
 	{ once(sub_atom(File, Pre, _, _Post, /)),
 	  sub_atom(File, 0, Pre, _, Alias),
-	  trill_on_swish_config:source_alias(Alias, _Options),
+	  swish_config:source_alias(Alias, _Options),
 	  option(label(Label), Options),
-	  http_location_by_id(trill_on_swish, Swish),
+	  http_location_by_id(swish, Swish),
 	  directory_file_path(Swish, File, HREF)
 	}, !,
 	html(a([class([alias,file]), href(HREF)], Label)).
 file(File, Options) -->
 	{ storage_file(File),
 	  option(label(Label), Options),
-	  http_location_by_id(trill_on_swish, Swish),
+	  http_location_by_id(swish, Swish),
 	  directory_file_path(Swish, p, StoreDir),
 	  directory_file_path(StoreDir, File, HREF)
 	}, !,

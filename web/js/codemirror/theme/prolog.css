@@ -3,12 +3,14 @@
 .cm-s-prolog span.cm-atom	       {color: #762;}
 .cm-s-prolog span.cm-qatom	       {color: #008;}
 .cm-s-prolog span.cm-string	       {color: #008; font-style: italic;}
+.cm-s-prolog span.cm-string_terminal   {color: #008; font-style: italic;}
 .cm-s-prolog span.cm-bqstring	       {color: #040; font-style: italic;}
 .cm-s-prolog span.cm-codes	       {color: #040; font-style: italic;}
 .cm-s-prolog span.cm-chars	       {color: #040; font-style: italic;}
 .cm-s-prolog span.cm-functor	       {color: #000; font-style: italic;}
 .cm-s-prolog span.cm-tag	       {color: #000; font-weight: bold;}
 .cm-s-prolog span.cm-key	       {color: #000; font-weight: bold;}
+.cm-s-prolog span.cm-ext_quant	       {color: #000; font-weight: bold;}
 .cm-s-prolog span.cm-qq_content        {color: #900;}
 .cm-s-prolog span.cm-qq_open,
 .cm-s-prolog span.cm-qq_sep,
@@ -29,6 +31,7 @@
 .cm-s-prolog span.cm-head_hook         {color: blue; text-decoration: underline;}
 .cm-s-prolog span.cm-head_extern       {color: blue; font-weight: bold;}
 .cm-s-prolog span.cm-head_public       {color: #016300; font-weight: bold;}
+.cm-s-prolog span.cm-head_constraint   {color: #008b8b; font-weight: bold;}
 .cm-s-prolog span.cm-head	       {font-weight: bold;}
 .cm-s-prolog span.cm-goal_built_in     {color: blue;}
 .cm-s-prolog span.cm-goal_imported     {color: blue;}
@@ -36,6 +39,7 @@
 .cm-s-prolog span.cm-goal_undefined    {color: red;}
 .cm-s-prolog span.cm-goal_dynamic      {color: #f0f;} /*magenta*/
 .cm-s-prolog span.cm-goal_thread_local {color: #f0f; text-decoration: underline;}
+.cm-s-prolog span.cm-goal_constraint   {color: #008b8b;} /*dark-cyan*/
 .cm-s-prolog span.cm-goal_recursion    {text-decoration: underline;}
 .cm-s-prolog span.cm-meta	       {color: blue;}
 .cm-s-prolog span.cm-op_type	       {color: blue;}

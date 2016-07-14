@@ -3,9 +3,11 @@
 [
 { "file":"examples.swinb",	"title":"Example programs" },
 "--",
-{ "file":"biopaxLevel3.owl",	"title":"Biopax" },
-{ "file":"BRCA.owl",		"title":"BRCA" },
-{ "file":"DBPedia.owl",		"title":"DBPedia" },
-{ "file":"peoplePets.owl",	"title":"people+pets" },
-{ "file":"vicodi.owl",		"title":"Vicodi" },
+{ "file":"biopaxLevel3.pl",	"title":"Biopax" },
+{ "file":"BRCA.pl",		"title":"BRCA" },
+{ "file":"DBPedia.pl",		"title":"DBPedia" },
+{ "file":"peoplePets.pl",	"title":"people+pets" },
+{ "file":"vicodi.pl",		"title":"Vicodi" },
+{ "file":"commander.pl",	"title":"Commander" },
+{ "file":"johnEmployee.pl",	"title":"John employee"}
 ]

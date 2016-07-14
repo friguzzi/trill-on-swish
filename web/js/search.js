@@ -168,7 +168,7 @@ define([ "jquery", "config", "typeahead" ],
 		 *******************************/
 
 	function predicateMatcher(q, cb) {
-	  var templates = config.trill_on_swish.templates;
+	  var templates = config.swish.templates;
 	  var matches = [];
 	  var ql = q.split(" ");
 	  var pl = [];
@@ -351,9 +351,9 @@ define([ "jquery", "config", "typeahead" ],
 		    datum.regex = new RegExp(RegExp.escape(datum.query), "g");
 		    datum.showAllMatches = true;
 		  }
-		  $(ev.target).parents(".trill_on_swish").trill_on_swish('playFile', datum);
+		  $(ev.target).parents(".swish").swish('playFile', datum);
 		} else if ( datum.arity !== undefined ) {
-		  $(".trill_on_swish-event-receiver").trigger("pldoc", datum);
+		  $(".swish-event-receiver").trigger("pldoc", datum);
 		} else if ( datum.editor !== undefined &&
 			    datum.line !== undefined ) {
 		  $(datum.editor).prologEditor('gotoLine', datum.line,
@@ -361,8 +361,9 @@ define([ "jquery", "config", "typeahead" ],
 						 showAllMatches: true
 					       });
 		} else if ( datum.alias !== undefined ) {
-		  var url = encodeURI("/trill_on_swish/"+datum.alias+
-				      "/"+datum.file+
+		  var url = encodeURI(config.http.locations.swish +
+		  		      datum.alias +
+				      "/"+datum.file +
 				      "."+datum.ext);
 		  var play = { url:url, line:datum.line };
 
@@ -371,7 +372,7 @@ define([ "jquery", "config", "typeahead" ],
 		    play.showAllMatches = true;
 		  }
 
-		  $(ev.target).parents(".trill_on_swish").trill_on_swish('playURL', play);
+		  $(ev.target).parents(".swish").swish('playURL', play);
 		} else {
 		  elem.data("target", {datum:datum, set:set});
 		  console.log(elem.data("target"));

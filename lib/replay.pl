@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_replay,
+:- module(replay,
 	  [ load_log/1,			% +File
 	    replay/0,
 	    replay/1,			% +Pengine

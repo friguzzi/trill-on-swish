@@ -27,12 +27,12 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_gitty_tools,
+:- module(gitty_tools,
 	  [ gitty_copy_store/3,		% +StoreIn, +StoreOut, +Driver
 	    gitty_compare_stores/2,	% +Store1, +Store2
 	    gitty_fsck/2		% +Store, +Options
 	  ]).
-:- use_module(trill_on_swish_gitty).
+:- use_module(gitty).
 :- use_module(library(apply)).
 :- use_module(library(option)).
 :- use_module(library(aggregate)).
@@ -147,10 +147,10 @@ check_objects(Store, Options) :-
 %	specified, bad objects are deleted from the store.
 
 check_object(Store, Hash, _) :-
-	trill_on_swish_gitty:fsck_object(Store, Hash), !.
+	gitty:fsck_object(Store, Hash), !.
 check_object(Store, Hash, Options) :-
 	gripe(bad_object(Store, Hash)),
-	fix(trill_on_swish_gitty:delete_object(Store, Hash), Options).
+	fix(gitty:delete_object(Store, Hash), Options).
 
 %%	load_commits(+Store) is det.
 %
@@ -192,9 +192,9 @@ check_head(Store, File, Head, Options) :-
 	->  true
 	;   gitty_file(Store, File, WrongHash)
 	->  gripe(head_mismatch(Store, File, Head, WrongHash)),
-	    fix(trill_on_swish_gitty:set_head(Store, File, Head), Options)
+	    fix(gitty:set_head(Store, File, Head), Options)
 	;   gripe(lost_head(Store, File, Head)),
-	    fix(trill_on_swish_gitty:set_head(Store, File, Head), Options)
+	    fix(gitty:set_head(Store, File, Head), Options)
 	).
 
 check_head_exists(Store, File, Head, Options) :-
@@ -205,7 +205,7 @@ check_head_exists(Store, File, Head, Options) :-
 	    ;	true
 	    ),
 	    gripe(lost_file(Store, File)),
-	    fix(trill_on_swish_gitty:delete_head(Store, File), Options)
+	    fix(gitty:delete_head(Store, File), Options)
 	).
 
 head(Store, File, Head) :-

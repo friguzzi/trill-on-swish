@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_gitty,
+:- module(gitty,
 	  [ gitty_open/2,		% +Store, +Options
 	    gitty_close/1,		% +Store
 

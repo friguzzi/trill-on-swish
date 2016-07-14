@@ -27,7 +27,7 @@
     the GNU General Public License.
 */
 
-:- module(trill_on_swish_search,
+:- module(swish_search,
 	  [ search_box//1,		% +Options
 	    match/3			% +Line, +Query, +Options
 	  ]).
@@ -57,8 +57,8 @@ search from the server side. What do we want to search for?
       these?
 */
 
-:- http_handler(trill_on_swish(typeahead), typeahead, [id(swish_typeahead)]).
-:- http_handler(trill_on_swish(search),    search,    [id(swish_search)]).
+:- http_handler(swish(typeahead), typeahead, [id(swish_typeahead)]).
+:- http_handler(swish(search),    search,    [id(swish_search)]).
 
 %%	search_box(+Options)//
 %
@@ -112,7 +112,7 @@ typeahead(Request) :-
 %	@tbd: Limit number of hits?
 
 :- multifile
-	trill_on_swish_config:source_alias/2.
+	swish_config:source_alias/2.
 
 typeahead(predicates, Query, Template, _) :-
 	swish_config(templates, Templates),
@@ -122,7 +122,7 @@ typeahead(predicates, Query, Template, _) :-
 typeahead(sources, Query, Hit, Options) :-
 	source_file(Path),
 	(   file_alias_path(Alias, Dir),
-	    once(trill_on_swish_config:source_alias(Alias, _)),
+	    once(swish_config:source_alias(Alias, _)),
 	    atom_concat(Dir, File, Path)
 	->  true
 	),
@@ -135,7 +135,7 @@ typeahead(sources, Query, Hit, Options) :-
 	).
 typeahead(sources, Query, hit{alias:Alias, file:Base, ext:Ext,
 			      query:Query, line:LineNo, text:Line}, Options) :-
-	trill_on_swish_config:source_alias(Alias, AliasOptions),
+	swish_config:source_alias(Alias, AliasOptions),
 	option(search(Pattern), AliasOptions),
 	DirSpec =.. [Alias,.],
 	absolute_file_name(DirSpec, Dir,
@@ -154,7 +154,7 @@ typeahead(sources, Query, hit{alias:Alias, file:Base, ext:Ext,
 	limit(5, search_file(Path, Query, LineNo, Line, Options)).
 
 search_file(Path, Query, LineNo, Line, Options) :-
-	debug(trill_on_swish(search), 'Searching ~q for ~q (~q)', [Path, Query, Options]),
+	debug(swish(search), 'Searching ~q for ~q (~q)', [Path, Query, Options]),
 	setup_call_cleanup(
 	    open(Path, read, In),
 	    read_string(In, _, String),
@@ -181,29 +181,13 @@ sow(Text, Offset) :-
 	Pre is Offset-1,
 	sub_atom(Text, Pre, 1, _, Before),
 	sub_atom(Text, Offset, 1, _, Start),
-	char_class(Start, Class),
-	\+ char_class(Before, Class).
-
-char_class(C, Class) :-
-	var(Class), !,
-	(   target_class(Class),
-	    char_type(C, Class)
-	->  true
-	;   Class = other
-	).
-char_class(C, Class) :-
-	(   target_class(Class)
-	->  char_type(C, Class)
-	;   \+ ( target_class(T),
-	         char_type(C, T)
-	       )
-	).
-
-target_class(lower).
-target_class(upper).
-target_class(digit).
-target_class(space).
-target_class(punct).
+	(   \+ char_type(Before, csym),
+	    char_type(Start, csym)
+	;   Before == '_',
+	    char_type(Start, csym)
+	;   char_type(Start, upper),
+	    char_type(Before, lower)
+	), !.
 
 %%	search(+Request)
 %
