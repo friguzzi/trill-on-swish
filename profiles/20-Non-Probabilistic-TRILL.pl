@@ -1,3 +1,4 @@
+% TRILL loaded with non probabilistic KB
 :- use_module(library(trill)).
 
 :- trill.
@@ -8,8 +9,8 @@ owl_rdf('<?xml version="1.0"?>
 
 /** <examples>
 
- Here examples of the form
- ?- prob_instanceOf('className','indName',Prob).
+Here examples of the form
+?- instanceOf(\'className\',\'indName\',Prob).
 
 */
 -->
@@ -19,7 +20,6 @@ owl_rdf('<?xml version="1.0"?>
     <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#" >
     <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#" >
     <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#" >
-    <!ENTITY disponte "https://sites.google.com/a/unife.it/ml/disponte#" >
 ]>
 
 
@@ -28,8 +28,7 @@ owl_rdf('<?xml version="1.0"?>
      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
      xmlns:owl="http://www.w3.org/2002/07/owl#"
      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-     xmlns:disponte="https://sites.google.com/a/unife.it/ml/disponte#">
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
     <owl:Ontology rdf:about="http://here.the.IRI.of.your.ontology"/>
     
 
@@ -37,30 +36,13 @@ owl_rdf('<?xml version="1.0"?>
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
-    // Annotation properties
+    // Your Axioms Here
     //
     ///////////////////////////////////////////////////////////////////////////////////////
      -->
 
-    
-
-
-    <!-- https://sites.google.com/a/unife.it/ml/disponte#probability -->
-
-    <owl:AnnotationProperty rdf:about="&disponte;probability"/>
-    
-
-
-    <!-- 
-    ///////////////////////////////////////////////////////////////////////////////////////
-    //
-    // Other Axioms
-    //
-    ///////////////////////////////////////////////////////////////////////////////////////
-     -->
-
-    
-</rdf:RDF>').
+</rdf:RDF>
+').
 
 /****************************
  * Other axioms here
