@@ -9,7 +9,7 @@ http://www.vicodi.org/
 
 /** <examples>
 
-?- prob_instanceOf('vicodi:Role','vicodi:Anthony-van-Dyck-is-Painter-in-Flanders'",Prob).
+?- prob_instanceOf('vicodi:Role','vicodi:Anthony-van-Dyck-is-Painter-in-Flanders',Prob).
 ?- instanceOf('vicodi:Role','vicodi:Anthony-van-Dyck-is-Painter-in-Flanders',ListExpl).
 
 ?- prob_sub_class('vicodi:Painter','vicodi:Role',Prob).

@@ -78,7 +78,7 @@ current_user(User) :- !,
 current_user(default).
 
 
-:- use_module(swish).
+:- use_module(trill_on_swish).
 
 %%	swish
 %

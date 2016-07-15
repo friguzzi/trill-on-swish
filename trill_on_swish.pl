@@ -59,7 +59,7 @@ user:file_search_path(icons,     swish_web(icons)).
 user:file_search_path(trill,	 swish(lib/trill)).
 
 set_swish_path :-
-	absolute_file_name(swish('swish.pl'), _,
+	absolute_file_name(swish('trill_on_swish.pl'), _,
 			   [file_errors(fail), access(read)]), !.
 set_swish_path :-
 	prolog_load_context(directory, Dir),

@@ -33,7 +33,7 @@
 	  ]).
 :- use_module(library(http/thread_httpd)).
 :- use_module(library(http/http_dispatch)).
-:- use_module(swish).
+:- use_module(trill_on_swish).
 
 /** <module> Load the SWISH server for local usage
 
