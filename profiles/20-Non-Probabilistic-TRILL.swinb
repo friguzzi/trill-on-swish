@@ -4,7 +4,11 @@
 This notebook uses the non probabilistic profile
 </div>
 
-<div class="nb-cell program" data-singleline="true">
+<div class="nb-cell program" data-background="true" data-singleline="true">
+:- use_module(library(trill)).
+
+:- trill.
+
 owl_rdf('
 &lt;?xml version="1.0"?&gt;<br />
 <br />
