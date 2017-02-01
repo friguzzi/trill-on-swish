@@ -1,30 +1,38 @@
-/*  Part of SWI-Prolog
+/*  Part of SWISH
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@cs.vu.nl
+    E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014, VU University Amsterdam
+    Copyright (c)  2014-2016, VU University Amsterdam
+    All rights reserved.
 
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
 
-    You should have received a copy of the GNU General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
 
-    As a special exception, if you link this library with other files,
-    compiled with a Free Software compiler, to produce an executable, this
-    library does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however
-    invalidate any other reasons why the executable file might be covered by
-    the GNU General Public License.
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+    Changes by:    Riccardo Zese
+    E-mail:        riccardo.zese@unife.it
 */
 
 :- module(swish_template_hint,
@@ -322,6 +330,95 @@ m_same_name_arity(H1, H2) :-
 
 
 		 /*******************************
+		 *	     TRILL		*
+		 *******************************/
+
+%%	trill_template(-Template)
+%
+%	Create a template for the TRILL queries.
+
+trill_template([     json{displayText:  "prob_instanceOf(+Class, +Individual, -Prob).",
+ 			  type:         "directive",
+			  template:     "prob_instanceOf(${Class},${Individual},Prob).",
+ 			  varTemplates: json{'TRILL-Query': Template}},
+			  
+		     json{displayText:  "prob_property_value(+Property, +Individual1, +Individual2, -Prob).",
+ 			  type:         "directive",
+			  template:     "prob_property_value(${Class},${Individual1},${Individual2},Prob).",
+ 			  varTemplates: json{'TRILL-Query': Template}},
+			  
+		     json{displayText:  "prob_sub_class(+Class1, +Class2, -Prob).",
+ 			  type:         "directive",
+			  template:     "prob_sub_class(${Class1},${Class2},Prob).",
+			  varTemplates: json{'TRILL-Query': Template}},
+
+		     json{displayText:  "prob_unsat(+ClassExpression, -Prob).",
+			  type:         "directive",
+			  template:     "prob_unsat(${ClassExpression},Prob).",
+			  varTemplates: json{'TRILL-Query': Template}},
+		 
+		     json{displayText:  "prob_inconsistent_theory(-Prob).",
+			  type:         "directive",
+			  template:     "prob_inconsistent_theory(Prob).",
+			  varTemplates: json{'TRILL-Query': Template}},
+		
+		     json{displayText:  "instanceOf(+Class, +Individual, -Expl).",
+ 			  type:         "directive",
+			  template:     "instanceOf(${Class},${Individual},Expl).",
+ 			  varTemplates: json{'TRILL-Query': Template}},
+			  
+		     json{displayText:  "property_value(+Property, +Individual1, +Individual2, -Expl).",
+ 			  type:         "directive",
+			  template:     "property_value(${Class},${Individual1},${Individual2},Expl).",
+ 			  varTemplates: json{'TRILL-Query': Template}},
+			  
+		     json{displayText:  "sub_class(+Class1, +Class2, -Expl).",
+ 			  type:         "directive",
+			  template:     "sub_class(${Class1},${Class2},Expl).",
+			  varTemplates: json{'TRILL-Query': Template}},
+
+		     json{displayText:  "unsat(+ClassExpression, -Expl).",
+			  type:         "directive",
+			  template:     "unsat(${ClassExpression},Expl).",
+			  varTemplates: json{'TRILL-Query': Template}},
+			  
+		     json{displayText:  "inconsistent_theory(-Expl).",
+			  type:         "directive",
+			  template:     "inconsistent_theory(Expl).",
+			  varTemplates: json{'TRILL-Query': Template}},
+		     
+		     json{displayText:  "instanceOf(+Class, +Individual).",
+ 			  type:         "directive",
+			  template:     "instanceOf(${Class},${Individual}).",
+ 			  varTemplates: json{'TRILL-Query': Template}},
+			  
+		     json{displayText:  "property_value(+Property, +Individual1, +Individual2).",
+ 			  type:         "directive",
+			  template:     "property_value(${Class},${Individual1},${Individual2}).",
+ 			  varTemplates: json{'TRILL-Query': Template}},
+			  
+		     json{displayText:  "sub_class(+Class1, +Class2).",
+ 			  type:         "directive",
+			  template:     "sub_class(${Class1},${Class2}).",
+			  varTemplates: json{'TRILL-Query': Template}},
+
+		     json{displayText:  "unsat(+ClassExpression).",
+			  type:         "directive",
+			  template:     "unsat(${ClassExpression}).",
+			  varTemplates: json{'TRILL-Query': Template}},
+			  
+		     json{displayText:  "inconsistent_theory.",
+			  type:         "directive",
+			  template:     "inconsistent_theory.",
+			  varTemplates: json{'TRILL-Query': Template}}
+		   ]) :-
+	findall(json{displayText: Comment,
+		     text: Name},
+		current_renderer(Name, Comment),
+		Template).
+
+
+		 /*******************************
 		 *	     RENDERING		*
 		 *******************************/
 
@@ -329,87 +426,13 @@ m_same_name_arity(H1, H2) :-
 %
 %	Create a template for the SWISH rendering modules.
 
-rendering_template([ /*json{displayText:  "use_rendering(+Renderer).",
+rendering_template([ json{displayText:  "use_rendering(+Renderer).",
 			  type:         "directive",
 			  template:     "use_rendering(${Renderer}).",
 			  varTemplates: json{'Renderer': Template}},
 		     json{displayText:  "use_rendering(+Renderer, +Options).",
 			  type:         "directive",
 			  template:     "use_rendering(${Renderer}).",
-			  varTemplates: json{'Renderer': Template}}*/
-		     json{displayText:  "prob_instanceOf(+Class, +Individual, -Prob).",
- 			  type:         "directive",
-			  template:     "prob_instanceOf(${Class},${Individual},Prob).",
- 			  varTemplates: json{'Renderer': Template}},
-			  
-		     json{displayText:  "prob_property_value(+Property, +Individual1, +Individual2, -Prob).",
- 			  type:         "directive",
-			  template:     "prob_property_value(${Class},${Individual1},${Individual2},Prob).",
- 			  varTemplates: json{'Renderer': Template}},
-			  
-		     json{displayText:  "prob_sub_class(+Class1, +Class2, -Prob).",
- 			  type:         "directive",
-			  template:     "prob_sub_class(${Class1},${Class2},Prob).",
-			  varTemplates: json{'Renderer': Template}},
-
-		     json{displayText:  "prob_unsat(+ClassExpression, -Prob).",
-			  type:         "directive",
-			  template:     "prob_unsat(${ClassExpression},Prob).",
-			  varTemplates: json{'Renderer': Template}},
-		 
-		     json{displayText:  "prob_inconsistent_theory(-Prob).",
-			  type:         "directive",
-			  template:     "prob_inconsistent_theory(Prob).",
-			  varTemplates: json{'Renderer': Template}},
-		
-		     json{displayText:  "instanceOf(+Class, +Individual, -Expl).",
- 			  type:         "directive",
-			  template:     "instanceOf(${Class},${Individual},Expl).",
- 			  varTemplates: json{'Renderer': Template}},
-			  
-		     json{displayText:  "property_value(+Property, +Individual1, +Individual2, -Expl).",
- 			  type:         "directive",
-			  template:     "property_value(${Class},${Individual1},${Individual2},Expl).",
- 			  varTemplates: json{'Renderer': Template}},
-			  
-		     json{displayText:  "sub_class(+Class1, +Class2, -Expl).",
- 			  type:         "directive",
-			  template:     "sub_class(${Class1},${Class2},Expl).",
-			  varTemplates: json{'Renderer': Template}},
-
-		     json{displayText:  "unsat(+ClassExpression, -Expl).",
-			  type:         "directive",
-			  template:     "unsat(${ClassExpression},Expl).",
-			  varTemplates: json{'Renderer': Template}},
-			  
-		     json{displayText:  "inconsistent_theory(-Expl).",
-			  type:         "directive",
-			  template:     "inconsistent_theory(Expl).",
-			  varTemplates: json{'Renderer': Template}},
-		     
-		     json{displayText:  "instanceOf(+Class, +Individual).",
- 			  type:         "directive",
-			  template:     "instanceOf(${Class},${Individual}).",
- 			  varTemplates: json{'Renderer': Template}},
-			  
-		     json{displayText:  "property_value(+Property, +Individual1, +Individual2).",
- 			  type:         "directive",
-			  template:     "property_value(${Class},${Individual1},${Individual2}).",
- 			  varTemplates: json{'Renderer': Template}},
-			  
-		     json{displayText:  "sub_class(+Class1, +Class2).",
- 			  type:         "directive",
-			  template:     "sub_class(${Class1},${Class2}).",
-			  varTemplates: json{'Renderer': Template}},
-
-		     json{displayText:  "unsat(+ClassExpression).",
-			  type:         "directive",
-			  template:     "unsat(${ClassExpression}).",
-			  varTemplates: json{'Renderer': Template}},
-			  
-		     json{displayText:  "inconsistent_theory.",
-			  type:         "directive",
-			  template:     "inconsistent_theory.",
 			  varTemplates: json{'Renderer': Template}}
 		   ]) :-
 	findall(json{displayText: Comment,
@@ -595,12 +618,14 @@ swish_templates(Template) :-
 	setof(From, visible_lib(swish, From), FromList),
 	swish_templates(Template, [from(FromList)]).
 
-/*swish_templates(Template, Options) :-
-	library_template(Template, Options).*/
+swish_templates(Template, _Options) :-
+	trill_template(Template).
+swish_templates(Template, Options) :-
+	library_template(Template, Options).
 swish_templates(Template, _Options) :-
 	rendering_template(Template).
-/*swish_templates(Templates, Options) :-
-	visible_predicate_templates(swish, Templates, Options).*/
+swish_templates(Templates, Options) :-
+	visible_predicate_templates(swish, Templates, Options).
 
 %%	visible_lib(+Module, -Lib) is nondet.
 %

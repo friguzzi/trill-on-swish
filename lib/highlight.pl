@@ -1,36 +1,42 @@
-/*  Part of SWI-Prolog
+/*  Part of SWISH
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@cs.vu.nl
+    E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014, VU University Amsterdam
+    Copyright (c)  2014-2016, VU University Amsterdam
+    All rights reserved.
 
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
 
-    You should have received a copy of the GNU General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
 
-    As a special exception, if you link this library with other files,
-    compiled with a Free Software compiler, to produce an executable, this
-    library does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however
-    invalidate any other reasons why the executable file might be covered by
-    the GNU General Public License.
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
 */
 
 :- module(swish_highlight,
 	  [ current_highlight_state/2
 	  ]).
 :- use_module(library(debug)).
+:- use_module(library(settings)).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/html_write)).
 :- use_module(library(http/http_json)).
@@ -53,6 +59,9 @@ http:location(codemirror, swish(cm), []).
 :- http_handler(codemirror(tokens), codemirror_tokens, []).
 :- http_handler(codemirror(leave),  codemirror_leave,  []).
 :- http_handler(codemirror(info),   token_info,        []).
+
+:- setting(swish:editor_max_idle_time, nonneg, 3600,
+	   "Maximum time we keep a mirror editor around").
 
 /** <module> Highlight token server
 
@@ -87,18 +96,25 @@ tokens_.
 %	the editor is not known.
 
 codemirror_change(Request) :-
+	call_cleanup(codemirror_change_(Request),
+		     check_unlocked).
+
+codemirror_change_(Request) :-
 	http_read_json_dict(Request, Change, []),
 	debug(cm(change), 'Change ~p', [Change]),
-	UUID = Change.uuid,
-	(   shadow_editor(Change, TB)
+	atom_string(UUID, Change.uuid),
+	catch(shadow_editor(Change, TB),
+	      cm(Reason), true),
+	(   var(Reason)
 	->  (	catch(apply_change(TB, Changed, Change.change),
 		      cm(outofsync), fail)
 	    ->  mark_changed(TB, Changed),
+		release_editor(UUID),
 		reply_json_dict(true)
 	    ;	destroy_editor(UUID),
 		change_failed(UUID, outofsync)
 	    )
-	;   change_failed(UUID, existence_error)
+	;   change_failed(UUID, Reason)
 	).
 
 change_failed(UUID, Reason) :-
@@ -154,13 +170,13 @@ insert([H|T], TB, ChPos0, ChPos, Changed) :-
 	->  Len	= 0
 	;   Changed = true,
 	    string_length(H, Len),
-	    debug(cm(change), 'Insert ~q at ~d', [H, ChPos0]),
+	    debug(cm(change_text), 'Insert ~q at ~d', [H, ChPos0]),
 	    insert_memory_file(TB, ChPos0, H)
 	),
 	ChPos1 is ChPos0+Len,
 	(   T == []
 	->  ChPos2 = ChPos1
-	;   debug(cm(change), 'Adding newline at ~d', [ChPos1]),
+	;   debug(cm(change_text), 'Adding newline at ~d', [ChPos1]),
 	    Changed = true,
 	    insert_memory_file(TB, ChPos1, '\n'),
 	    ChPos2 is ChPos1+1
@@ -168,9 +184,15 @@ insert([H|T], TB, ChPos0, ChPos, Changed) :-
 	insert(T, TB, ChPos2, ChPos, Changed).
 
 :- dynamic
-	current_editor/4,			% UUID, MemFile, Role, Time
-	editor_last_access/2,			% UUID, Time
-	xref_upto_data/1.			% UUID
+	current_editor/5,		% UUID, MemFile, Role, Lock, Time
+	editor_last_access/2,		% UUID, Time
+	xref_upto_data/1.		% UUID
+
+%%	create_editor(+UUID, -Editor, +Change) is det.
+%
+%	Create a new editor for source UUID   from Change. The editor is
+%	created  in  a  locked  state  and    must   be  released  using
+%	release_editor/1 before it can be publically used.
 
 create_editor(UUID, Editor, Change) :-
 	must_be(atom, UUID),
@@ -181,7 +203,16 @@ create_editor(UUID, Editor, Change) :-
 	;   Role = source
 	),
 	get_time(Now),
-	asserta(current_editor(UUID, Editor, Role, Now)).
+	mutex_create(Lock),
+	with_mutex(swish_create_editor,
+		   register_editor(UUID, Editor, Role, Lock, Now)), !.
+create_editor(UUID, Editor, _Change) :-
+	fetch_editor(UUID, Editor).
+
+register_editor(UUID, Editor, Role, Lock, Now) :-
+	\+ current_editor(UUID, _, _, _, _),
+	mutex_lock(Lock),
+	asserta(current_editor(UUID, Editor, Role, Lock, Now)).
 
 %%	current_highlight_state(?UUID, -State) is nondet.
 %
@@ -191,9 +222,10 @@ current_highlight_state(UUID,
 			highlight{data:Editor,
 				  role:Role,
 				  created:Created,
+				  lock:Lock,
 				  access:Access
 				 }) :-
-	current_editor(UUID, Editor, Role, Created),
+	current_editor(UUID, Editor, Role, Lock, Created),
 	(   editor_last_access(Editor, Access)
 	->  true
 	;   Access = Created
@@ -209,25 +241,28 @@ current_highlight_state(UUID,
 uuid_like(UUID) :-
 	split_string(UUID, "-", "", Parts),
 	maplist(string_length, Parts, [8,4,4,4,12]),
-	\+ current_editor(UUID, _, _, _).
+	\+ current_editor(UUID, _, _, _, _).
 
 %%	destroy_editor(+UUID)
 %
 %	Destroy source admin UUID: the shadow  text (a memory file), the
-%	XREF data and the module used for cross-referencing.
+%	XREF data and the module used  for cross-referencing. The editor
+%	must  be  acquired  using  fetch_editor/2    before  it  can  be
+%	destroyed.
 
 destroy_editor(UUID) :-
 	must_be(atom, UUID),
+	current_editor(UUID, Editor, _, Lock, _), !,
+	mutex_unlock(Lock),
 	retractall(xref_upto_data(UUID)),
 	retractall(editor_last_access(UUID, _)),
-	current_editor(UUID, Editor, _, _), !,
-	(   xref_source_id(Editor, SourceID)
+	(   xref_source_id(UUID, SourceID)
 	->  xref_clean(SourceID),
 	    destroy_state_module(UUID)
 	;   true
 	),
-	% destroy late to make xref_source_identifier/2 work.
-	retractall(current_editor(UUID, Editor, _, _)),
+	% destroy after xref_clean/1 to make xref_source_identifier/2 work.
+	retractall(current_editor(UUID, Editor, _, _, _)),
 	free_memory_file(Editor).
 destroy_editor(_).
 
@@ -247,7 +282,8 @@ destroy_editor(_).
 :- dynamic
 	gced_editors/1.
 
-editor_max_idle_time(3600).
+editor_max_idle_time(Time) :-
+	setting(swish:editor_max_idle_time, Time).
 
 gc_editors :-
 	get_time(Now),
@@ -262,69 +298,123 @@ gc_editors :-
 gc_editors :-
 	editor_max_idle_time(MaxIdle),
 	forall(garbage_editor(UUID, MaxIdle),
-	       destroy_old_editor(UUID)).
+	       destroy_garbage_editor(UUID)).
 
 garbage_editor(UUID, TimeOut) :-
 	get_time(Now),
-	current_editor(UUID, _TB, _Role, Created),
+	current_editor(UUID, _TB, _Role, _Lock, Created),
 	Now - Created > TimeOut,
 	(   editor_last_access(UUID, Access)
 	->  Now - Access > TimeOut
 	;   true
 	).
 
-destroy_old_editor(UUID) :-
-	with_mutex(swish_gc_editor,
-		   destroy_old_editor_sync(UUID)).
-
-destroy_old_editor_sync(UUID) :-
-	editor_max_idle_time(MaxIdle),
-	garbage_editor(UUID, MaxIdle), !,
-	debug(cm(gc), 'GC highlight state for ~q', [UUID]),
+destroy_garbage_editor(UUID) :-
+	fetch_editor(UUID, _TB), !,
 	destroy_editor(UUID).
-destroy_old_editor_sync(_).
+destroy_garbage_editor(_).
 
 %%	fetch_editor(+UUID, -MemFile) is semidet.
 %
-%	Fetch existing editor for source UUID. Make sure the last access
-%	time is updated to avoid concurrent GC of the editor.
+%	Fetch existing editor for source UUID.   Update  the last access
+%	time. After success, the editor is   locked and must be released
+%	using release_editor/1.
 
 fetch_editor(UUID, TB) :-
-	with_mutex(swish_gc_editor,
-		   ( current_editor(UUID, TB, _Role, _),
-		     update_access(UUID)
-		   )).
+	current_editor(UUID, TB, Role, Lock, _),
+	catch(mutex_lock(Lock), error(existence_error(mutex,_),_), fail),
+	debug(cm(lock), 'Locked ~p', [UUID]),
+	(   current_editor(UUID, TB, Role, Lock, _)
+	->  update_access(UUID)
+	;   mutex_unlock(Lock)
+	).
+
+release_editor(UUID) :-
+	current_editor(UUID, _TB, _Role, Lock, _),
+	debug(cm(lock), 'Unlocked ~p', [UUID]),
+	mutex_unlock(Lock).
+
+check_unlocked :-
+	check_unlocked(unknown).
+
+check_unlocked(Reason) :-
+	thread_self(Me),
+	current_editor(_UUID, _TB, _Role, Lock, _),
+	mutex_property(Lock, status(locked(Me, _Count))), !,
+	print_message(error, locked(Reason, Me)),
+	assertion(fail).
+check_unlocked(_).
+
+unlocked_editor(UUID) :-
+	thread_self(Me),
+	current_editor(UUID, _TB, _Role, Lock, _),
+	mutex_property(Lock, status(locked(Me, _Count))), !,
+	fail.
+unlocked_editor(_).
+
+%%	update_access(+UUID)
+%
+%	Update the registered last access. We only update if the time is
+%	behind for more than a minute.
 
 update_access(UUID) :-
 	get_time(Now),
-	retractall(editor_last_access(UUID, _)),
-	asserta(editor_last_access(UUID, Now)).
+	(   editor_last_access(UUID, Last),
+	    Now-Last < 60
+	->  true
+	;   retractall(editor_last_access(UUID, _)),
+	    asserta(editor_last_access(UUID, Now))
+	).
 
 :- multifile
 	prolog:xref_source_identifier/2,
-	prolog:xref_open_source/2.
+	prolog:xref_open_source/2,
+	prolog:xref_close_source/2.
 
 prolog:xref_source_identifier(UUID, UUID) :-
-	current_editor(UUID, _, _, _).
+	current_editor(UUID, _, _, _, _).
 
+%%	prolog:xref_open_source(+UUID, -Stream)
+%
+%	Open a source. As we cannot open   the same source twice we must
+%	lock  it.  As  of  7.3.32   this    can   be  done  through  the
+%	prolog:xref_close_source/2 hook. In older  versions   we  get no
+%	callback on the close, so we must leave the editor unlocked.
+
+:- if(current_predicate(prolog_source:close_source/3)).
 prolog:xref_open_source(UUID, Stream) :-
-	current_editor(UUID, TB, _Role, _), !,
+	fetch_editor(UUID, TB),
 	open_memory_file(TB, read, Stream).
 
+prolog:xref_close_source(UUID, Stream) :-
+	release_editor(UUID),
+	close(Stream).
+:- else.
+prolog:xref_open_source(UUID, Stream) :-
+	fetch_editor(UUID, TB),
+	open_memory_file(TB, read, Stream),
+	release_editor(UUID).
+:- endif.
 
 %%	codemirror_leave(+Request)
 %
-%	POST  handler  that  deals   with    destruction   of  the  XPCE
-%	source_buffer  associated  with  an  editor,   as  well  as  the
-%	associated cross-reference information.
+%	POST  handler  that  deals  with    destruction  of  our  mirror
+%	associated  with  an  editor,   as    well   as  the  associated
+%	cross-reference information.
 
 codemirror_leave(Request) :-
+	call_cleanup(codemirror_leave_(Request),
+		     check_unlocked).
+
+codemirror_leave_(Request) :-
 	http_read_json_dict(Request, Data, []),
-	debug(cm(leave), 'Leaving editor ~p', [Data]),
 	(   atom_string(UUID, Data.get(uuid))
-	->  forall(current_editor(UUID, _TB, _Role, _),
-		   with_mutex(swish_gc_editor, destroy_editor(UUID)))
-	;   true
+	->  debug(cm(leave), 'Leaving editor ~p', [UUID]),
+	    (	fetch_editor(UUID, _TB)
+	    ->	destroy_editor(UUID)
+	    ;	debug(cm(leave), 'No editor for ~p', [UUID])
+	    )
+	;   debug(cm(leave), 'No editor?? (data=~p)', [Data])
 	),
 	reply_json_dict(true).
 
@@ -334,7 +424,7 @@ codemirror_leave(Request) :-
 
 mark_changed(MemFile, Changed) :-
 	(   Changed == true
-	->  current_editor(UUID, MemFile, _Role, _),
+	->  current_editor(UUID, MemFile, _Role, _, _),
 	    retractall(xref_upto_data(UUID))
 	;   true
 	).
@@ -344,44 +434,42 @@ mark_changed(MemFile, Changed) :-
 xref(UUID) :-
 	xref_upto_data(UUID), !.
 xref(UUID) :-
-	current_editor(UUID, MF, _Role, _),
-	xref_source_id(MF, SourceId),
-	xref_state_module(MF, Module),
-	xref_source(SourceId,
-		    [ silent(true),
-		      module(Module)
-		    ]),
-	asserta(xref_upto_data(UUID)).
+	setup_call_cleanup(
+	    fetch_editor(UUID, _TB),
+	    ( xref_source_id(UUID, SourceId),
+	      xref_state_module(UUID, Module),
+	      xref_source(SourceId,
+			  [ silent(true),
+			    module(Module)
+			  ]),
+	      asserta(xref_upto_data(UUID))
+	    ),
+	    release_editor(UUID)).
 
-%%	xref_source_id(+TextBuffer, -SourceID) is det.
+%%	xref_source_id(+Editor, -SourceID) is det.
 %
-%	Find the object we need  to   examine  for cross-referencing. If
-%	this is an included file, this is the corresponding main file.
+%	SourceID is the xref source  identifier   for  Editor. As we are
+%	using UUIDs we just use the editor.
 
-%xref_source_id(TB, SourceId) :-
-%	get(TB, file, File), File \== @nil, !,
-%	get(File, absolute_path, Path0),
-%	absolute_file_name(Path0, Path),
-%	master_load_file(Path, [], Master),
-%	(   Master == Path
-%	->  SourceId = TB
-%	;   SourceId = Master
-%	).
-xref_source_id(TB, UUID) :-
-	current_editor(UUID, TB, _Role, _).
+xref_source_id(UUID, UUID).
 
-%%	xref_state_module(+TB, -Module) is semidet.
+%%	xref_state_module(+UUID, -Module) is semidet.
 %
 %	True if we must run the cross-referencing   in  Module. We use a
 %	temporary module based on the UUID of the source.
 
-xref_state_module(TB, UUID) :-
-	current_editor(UUID, TB, _Role, _),
+xref_state_module(UUID, UUID) :-
 	(   module_property(UUID, class(temporary))
 	->  true
 	;   set_module(UUID:class(temporary)),
-	    add_import_module(UUID, swish, start)
+	    add_import_module(UUID, swish, start),
+	    maplist(copy_flag(UUID, swish), [var_prefix])
 	).
+
+copy_flag(Module, Application, Flag) :-
+    current_prolog_flag(Application:Flag, Value), !,
+    set_prolog_flag(Module:Flag, Value).
+copy_flag(_, _, _).
 
 destroy_state_module(UUID) :-
 	module_property(UUID, class(temporary)), !,
@@ -399,13 +487,23 @@ destroy_state_module(_).
 %	editor.
 
 codemirror_tokens(Request) :-
+	setup_call_catcher_cleanup(
+	    true,
+	    codemirror_tokens_(Request),
+	    Reason,
+	    check_unlocked(Reason)).
+
+codemirror_tokens_(Request) :-
 	http_read_json_dict(Request, Data, []),
+	atom_string(UUID, Data.get(uuid)),
 	debug(cm(tokens), 'Asking for tokens: ~p', [Data]),
 	(   catch(shadow_editor(Data, TB), cm(Reason), true)
 	->  (   var(Reason)
-	    ->	enriched_tokens(TB, Data, Tokens),
+	    ->	call_cleanup(enriched_tokens(TB, Data, Tokens),
+			     release_editor(UUID)),
 		reply_json_dict(json{tokens:Tokens}, [width(0)])
-	    ;	change_failed(Data.uuid, Reason)
+	    ;	check_unlocked(Reason),
+		change_failed(UUID, Reason)
 	    )
 	;   reply_json_dict(json{tokens:[[]]})
 	),
@@ -413,7 +511,7 @@ codemirror_tokens(Request) :-
 
 
 enriched_tokens(TB, _Data, Tokens) :-		% source window
-	current_editor(UUID, TB, source, _), !,
+	current_editor(UUID, TB, source, _Lock, _), !,
 	xref(UUID),
 	server_tokens(TB, Tokens).
 enriched_tokens(TB, Data, Tokens) :-		% query window
@@ -449,7 +547,7 @@ json_source_id(String, SourceID) :-
 string_source_id(String, SourceID) :-
 	atom_string(SourceID, String),
 	(   fetch_editor(SourceID, _TB)
-	->  true
+	->  release_editor(SourceID)
 	;   true
 	).
 
@@ -480,9 +578,13 @@ shadow_editor(Data, TB) :-
 	    insert_memory_file(TB, 0, Text),
 	    mark_changed(TB, true)
 	;   Changes = Data.get(changes)
-	->  (   maplist(apply_change(TB, Changed), Changes)
+	->  (   debug(cm(change), 'Patch editor for ~p', [UUID]),
+		catch(maplist(apply_change(TB, Changed), Changes), E,
+		      (release_editor(UUID), throw(E)))
 	    ->	true
-	    ;	throw(cm(out_of_sync))
+	    ;	release_editor(UUID),
+		assertion(unlocked_editor(UUID)),
+		throw(cm(out_of_sync))
 	    ),
 	    mark_changed(TB, Changed)
 	).
@@ -490,7 +592,8 @@ shadow_editor(Data, TB) :-
 	Text = Data.get(text), !,
 	atom_string(UUID, Data.uuid),
 	create_editor(UUID, TB, Data),
-	debug(cm(change), 'Initialising editor to ~q', [Text]),
+	debug(cm(change), 'Create editor for ~p', [UUID]),
+	debug(cm(change_text), 'Initialising editor to ~q', [Text]),
 	insert_memory_file(TB, 0, Text).
 shadow_editor(Data, TB) :-
 	_{role:_} :< Data, !,
@@ -506,9 +609,8 @@ shadow_editor(_Data, _TB) :-
 %%	server_tokens(+Role) is det.
 %
 %	These predicates help debugging the   server side. show_mirror/0
-%	opens the XPCE editor,  which   simplifies  validation  that the
-%	server  copy  is  in  sync  with    the  client.  The  predicate
-%	server_tokens/1 dumps the token list.
+%	displays the text the server thinks is in the client editor. The
+%	predicate server_tokens/1 dumps the token list.
 %
 %	@arg	Role is one of =source= or =query=, expressing the role of
 %		the editor in the SWISH UI.
@@ -518,12 +620,12 @@ shadow_editor(_Data, _TB) :-
 	server_tokens/1.
 
 show_mirror(Role) :-
-	current_editor(_UUID, TB, Role, _), !,
+	current_editor(_UUID, TB, Role, _Lock, _), !,
 	memory_file_to_string(TB, String),
 	write(user_error, String).
 
 server_tokens(Role) :-
-	current_editor(_UUID, TB, Role, _), !,
+	current_editor(_UUID, TB, Role, _Lock, _), !,
 	enriched_tokens(TB, _{}, Tokens),
 	print_term(Tokens, [output(user_error)]).
 
@@ -533,7 +635,7 @@ server_tokens(Role) :-
 %		represents the tokens found in a single toplevel term.
 
 server_tokens(TB, GroupedTokens) :-
-	current_editor(UUID, TB, _Role, _),
+	current_editor(UUID, TB, _Role, _Lock, _),
 	setup_call_cleanup(
 	    open_memory_file(TB, read, Stream),
 	    ( set_stream_file(TB, Stream),
@@ -602,8 +704,12 @@ json_token(TB, Start, Token) :-
 	dict_create(Token, json, [type(Type)|Attrs]).
 
 atomic_special(atom, Start, Len, TB, Type, Attrs) :-
-	(   memory_file_substring(TB, Start, 1, _, "'")
+	memory_file_substring(TB, Start, 1, _, FirstChar),
+	(   FirstChar == "'"
 	->  Type = qatom,
+	    Attrs = []
+	;   char_type(FirstChar, upper)
+	->  Type = uatom,			% var_prefix in effect
 	    Attrs = []
 	;   Type = atom,
 	    (   Len =< 5			% solo characters, neck, etc.
@@ -696,6 +802,7 @@ style(module(_Module),   module,			   [text]).
 style(error,		 error,				   [text]).
 style(type_error(Expect), error,		      [text,expected(Expect)]).
 style(syntax_error(_Msg,_Pos), syntax_error,		   []).
+style(instantiation_error, instantiation_error,	           [text]).
 style(predicate_indicator, atom,			   [text]).
 style(predicate_indicator, atom,			   [text]).
 style(arity,		 int,				   []).
@@ -719,8 +826,11 @@ style(dcg(plain),	 brace_term_open-brace_term_close, []).
 style(brace_term,	 brace_term_open-brace_term_close, []).
 style(dict_content,	 dict_open-dict_close,             []).
 style(expanded,		 expanded,			   [text]).
-style(comment_string,	 comment_string,		   []).
+style(comment_string,	 comment_string,		   []). % up to 7.3.33
+style(comment(string),	 comment_string,		   []). % after 7.3.33
 style(ext_quant,	 ext_quant,			   []).
+style(unused_import,	 unused_import,			   [text]).
+style(undefined_import,	 undefined_import,		   [text]).
 					% from library(http/html_write)
 style(html(_Element),	 html,				   []).
 style(entity(_Element),	 entity,			   []).
@@ -833,15 +943,43 @@ highlight_style(StyleName, Style) :-
 css_style(bold(true),      'font-weight'(bold)) :- !.
 css_style(underline(true), 'text-decoration'(underline)) :- !.
 css_style(colour(Name), color(RGB)) :-
-	current_prolog_flag(gui, true), !,
-	get(colour(Name), red,   R0),
-	get(colour(Name), green, G0),
-	get(colour(Name), blue,  B0),
-	R is R0//256,
-	G is G0//256,
-	B is B0//256,
+	x11_color(Name, R, G, B),
 	format(atom(RGB), '#~|~`0t~16r~2+~`0t~16r~2+~`0t~16r~2+', [R,G,B]).
 css_style(Style, Style).
+
+%%	x11_color(+Name, -R, -G, -B)
+%
+%	True if RGB is the color for the named X11 color.
+
+x11_color(Name, R, G, B) :-
+	(   x11_color_cache(_,_,_,_)
+	->  true
+	;   load_x11_colours
+	),
+	x11_color_cache(Name, R, G, B).
+
+:- dynamic
+	x11_color_cache/4.
+
+load_x11_colours :-
+	source_file(load_x11_colours, File),
+	file_directory_name(File, Dir),
+	directory_file_path(Dir, 'rgb.txt', RgbFile),
+	setup_call_cleanup(
+	    open(RgbFile, read, In),
+	    ( lazy_list(lazy_read_lines(In, [as(string)]), List),
+	      maplist(assert_colour, List)
+	    ),
+	    close(In)).
+
+assert_colour(String) :-
+	split_string(String, "\s\t\r", "\s\t\r", [RS,GS,BS|NameParts]),
+	number_string(R, RS),
+	number_string(G, GS),
+	number_string(B, BS),
+	atomic_list_concat(NameParts, '_', Name0),
+	downcase_atom(Name0, Name),
+	assertz(x11_color_cache(Name, R, G, B)).
 
 %%	css(?Context, ?Selector, -Style) is nondet.
 %
@@ -974,13 +1112,13 @@ predicate_info(Module:Name/Arity, Key, Value) :-
 	functor(Head, Name, Arity),
 	predicate_property(system:Head, iso), !,
 	ignore(Module = system),
-	(   catch(predicate(Name, Arity, Summary, _, _), _, fail),
+	(   catch(once(predicate(Name, Arity, Summary, _, _)), _, fail),
 	    Key = summary,
 	    Value = Summary
 	;   Key = iso,
 	    Value = true
 	).
 predicate_info(_Module:Name/Arity, summary, Summary) :-
-	catch(predicate(Name, Arity, Summary, _, _), _, fail), !.
+	catch(once(predicate(Name, Arity, Summary, _, _)), _, fail), !.
 predicate_info(PI, summary, Summary) :-	% PlDoc
-	prolog:predicate_summary(PI, Summary).
+	once(prolog:predicate_summary(PI, Summary)).

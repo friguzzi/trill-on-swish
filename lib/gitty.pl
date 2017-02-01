@@ -1,30 +1,35 @@
-/*  Part of SWI-Prolog
+/*  Part of SWISH
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@cs.vu.nl
+    E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2015, VU University Amsterdam
+    Copyright (c)  2014-2015, VU University Amsterdam
+    All rights reserved.
 
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
 
-    You should have received a copy of the GNU General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
 
-    As a special exception, if you link this library with other files,
-    compiled with a Free Software compiler, to produce an executable, this
-    library does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however
-    invalidate any other reasons why the executable file might be covered by
-    the GNU General Public License.
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
 */
 
 :- module(gitty,
@@ -428,7 +433,7 @@ set_head(Store, File, Head) :-
 		 *	       DIFF		*
 		 *******************************/
 
-%%	gitty_diff(+Store, ?Hash1, +FileOrHash2, -Dict) is det.
+%%	gitty_diff(+Store, ?Hash1, +FileOrHash2OrData, -Dict) is det.
 %
 %	True if Dict representeds the changes   in Hash1 to FileOrHash2.
 %	If Hash1 is unbound,  it  is   unified  with  the  `previous` of
@@ -443,7 +448,19 @@ set_head(Store, File, Head) :-
 %	  data.  Only present of data has changed
 %	  - tags:_{added:AddedTags, deleted:DeletedTags}
 %	  If tags have changed, the added and deleted ones.
+%
+%	@arg	FileOrHash2OrData is a file name, hash or a term
+%		data(String) to compare a given string with a
+%		gitty version.
 
+gitty_diff(Store, C1, data(Data2), Dict) :- !,
+	must_be(atom, C1),
+	gitty_data(Store, C1, Data1, _Meta1),
+	(   Data1 \== Data2
+	->  udiff_string(Data1, Data2, UDIFF),
+	    Dict = json{data:UDIFF}
+	;   Dict = json{}
+	).
 gitty_diff(Store, C1, C2, Dict) :-
 	gitty_data(Store, C2, Data2, Meta2),
 	(   var(C1)

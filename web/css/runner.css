@@ -1,3 +1,10 @@
+/* 
+
+    Changes by:    Riccardo Zese
+    E-mail:        riccardo.zese@unife.it
+    Copyright:	   2014-2016, University of Ferrara
+*/
+
 div.prolog-runners {
   width: 100%; height: 100%;
   background-image: url("../icons/red_bird_op.svg");
@@ -150,6 +157,28 @@ pre.prolog-message {
   white-space: pre-wrap;
   padding: 2px 2px;
   margin: 0;
+  width: 100%;
+}
+
+span.output.error-context {
+  display: block;
+  position: relative;
+  padding-left: 25px;
+}
+
+span.output.error-context:hover {
+  text-decoration: underline;
+}
+
+span.output.error-context > span.glyphicon {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+}
+
+a.goto-error:hover {
+  text-decoration: none;		/* ignored inside <pre>? */
+  outline: 2px solid #337ab7;
 }
 
 pre.msg-information   { color: #060; font-style: italic; }

@@ -1,3 +1,42 @@
+/*  Part of SWISH
+
+    Author:        Jan Wielemaker
+    E-mail:        J.Wielemaker@cs.vu.nl
+    WWW:           http://www.swi-prolog.org
+    Copyright (C): 2014-2016, VU University Amsterdam
+			      CWI Amsterdam
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+    Changes by:    Riccardo Zese
+    E-mail:        riccardo.zese@unife.it
+    Copyright:	   2014-2016, University of Ferrara
+*/
+
 /**
  * @fileOverview
  * Combine the SWISH components.
@@ -56,7 +95,7 @@ preferences.setDefault("emacs-keybinding", false);
 	"Download": function() {
 	  menuBroadcast("download");
 	},
-	"Collaborate ...": function() {
+	"Start TogetherJS ...": function() {
 	  $("body").swish('collaborate');
 	},
 	"Print group": "--",
@@ -71,6 +110,16 @@ preferences.setDefault("emacs-keybinding", false);
 	"Changes": "--",
 	"View changes": function() {
 	  menuBroadcast("diff");
+	},
+	"Edit": "--",
+	"Find (Ctrl-F)": function() {
+	  menuBroadcast("edit-command", "find");
+	},
+	"Find and replace (Shift-Ctrl-F)": function() {
+	  menuBroadcast("edit-command", "replace");
+	},
+	"Jump to line (Alt-G)": function() {
+	  menuBroadcast("edit-command", "jumpToLine");
 	},
 	"Options": "--",
 	/*"Semantic highlighting": {
@@ -103,9 +152,9 @@ preferences.setDefault("emacs-keybinding", false);
 	"Notebook ...": function() {
 	  menuBroadcast("help", {file:"notebook.html"});
 	},
-	/*"Editor ...": function() {
+	"Editor ...": function() {
 	  menuBroadcast("help", {file:"editor.html"});
-	},*/
+	},
 	"Background": "--",
 	"Limitations ...": function() {
 	  menuBroadcast("help", {file:"beware.html"});
@@ -164,10 +213,14 @@ preferences.setDefault("emacs-keybinding", false);
 
 	$(".notebook").notebook();
 
-	if ( options.show_beware )
+	if ( options.show_beware &&
+	     !(swish.option && swish.option.show_beware == false) )
 	  menuBroadcast("help", {file:"beware.html", notagain:"beware"});
 
 	elem.data(pluginName, data);	/* store with element */
+
+	if ( window.location.href.indexOf("&togetherjs=") > 0 )
+	  elem.swish('collaborate');
       });
     },
 

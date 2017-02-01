@@ -1,30 +1,38 @@
-/*  Part of SWI-Prolog
+/*  Part of SWISH
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@cs.vu.nl
+    E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2015, VU University Amsterdam
+    Copyright (c)  2014-2016, VU University Amsterdam
+    All rights reserved.
 
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
 
-    You should have received a copy of the GNU General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
 
-    As a special exception, if you link this library with other files,
-    compiled with a Free Software compiler, to produce an executable, this
-    library does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however
-    invalidate any other reasons why the executable file might be covered by
-    the GNU General Public License.
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+    Changes by:    Riccardo Zese
+    E-mail:        riccardo.zese@unife.it
 */
 
 :- module(swish_page,
@@ -94,6 +102,8 @@ http:location(pldoc, swish(pldoc), [priority(100)]).
 %	  of a line.
 %	  - q(Query)
 %	  Use Query as the initial query.
+%	  - show_beware(Boolean)
+%	  Control showing the _beware limited edition_ warning.
 
 swish_reply(Options, Request) :-
 	swish_config:authenticate(Request, User), !, % must throw to deny access
@@ -110,18 +120,20 @@ swish_reply2(_, Request) :-
 swish_reply2(Options, Request) :-
 	swish_reply_config(Request, Options), !.
 swish_reply2(SwishOptions, Request) :-
-	Params = [ code(_,	 [optional(true)]),
-		   background(_, [optional(true)]),
-		   examples(_,   [optional(true)]),
-		   q(_,          [optional(true)]),
-		   format(_,     [oneof([swish,raw,json]), default(swish)])
+	Params = [ code(_,	  [optional(true)]),
+		   show_beware(_, [optional(true)]),
+		   background(_,  [optional(true)]),
+		   examples(_,    [optional(true)]),
+		   q(_,           [optional(true)]),
+		   format(_,      [oneof([swish,raw,json]), default(swish)])
 		 ],
 	http_parameters(Request, Params),
 	params_options(Params, Options0),
 	merge_options(Options0, SwishOptions, Options1),
-	source_option(Request, Options1, Options2),
-	option(format(Format), Options2),
-	swish_reply3(Format, Options2).
+	add_show_beware(Options1, Options2),
+	source_option(Request, Options2, Options3),
+	option(format(Format), Options3),
+	swish_reply3(Format, Options3).
 
 swish_reply3(raw, Options) :-
 	option(code(Code), Options), !,
@@ -154,6 +166,31 @@ params_options([H0|T0], [H|T]) :-
 	params_options(T0, T).
 params_options([_|T0], T) :-
 	params_options(T0, T).
+
+%!	add_show_beware(+Options0, -Option) is det.
+%
+%	Add show_beware(false) when called with code, query or examples.
+%	These are dedicated calls that do not justify this message.
+
+add_show_beware(Options0, Options) :-
+	implicit_no_show_beware(Options0), !,
+	Options = [show_beware(false)|Options0].
+add_show_beware(Options, Options).
+
+implicit_no_show_beware(Options) :-
+	option(show_beware(_), Options), !,
+	fail.
+implicit_no_show_beware(Options) :-
+	\+ option(format(swish), Options), !,
+	fail.
+implicit_no_show_beware(Options) :-
+	option(code(_), Options).
+implicit_no_show_beware(Options) :-
+	option(q(_), Options).
+implicit_no_show_beware(Options) :-
+	option(examples(_), Options).
+implicit_no_show_beware(Options) :-
+	option(background(_), Options).
 
 
 %%	source_option(+Request, +Options0, -Options)
@@ -353,7 +390,7 @@ swish_logo(_Options) -->
 %	Add search box to the navigation bar
 
 search_form(Options) -->
-	html(div(class(['col-sm-3', 'col-md-3', 'pull-right']),
+	html(div(class(['pull-right']),
 		 \search_box(Options))).
 
 
@@ -370,6 +407,7 @@ swish_content(Options) -->
 	},
 	swish_resources,
 	swish_config_hash(Options),
+	swish_options(Options),
 	html(div([id(content), class([container, swish])],
 		 [ div([class([tile, horizontal]), 'data-split'('50%')],
 		       [ div([ class([editors, tabbed])
@@ -400,6 +438,24 @@ swish_config_hash(Options) -->
 		   window.swish.config_hash = Hash;
 		   |}).
 
+
+%!	swish_options(+Options)//
+%
+%	Emit additional options. This is  similar   to  config,  but the
+%	config object is big and stable   for a particular SWISH server.
+%	The options are set per session.
+
+swish_options(Options) -->
+	{ option(show_beware(Show), Options),
+	  JSShow = @(Show)
+	}, !,
+	js_script({|javascript(JSShow)||
+		   window.swish = window.swish||{};
+		   window.swish.option = window.swish.options||{};
+		   window.swish.option.show_beware = JSShow;
+		   |}).
+swish_options(_Options) -->
+	[].
 
 %%	source(+Type, +Options)//
 %

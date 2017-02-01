@@ -1,3 +1,6 @@
+# Copyright: VU University of Amsterdam, CWI Amsterdam & University of Ferrara
+# License:   Simplified BSD license
+
 BOWER_ARCHIVE=swish-bower-components.zip
 BOWER_URL=http://www.swi-prolog.org/download/swish/${BOWER_ARCHIVE}
 
@@ -18,7 +21,8 @@ clean::
 
 bower-components::
 	curl $(BOWER_URL) > $(BOWER_ARCHIVE)
-	unzip $(BOWER_ARCHIVE)
+	unzip -u $(BOWER_ARCHIVE)
+	rm $(BOWER_ARCHIVE)
 
 swish-bower-components.zip::
 	rm -f $@

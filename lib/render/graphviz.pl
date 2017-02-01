@@ -1,34 +1,40 @@
-/*  Part of SWI-Prolog
+/*  Part of SWISH
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@cs.vu.nl
+    E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2015, VU University Amsterdam
+    Copyright (c)  2015-2016, VU University Amsterdam
+    All rights reserved.
 
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
 
-    You should have received a copy of the GNU General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
 
-    As a special exception, if you link this library with other files,
-    compiled with a Free Software compiler, to produce an executable, this
-    library does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however
-    invalidate any other reasons why the executable file might be covered by
-    the GNU General Public License.
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
 */
 
 :- module(swish_render_graphviz,
-	  [ term_rendering//3			% +Term, +Vars, +Options
+	  [ term_rendering//3,			% +Term, +Vars, +Options
+	    svg//2				% +String, +Options
 	  ]).
 :- use_module(library(http/html_write)).
 :- use_module(library(http/js_write)).
@@ -38,7 +44,10 @@
 :- use_module(library(process)).
 :- use_module(library(sgml)).
 :- use_module(library(debug)).
+:- use_module(library(error)).
 :- use_module(library(option)).
+:- use_module(library(lists)).
+:- use_module(library(apply)).
 :- use_module(library(dcg/basics)).
 :- use_module('../render').
 
@@ -147,8 +156,19 @@ render_dot(DOTString, Program, _Options) -->	% <svg> rendering
 	->  html(div([ class(['render-graphviz', 'reactive-size']),
 		       'data-render'('As Graphviz graph')
 		     ],
-		     [ \[SVG],
-		       \js_script({|javascript||
+		     \svg(SVG, [])))
+	;   html(div(style('color:red;'),
+		     [ '~w'-[Program], ': ', Error]))
+	).
+
+%%	svg(+SVG:string, +Options:list)//
+%
+%	Include SVG as pan/zoom image. Must be  embedded in a <div> with
+%	class 'reactive-size'.
+
+svg(SVG, _Options) -->
+	html([ \[SVG],
+	       \js_script({|javascript||
 (function() {
    if ( $.ajaxScript ) {
      var div  = $.ajaxScript.parent();
@@ -191,10 +211,8 @@ render_dot(DOTString, Program, _Options) -->	% <svg> rendering
    }
  })();
 		      |})
-		     ]))
-	;   html(div(style('color:red;'),
-		     [ '~w'-[Program], ': ', Error]))
-	).
+	     ]).
+
 
 %%	data_to_graphviz_string(+Data, -DOTString, -Program) is semidet.
 %
@@ -396,6 +414,11 @@ statement(subgraph(ID, Statements), O) -->
 	{ step_indent(O, O1) },
 	keyword(subgraph), ws, id(ID), ws, "{", nl,
 	statements(Statements, O1), indent(O), "}".
+statement(group(Statements), O) -->
+	{ step_indent(O, O1) },
+	"{", nl, statements(Statements, O1), indent(O), "}".
+statement(ID, O) -->
+	node(ID, O).
 
 step_indent(O, O2) :-
 	I is O.indent+2,
@@ -446,21 +469,51 @@ attribute_list([H|T], O) -->
 	;   ",", attribute_list(T, O)
 	).
 
-attribute(Name=Value, _O) -->
+attribute(Var, _) -->
+	{ var(Var),
+	  instantiation_error(Var)
+	}.
+attribute(html(Value), O) --> !,
+	attribute(label=html(Value), O).
+attribute(Name=html(Value), _, List, Tail) :-
+	atomic(Value), !,
+	format(codes(List,Tail), '~w=<~w>', [Name, Value]).
+attribute(Name=html(Term), _, List, Tail) :-
+	nonvar(Term), !,
+	phrase(html(Term), Tokens0),
+	delete(Tokens0, nl(_), Tokens),
+	with_output_to(string(HTML), print_html(Tokens)),
+	format(codes(List,Tail), '~w=<~w>', [Name, HTML]).
+attribute(Name=Value, _O) --> !,
 	atom(Name),"=",value(Name, Value).
-attribute(html(Value), _, List, Tail) :- !,
-	format(codes(List,Tail), 'label=<~w>', [Value]).
 attribute(NameValue, _O)  -->
 	{NameValue =.. [Name,Value]}, !,
 	atom(Name),"=",value(Name, Value).
+attribute(NameValue, _O)  -->
+	{ domain_error(graphviz_attribute, NameValue) }.
+
+%%	value(+Name, +Value)//
+%
+%	Emit a GraphViz value.
 
 value(Name, Value) -->
 	{ string_attribute(Name), !,
 	  value_codes(Value, Codes)
 	},
 	"\"", cstring(Codes), "\"".
+value(_Name, Number, List, Tail) :-
+	number(Number), !,
+	format(codes(List,Tail), '~w', [Number]).
+value(_Name, (A,B), List, Tail) :-
+	number(A), number(B), !,
+	format(codes(List,Tail), '"~w,~w"', [A, B]).
 value(_Name, Value, List, Tail) :-
+	is_graphviz_id(Value), !,
 	format(codes(List,Tail), '~w', [Value]).
+value(_Name, Value) -->
+	{ value_codes(Value, Codes)
+	},
+	"\"", cstring(Codes), "\"".
 
 id(ID) --> { number(ID) }, !, number(ID).
 id(ID) --> { atom(ID), !, atom_codes(ID, Codes) }, "\"", cstring(Codes), "\"".
@@ -486,6 +539,27 @@ value_codes(Value, Codes) :-
 value_codes(Value, Codes) :-
 	format(codes(Codes), '~p', [Value]).
 
+%%	is_graphviz_id(+AtomOrString) is semidet.
+%
+%	True if AtomOrString is a valid Graphviz  ID, i.e., a value that
+%	does not need to be quoted.
+
+is_graphviz_id(Atom) :-
+	(   atom(Atom)
+	->  true
+	;   string(Atom)
+	),
+	atom_codes(Atom, Codes),
+	maplist(id_code, Codes),
+	Codes = [C0|_],
+	\+ between(0'0, 0'9, C0).
+
+id_code(C) :- between(0'a, 0'z, C).
+id_code(C) :- between(0'A, 0'Z, C).
+id_code(C) :- between(0'0, 0'9, C).
+id_code(C) :- between(0'_, 0'_, C).
+id_code(C) :- between(8'200, 8'377, C).
+
 
 		 /*******************************
 		 *	  DOT PRIMITIVES	*
@@ -496,12 +570,18 @@ This code is copied from ClioPatria, rdf_graphviz.pl
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 string_attribute(label).
+string_attribute(xlabel).
+string_attribute(tooltip).
+string_attribute(headtooltip).
+string_attribute(tailtooltip).
+string_attribute(labeltooltip).
 string_attribute(url).
 string_attribute(href).
 string_attribute(id).
 string_attribute('URL').
 string_attribute(fillcolor).
 string_attribute(fontcolor).
+string_attribute(color).
 string_attribute(fontname).
 string_attribute(style).
 string_attribute(size).

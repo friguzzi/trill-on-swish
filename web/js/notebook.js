@@ -1,3 +1,42 @@
+/*  Part of SWISH
+
+    Author:        Jan Wielemaker
+    E-mail:        J.Wielemaker@cs.vu.nl
+    WWW:           http://www.swi-prolog.org
+    Copyright (C): 2015-2016, VU University Amsterdam
+			      CWI Amsterdam
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+    Changes by:    Riccardo Zese
+    E-mail:        riccardo.zese@unife.it
+    Copyright:	   2014-2016, University of Ferrara
+*/
+
 /**
  * @fileOverview
  * Manage the cell structure of a notebook modelled after IPython
@@ -362,7 +401,7 @@ var cellTypes = {
       var viewrect;
 
       if ( options.if_visible ) {
-	if ( view.find(".nb-cell").length > 0 )
+	if ( view.find(".nb-content > div.nb-cell").length > 0 )
 	  viewrect = view[0].getBoundingClientRect();
       }
 
@@ -697,6 +736,9 @@ var cellTypes = {
 	    this.find(".editor").prologEditor('makeCurrent');
 	    break;
 	  case "query":
+	    var ed = this.prevAll(".program").first().find(".editor");
+	    if ( ed.length == 1 )
+	      ed.prologEditor('makeCurrent');
 	    this.closest(".notebook")
                 .find(".nb-cell.program")
                 .not(this.nbCell("program_cells"))
@@ -880,15 +922,22 @@ var cellTypes = {
 
     /**
      * Returns all program cells in current notebook that are loaded
-     * for executing the receiving query.
+     * for executing the current cell.  This always starts with the
+     * background programs.  If `this` is a program cell, it is added.
+     * Otherwise the program cell before `this` is added.
      * @return {jQuery} set of nbCell elements that form the
      * sources for the receiving query cell.
      */
     program_cells: function() {
       var data = this.data(pluginName);
       var programs = this.closest(".notebook")
-	                 .find(".nb-cell.program.background")
-			 .add(this.prevAll(".program").first());
+	                 .find(".nb-cell.program.background");
+      if ( this.hasClass("program") ) {
+	if ( !this.hasClass("background") )
+	  programs = programs.add(this);
+      } else {
+	programs = programs.add(this.prevAll(".program").first());
+      }
       return programs;
     },
 
@@ -966,10 +1015,15 @@ var cellTypes = {
   }
 
   methods.type.program = function(options) {	/* program */
-    var editor, bg;
+    var cell = this;
+    var editor;
 
     options = options||{};
     options.autoCurrent = false;
+    options.getSource = function() {
+      var programs = cell.nbCell('programs');
+      return programs.prologEditor('getSource', undefined, true);
+    };
 
     this.html("");
 
@@ -977,8 +1031,7 @@ var cellTypes = {
       {class:"btn-group nb-cell-buttons", role:"group"},
       glyphButton("triangle-bottom", "singleline", "Show only first line",
 		  "default", "xs"),
-      bg=glyphButton("cloud", "background", "Use as background program",
-		     "success", "xs"));
+      imageButton("background", "Use as background program", "xs"));
     this.append(buttons,
 		editor=$.el.div({class:"editor with-buttons"}));
     if ( options.background )
@@ -1021,9 +1074,6 @@ var cellTypes = {
       { role: "query",
 	sourceID: function() {
 	  return cell.nbCell('programs').prologEditor('getSourceID');
-	},
-	prologQuery: function(q) {
-	  cell.nbCell('run');
 	}
       });
 
@@ -1052,7 +1102,7 @@ var cellTypes = {
 	  "Download answers as CSV": function() {
 	    var query  = cellText(this).replace(/\.\s*$/,"");
 	    var source = this.nbCell('programs')
-			     .prologEditor('getSource');
+			     .prologEditor('getSource', undefined, true);
 	    var options = {};
 	    var name   = this.attr("name");
 	    if ( name )
@@ -1216,11 +1266,13 @@ var cellTypes = {
       if ( pretext )
 	text = pretext + ", (" + prolog.trimFullStop(text) + ")";
     }
-    var query = { source: programs.prologEditor('getSource'),
-                  query:  text,
-		  tabled: settings.tabled||false,
-		  chunk:  settings.chunk,
-		  title:  false
+    var query = { source:       programs.prologEditor('getSource',
+						      undefined, true),
+                  query:        text,
+		  tabled:       settings.tabled||false,
+		  chunk:        settings.chunk,
+		  title:        false,
+		  query_editor: this.find(".prolog-editor.query")
                 };
     if ( programs[0] )
       query.editor = programs[0];
@@ -1457,7 +1509,7 @@ var cellTypes = {
 		 *******************************/
 
   function cellText(cell) {
-    return cell.find(".editor").prologEditor('getSource');
+    return cell.find(".editor").prologEditor('getSource', undefined, true);
   }
 
   /**
@@ -1547,6 +1599,16 @@ function glyphButton(glyph, action, title, style, size) {
   return btn;
 }
 
+function imageButton(action, title, size) {
+  size = size||"sm";
+  var btn = $.el.a({href:"#",
+		    class:"btn btn-default btn-image btn-"+size+" action-"+action,
+		    title:title, "data-action":action},
+		   $.el.span({class:"image-icon"}));
+
+  return btn;
+}
+
 function glyphButtonGlyph(elem, action, glyph) {
   var span = elem.find("a[data-action="+action+"] > span.glyphicon");
 
@@ -1572,7 +1634,7 @@ function Notebook(options) {
  */
 Notebook.prototype.swish = function(options) {
   var pcells = this.cell().nbCell("programs");
-  var source = pcells.prologEditor('getSource');
+  var source = pcells.prologEditor('getSource', undefined, true);
 
   if ( source )
     options.src = source;

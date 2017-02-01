@@ -1,3 +1,38 @@
+/*  Part of SWISH
+
+    Author:        Jan Wielemaker
+    E-mail:        J.Wielemaker@cs.vu.nl
+    WWW:           http://www.swi-prolog.org
+    Copyright (C): 2014-2016, VU University Amsterdam
+			      CWI Amsterdam
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+*/
+
 /**
  * @fileOverview
  * Run an manage Prolog queries and their output
@@ -11,7 +46,7 @@
 
 define([ "jquery", "config", "preferences",
 	 "cm/lib/codemirror", "form", "prolog", "links",
-	 "answer", "laconic", "sparkline"
+	 "answer", "laconic", "sparkline", "download"
        ],
        function($, config, preferences, CodeMirror, form, prolog, links) {
 
@@ -406,13 +441,42 @@ define([ "jquery", "config", "preferences",
 
     /**
      * Add pengine output as `<span class="output">`
-     * @param {String} data HTML that is inserted in the span.
+     * @param {String} data HTML that is inserted into the span.
+     * @return {DOM} the added node (a span)
      */
     outputHTML: function(data) {
       var span = $.el.span({class:"output"});
-      $(span).html(data);
       addAnswer(this, span);
+      span.innerHTML = data;
+      runScripts(span);
+      return span;
     },
+
+    /**
+     * Handle object output
+     */
+     downloadButton: function(obj) {
+       var button = $.el.a({class:"download"});
+       addAnswer(this, button);
+       $(button).downloader(obj);
+     },
+
+    /**
+     * Display a syntax error in the query.
+     * {Object} options
+     * {String} options.message is the message
+     * {Object} options.location contains the `line` and `ch` position
+     */
+     syntaxError: function(options) {
+       var data = this.data(pluginName);
+
+       options.data = "<pre class=\"output msg-error\">" +
+		      options.message +
+		      "</pre>";
+       options.location.file = true;
+       $(data.query.query_editor).prologEditor('highlightError', options);
+       return this;
+     },
 
     /**
      * Add an error message to the output.  The error is
@@ -433,8 +497,22 @@ define([ "jquery", "config", "preferences",
 	    title:"Remote pengine timed out"
 	  }));
 	  return this;
+	} else if ( options.code == "syntax_error" )
+	{ var m = options.message.match(/^HTTP:DATA:(\d+):(\d+):\s*(.*)/);
+
+	  if ( m && m.length == 4 ) {
+	    this.prologRunner('syntaxError',
+			      { location:
+				{ line: parseInt(m[1])-1,
+				  ch:	parseInt(m[2])
+				},
+				message: m[3]
+			      });
+	    msg = "Cannot run query due to a syntax error (check query window)";
+	  }
 	}
-	msg = options.message;
+	if ( !msg )
+	  msg = options.message;
       } else
 	msg = options;
 
@@ -808,7 +886,8 @@ define([ "jquery", "config", "preferences",
 	   data.stacks[s].usage = data.stacks[s].usage.slice(1);
 	 data.stacks[s].usage.push(u);
 	 spark.sparkline(data.stacks[s].usage,
-			 { composite: i>0,
+			 { height: spark.parent().height(),
+			   composite: i>0,
 			   chartRangeMin: 0,
 			   chartRangeMax: 4,
 			   lineColor: colors[i],
@@ -865,6 +944,52 @@ define([ "jquery", "config", "preferences",
     return table;
   }
 
+		 /*******************************
+		 *	 SCRIPTS IN NODES	*
+		 *******************************/
+
+  var node_id = 1;
+  function runScripts(elem) {
+    var scripts = [];
+    elem = $(elem);
+
+    elem.find("script").each(function() {
+      var type = this.getAttribute('type')||"text/javascript";
+      if ( type == "text/javascript" )
+	scripts.push(this.textContent);
+    });
+
+    if ( scripts.length > 0 ) {
+      var script = "(function(node){" + scripts.join("\n") + "})";
+      var node = new Node({
+        node: elem[0]
+      });
+
+      try {
+	eval(script)(node);
+      } catch(e) {
+	alert(e);
+      }
+    }
+  }
+
+  function Node(options) {
+    this.my_node = options.node;
+  }
+
+  Node.prototype.node = function() {
+    return $(this.my_node);
+  }
+
+  /**
+   * Provide a unique id for the node.  This can be used as prefix to
+   * avoid conflicts for `id` attributes.
+   */
+  Node.prototype.unique_id = function() {
+    if ( !this.uid )
+      this.uid = node_id++;
+    return this.uid;
+  }
 
 
 		 /*******************************
@@ -877,23 +1002,31 @@ define([ "jquery", "config", "preferences",
     return $(runner).parents(".swish").swish('breakpoints', data.prolog.id);
   }
 
+  function registerSources(pengine) {
+    var runner = pengine.options.runner;
+    var data   = runner.data(pluginName);
+
+    if ( data.query.editor )
+      $(data.query.editor).prologEditor('pengine', {add: pengine.id});
+  }
+
   function handleCreate() {
     var elem = this.pengine.options.runner;
     var data = elem.data(pluginName);
     var options = {};
     var bps;
+    var resvar = config.swish.residuals_var || "Residuals";
 
-    if ( data.query.editor )
-      $(data.query.editor).prologEditor('pengine', {add: this.pengine.id});
+    registerSources(this.pengine);
 
     if ( (bps = breakpoints(elem)) )
       options.breakpoints = Pengine.stringify(bps);
     if ( data.chunk )
       options.chunk = data.chunk;
 
-    this.pengine.ask("'$swish wrapper'((" +
+    this.pengine.ask("'$swish wrapper'((\n" +
 		     termNoFullStop(data.query.query) +
-		     "), Residuals)", options);
+		     "\n), "+resvar+")", options);
     elem.prologRunner('setState', "running");
   }
 
@@ -954,22 +1087,112 @@ define([ "jquery", "config", "preferences",
   }
 
   /**
+   * Make indicated source locations clickable.
+   * @param {String} msg is the HTML error message string
+   * @param {DOM} editor is the source editor; the editor for pengine://
+   * source locations
+   */
+  function clickableLocations(msg, editor) {
+    var pattern = /pengine:\/\/[-0-9a-f]{36}\/src:(\d+)/;
+
+    return msg.replace(pattern, function(matched) {
+      var line = matched.match(pattern)[1];
+      return "<a class='goto-error' title='Goto location'>" +
+               "<span class='glyphicon glyphicon-hand-right'></span> "+
+	       "<b>line <span class='line'>"+line+"</span></b></a>";
+    });
+  }
+
+  function gotoError(ev) {
+    var a        = $(ev.target).closest("a.goto-error");
+    var ctx      = $(ev.target).closest(".error-context");
+    var econtext = ctx.data("error_context");
+
+    if ( a[0] ) {
+      var line = parseInt(a.find("span.line").text());
+      var file = a.find("span.file").text();
+
+      ev.preventDefault();
+
+      if ( file ) {
+	ctx.closest("body.swish")
+	   .swish('playFile', {file:file, line:line});
+      } else {
+	$(econtext.editor).prologEditor('gotoLine', line);
+      }
+
+      return false;
+    } else if ( econtext.location.file ) {
+      ctx.closest("body.swish")
+	 .swish('playFile', econtext.location);
+    } else {
+      $(econtext.editor).prologEditor('gotoLine', econtext.location.line);
+    }
+  }
+
+  /**
    * handle `pengine_output/1`.  Note that compiler warnings and errors
    * also end up here. If they have a location, this is provided through
    * this.location, which contains `file`, `line` and `ch`.  We must use
    * this to indicate the location of the error in CodeMirror.
    */
 
-  function handleOutput() {
-    var elem = this.pengine.options.runner;
+  function handleOutput(msg) {
+    var elem = msg.pengine.options.runner;
 
-    this.data = this.data.replace(new RegExp("'[-0-9a-f]{36}':", 'g'), "")
-    if ( this.location ) {
-      this.data = this.data.replace(/pengine:\/\/[-0-9a-f]*\//, "");
-      $(".swish-event-receiver").trigger("source-error", this);
+    if ( typeof(msg.data) == 'string' ) {
+      var data = elem.data(pluginName);
+      var econtext = {editor: data.query.editor};
+
+      msg.data = msg.data.replace(/'[-0-9a-f]{36}':/g, "")  /* remove module */
+
+      if ( msg.location ) {
+	var loc = msg.location;
+	var prefix = "swish://";
+	var span;
+
+	function clickableError() {
+	  var str = loc.file+":"+loc.line+":";
+	  if ( loc.ch ) str += loc.ch+":";
+	  str += "\\s*";
+
+	  msg.data = clickableLocations(
+			 msg.data.replace(new RegExp(str, "g"), ""),
+			 econtext.editor);
+
+	  span = elem.prologRunner('outputHTML', msg.data);
+
+	  $(span).addClass("error-context");
+	  $(span).append($.el.span({class:"glyphicon glyphicon-hand-right"}));
+	  $(span).attr("title", "Error in program.  Click to show in context");
+	  $(span).on("click", gotoError);
+	  $(span).data("error_context", econtext);
+	}
+
+	if ( loc.file.startsWith(prefix) ) {
+	  var file = loc.file.slice(prefix.length);
+	  econtext.location = {file:file, line:loc.line};
+	  clickableError();
+	} else if ( loc.file.startsWith("pengine://") ) {
+	  econtext.location = {line:loc.line};
+	  clickableError(data.query.editor);
+	}
+	registerSources(msg.pengine);
+	msg.error_context = econtext;
+	msg.error_handler = gotoError;
+	$(".swish-event-receiver").trigger("source-error", msg);
+      } else {
+	var span = elem.prologRunner('outputHTML',
+				     clickableLocations(msg.data,
+							econtext.editor));
+	$(span).on("click", gotoError);
+	$(span).data("error_context", econtext);
+      }
+    } else if ( typeof(msg.data) == 'object' ) {
+      elem.prologRunner(msg.data.action, msg.data);
+    } else {
+      console.log(msg.data);
     }
-
-    elem.prologRunner('outputHTML', this.data);
     RS(elem).prologRunners('scrollToBottom');
   }
 

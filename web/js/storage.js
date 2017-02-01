@@ -1,3 +1,42 @@
+/*  Part of SWISH
+
+    Author:        Jan Wielemaker
+    E-mail:        J.Wielemaker@cs.vu.nl
+    WWW:           http://www.swi-prolog.org
+    Copyright (C): 2014-2016, VU University Amsterdam
+			      CWI Amsterdam
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+    Changes by:    Riccardo Zese
+    E-mail:        riccardo.zese@unife.it
+    Copyright:	   2014-2016, University of Ferrara
+*/
+
 /**
  * @fileOverview
  * Defines the interaction with the `File` menu and gitty storage
@@ -198,6 +237,32 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
     },
 
     /**
+     * Reload from server
+     */
+    reload: function() {
+      var elem = this;
+      var data = elem.data(pluginName);
+      var url  = config.http.locations.web_storage +
+		 encodeURI(data.file);
+
+      $.ajax({ url: url,
+	       type: "GET",
+	       data: { format: "json" },
+	       success: function(reply) {
+		 reply.url = url;
+		 reply.st_type = "gitty";
+		 reply.noHistory = true;
+		 elem.storage('setSource', reply);
+	       },
+	       error: function(jqXHR) {
+		 modal.ajaxError(jqXHR);
+	       }
+	     });
+
+      return this;
+    },
+
+    /**
      * Save the current document to the server.  Depending on the
      * arguments, this function implements several forms of saving:
      *
@@ -249,9 +314,6 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 	post = { data: data.getValue(),
 		 type: type.dataType
 	       };
-	if ( data.meta ) {			/* rename */
-	  post.previous = data.meta.commit;
-	}
       } else {
 	if ( !data.isClean(data.cleanGeneration) ) {
 	  post = { data: data.getValue(),
@@ -265,6 +327,8 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 
       if ( meta )
 	post.meta = meta;
+      if ( data.meta )
+	post.previous = data.meta.commit;
 
       $.ajax({ url: url,
                dataType: "json",
@@ -294,8 +358,14 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 		   history.push(reply);
 		 }
 	       },
-	       error: function(jqXHR) {
-		 elem.storage('saveAs');
+	       error: function(jqXHR, textStatus, errorThrown) {
+		 if ( jqXHR.status == 409 ) {
+		   elem.storage('resolveEditConflict',
+				JSON.parse(jqXHR.responseText));
+		 } else {
+		   alert('Save failed; click "ok" to try again');
+		   elem.storage('saveAs');
+		 }
 	       }
 	     });
 
@@ -404,6 +474,133 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 
       return this;
     },
+
+		 /*******************************
+		 *	    EDIT CONFLICTS	*
+		 *******************************/
+
+    resolveEditConflict: function(options) {
+      var bdiv;
+
+      options.storage = this;
+
+      function body() {
+	var elem = $(this);
+
+	elem.addClass("edit-conflict");
+
+	function tabLabel(label, active, id, disabled) {
+	  var attrs = {role:"presentation"};
+	  var classes = [];
+	  if ( active   ) classes.push("active");
+	  if ( disabled ) classes.push("disabled");
+	  if ( classes != [] )
+	    attrs.class = classes.join(" ");
+	  var elem =
+	  $.el.li(attrs, $.el.a({href:"#"+id, 'data-toggle':"tab"}, label));
+	  return elem;
+	}
+
+	tabs = $($.el.div({class:"tab-content"}));
+	elem.append($.el.ul(
+	  {class:"nav nav-tabs"},
+	  tabLabel("My edits",    true,  "merge-my-edits"),
+	  tabLabel("Their edits", false, "merge-server-edits"),
+	  tabLabel("Conflicts",   false, "merge-conflicts")));
+	elem.append(tabs);
+
+	function tabContent(id, cls) {
+	  tabs.append($.el.div({class:"tab-pane fade "+id+" "+cls, id:id}));
+	  elem.find('[href="#'+id+'"]').on("show.bs.tab", function(ev) {
+	    elem.storage(id);
+	  });
+	}
+
+	tabContent("merge-my-edits",    "in active");
+	tabContent("merge-server-edits", "");
+	tabContent("merge-conflicts",   "");
+
+	elem.data("edit-conflict", options);
+
+	elem.storage('merge-my-edits');
+
+	elem.append(bdiv =
+	  $.el.div({class:"form-group"},
+		   $.el.button({name:"merge",
+				class:"btn btn-primary"},
+			       "Merge"),
+		   $.el.button({name:"discard-my-edits",
+				class:"btn btn-primary"},
+			       "Discard my changes"),
+		   $.el.button({name:"discard-server-edits",
+				class:"btn btn-primary"},
+			       "Discard changes on server"),
+		   $.el.button({name:"cancel",
+				class:"btn btn-danger",
+				'data-dismiss':"modal"},
+			       "Cancel")));
+
+
+	$(bdiv).on("click", "button", function(ev) {
+	  elem.storage('editConflictAction', $(ev.target).attr("name"));
+	  $(ev.target).parents(".modal").modal('hide');
+	  ev.preventDefault();
+	  return false;
+	});
+      }
+
+      form.showDialog({ title: "Edit conflict",
+			body: body
+		      });
+
+      return this;
+    },
+
+    'merge-my-edits': function() {
+      var data = $(this).data("edit-conflict");
+      $(this).find(".merge-my-edits")
+        .empty()
+        .append(udiff(data.edit.me.data));
+    },
+
+    'merge-server-edits': function() {
+      var data = $(this).data("edit-conflict");
+      $(this).find(".merge-server-edits")
+        .empty()
+        .append(udiff(data.edit.server.data));
+    },
+
+    'merge-conflicts': function() {
+      var data = $(this).data("edit-conflict");
+      var tab  = $(this).find(".merge-conflicts");
+
+      tab.empty();
+      if ( data.patch_status != 0 ) {
+	tab.append(editConflicts(data.merged));
+      } else {
+	tab.html("No merge conflicts");
+      }
+    },
+
+    editConflictAction: function(action) {
+      var options = $(this).data("edit-conflict");
+      var data = $(options.storage).data(pluginName);
+
+      if ( action == "merge" ) {
+	data.setValue(options.merged);
+	data.meta.commit = options.edit.server.to.commit;
+      } else if ( action == "discard-my-edits" ) {
+	$(options.storage).storage('reload');
+      } else if ( action == "discard-server-edits" ) {
+	var data = $(options.storage).data(pluginName);
+	data.meta.commit = options.edit.server.to.commit;
+      }
+    },
+
+
+		 /*******************************
+		 *	   DOWNLOADING		*
+		 *******************************/
 
     download: function() {
       var options = this.data(pluginName);
@@ -709,5 +906,56 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 
   function basename(path) {
     return path ? path.split('/').pop() : null;
+  }
+
+  function udiff(diff) {
+    if ( diff ) {
+      var lines = diff.split("\n");
+      var pre = $($.el.pre({class:"udiff"}));
+
+      for(var i=0; i<lines.length; i++) {
+	var line = lines[i];
+	var classmap = { '@': 'udiff-hdr',
+			 ' ': 'udiff-ctx',
+			 '+': 'udiff-add',
+			 '-': 'udiff-del'
+		       };
+	pre.append($.el.span({class:classmap[line.charAt(0)]}, line),
+		   $.el.br());
+      }
+      return pre;
+    } else {
+      return $($.el.div({class:"udiff"}, "No changes"));
+    }
+  }
+
+  function editConflicts(merged) {
+    var lines = merged.split("\n");
+    var pre = $($.el.pre({class:"udiff"}));
+    var cls = null;
+
+    function addLine(line, cls) {
+      pre.append($.el.span({class:cls}, line),
+		 $.el.br());
+    }
+
+    for(var i=0; i<lines.length; i++) {
+      var line = lines[i];
+
+      if ( line == "<<<<<<<" ) {
+	addLine(line, "edit-conflict-sep");
+	cls = "edit-conflict-me";
+      } else if ( cls == "edit-conflict-me" && line == "=======" ) {
+	addLine(line, "edit-conflict-sep");
+	cls = "edit-conflict-them";
+      } else if ( cls == "edit-conflict-them" && line == ">>>>>>>" ) {
+	addLine(line, "edit-conflict-sep");
+	cls = null;
+      } else if ( cls ) {
+	addLine(line, cls);
+     }
+   }
+
+   return pre;
   }
 });

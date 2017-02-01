@@ -62,6 +62,14 @@ span.format
   font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
 }
 
+a.download
+{ margin-right: 5px;
+}
+
+a.download span.glyphicon
+{ margin-left: 1ex;
+}
+
 
 		 /*******************************
 		 *	GENERAL RENDERERS	*
@@ -106,3 +114,8 @@ but that is rather expensive.
 
 .answer svg { vertical-align: top; }
 .render-graphviz { display: inline-block; }
+
+/* R */
+div.R.svg svg
+{ overflow: visible;
+}

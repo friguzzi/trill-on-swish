@@ -17,7 +17,10 @@ Copyright: Public domain
 :- initialization main.
 %:- debug(css).
 
-main([In, Out]) :-
+main(['--debug'|Argv]) :- !,
+	debug(css),
+	main(Argv).
+main([In, Out]) :- !,
 	process(In, Out).
 main([In]) :-
 	process(In, In).
@@ -51,12 +54,22 @@ save(Out, url(S)) :-
 	->  true
 	;   Size < 2000
 	), !,
-	debug(css, 'Inlining image: ~q (~D bytes)~n', [S, Size]),
+	debug(css, 'Inlining image: ~q (~D bytes)', [S, Size]),
 	read_file_to_codes(S, Codes, [type(binary)]),
 	phrase(base64(Codes), Base64),
 	format(Out, 'url(data:image/~w;base64,~s)', [Ext,Base64]).
 save(Out, url(S)) :-
-	debug(css, 'URL: ~q~n', [S]),
+	sub_atom(S, 0, _, _, 'data:'), !,
+	(   atom_length(S, Len),
+	    Len < 50
+	->  S1 = S
+	;   sub_atom(S, 0, 50, _, S1)
+	),
+	debug(css, 'URL: already inlined: ~s ...', [S1]),
+	format(Out, 'url(~s)', [S]).
+save(Out, url(S)) :-
+	debug(css, 'URL: ~q', [S]),
+	format('~s~n', [S]),
 	format(Out, 'url(~s)', [S]).
 
 image_ext(gif).

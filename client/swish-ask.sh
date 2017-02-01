@@ -4,9 +4,12 @@
 #
 # This program allows you to download query  results from a SWISH server
 # as CSV data.
+#
+# This code is on the public domain.
 
 server=${SWISH_SERVER-http://localhost:3050}
 srctext=
+curlarg=
 format=${SWISH_FORMAT-prolog}
 program=$(basename $0)
 
@@ -57,6 +60,10 @@ while [ $done = false ]; do
 	    esac
             shift
             ;;
+	https://*.pl|http://*.pl)
+	    curlarg+=" -d src_url=$1"
+	    shift
+	    ;;
 	*.pl)
             script=$(echo $1 | sed 's/.*=//')
 	    srctext+=":- include('$script'). "
@@ -84,4 +91,5 @@ curl -s \
      -d format=csv \
      -d chunk=10 \
      -d solutions=all \
+     $curlarg \
      $server/pengine/create

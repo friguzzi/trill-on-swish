@@ -1,3 +1,42 @@
+/*  Part of SWISH
+
+    Author:        Jan Wielemaker
+    E-mail:        J.Wielemaker@cs.vu.nl
+    WWW:           http://www.swi-prolog.org
+    Copyright (C): 2014-2016, VU University Amsterdam
+			      CWI Amsterdam
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+    Changes by:    Riccardo Zese
+    E-mail:        riccardo.zese@unife.it
+    Copyright:	   2014-2016, University of Ferrara
+*/
+
 /**
  * @fileOverview
  * Prolog editor plugin based on [CodeMirror](http://codemirror.net)
@@ -33,6 +72,10 @@ define([ "cm/lib/codemirror",
 	 "cm/addon/hint/anyword-hint",
 	 "cm/addon/display/placeholder",
 	 "cm/addon/runmode/runmode",
+	 "cm/addon/search/search",
+	 "cm/addon/search/searchcursor",
+	 "cm/addon/search/jump-to-line",
+	 "cm/addon/dialog/dialog",
 
 	 "cm/addon/hover/text-hover",
 	 "cm/addon/hover/prolog-hover",
@@ -91,6 +134,8 @@ define([ "cm/lib/codemirror",
     }
   };
 
+  var lastEditor;
+
   /** @lends $.fn.prologEditor */
   var methods = {
     /**
@@ -138,6 +183,8 @@ define([ "cm/lib/codemirror",
 
 	if ( options.mode == "prolog" ) {
 	  data.role = options.role;
+	  if ( options.getSource )
+	    data.getSource = options.getSource;
 
 	  if ( config.http.locations.cm_highlight ) {
 	    options.prologHighlightServer =
@@ -228,6 +275,15 @@ define([ "cm/lib/codemirror",
 	  if ( data.role != "query" )
 	    elem.prologEditor('print');
 	});
+	elem.on("clearMessages", function(ev) {
+	  elem.prologEditor('clearMessages');
+	});
+	elem.on("edit-command", function(ev, command) {
+	  elem.prologEditor('execCommand', command);
+	});
+	data.cm.on("blur", function(ev) {
+	  elem.prologEditor('execCommand', 'prepare');
+	});
 
 	if ( options.save ) {
 	  storage.typeName = options.typeName||"program";
@@ -243,9 +299,6 @@ define([ "cm/lib/codemirror",
 
 	  elem.on("source-error", function(ev, error) {
 	    elem.prologEditor('highlightError', error);
-	  });
-	  elem.on("clearMessages", function(ev) {
-	    elem.prologEditor('clearMessages');
 	  });
 	  elem.on("pengine-died", function(ev, id) {
 	    if ( data.pengines ) {
@@ -404,11 +457,16 @@ define([ "cm/lib/codemirror",
     /**
      * FIXME: Add indication of the source, such that errors
      * can be relayed to the proper editor.
+     *
+     * @param {String} [role] Only return source for editors that
+     * match the given role.
+     * @param {Boolean} [direct] If `true`, do not try to indirect
+     * over the `data.getSource` function.
      * @returns {String} current contents of the editor.  If
      * the jQuery object holds multiple editors, we return the
      * joined content of the editors.
      */
-    getSource: function(role) {
+    getSource: function(role, direct) {
       var src = [];
 
       this.each(function() {
@@ -416,8 +474,15 @@ define([ "cm/lib/codemirror",
 	  var data = $(this).data(pluginName);
 
 	  if ( data ) {
-	    if ( !role || (role == data.role) )
-	      src.push(data.cm.getValue());
+	    if ( !role || (role == data.role) ) {
+	      var mysrc;
+	      if ( typeof(data.getSource) == "function" && !direct ) {
+		mysrc = data.getSource();
+	      } else {
+		mysrc = data.cm.getValue();
+	      }
+	      src.push(mysrc);
+	    }
 	  }
 	}
       });
@@ -568,7 +633,7 @@ define([ "cm/lib/codemirror",
 	iframe.contentWindow.print();
       }
 
-      $.ajax({ url: config.http.locations.swish+"css/print.css", //"js/codemirror/theme/prolog.css",
+      $.ajax({ url: config.http.locations.swish+"js/codemirror/theme/prolog.css", //+"css/print.css"
 	       dataType: "text",
 	       success: function(data) {
 		 printWithIframe($.el.div($.el.style(data),
@@ -613,35 +678,42 @@ define([ "cm/lib/codemirror",
     /**
      * Highlight a (syntax) error in the source.
      * @param {Object} error
-     * @param {String} error.data contains the error message
+     * @param {String} error.data contains the error message (HTML
+     * string)
      * @param {Object} error.location contains the location, providing
      * `line` and `ch` attributes.
      */
     highlightError: function(error) {
       if ( error.location.file &&
-	   this.prologEditor('isMyFile', error.location.file) ) {
+	   (error.location.file == true ||
+	    this.prologEditor('isMyFile', error.location.file)) ) {
 	var data = this.data(pluginName);
-	var msg  = $(error.data).text();
-	var left;
+	var chmark;
 
 	if ( error.location.ch ) {
 	  left = data.cm.charCoords({ line: error.location.line-1,
-				      ch:   error.location.ch
+				      ch:   error.location.ch-1
 				    },
 				    "local").left;
-	} else {
-	  left = 0;
+	  chmark = $.el.div({class:"source-msg-charmark"},
+			    $.el.span({class:"glyphicon glyphicon-chevron-up"}));
+	  $(chmark).css("padding-left", left+"px");
 	}
 
-	msg = msg.replace(/^.*?:[0-9][0-9]*: /, "");
-	var elem = $.el.span({class:"source-msg error"},
-			     msg,
-			     $("<span>&times;</span>")[0]);
-	$(elem).css("margin-left", left+"px");
-
+	var elem = $.el.div({ class:"source-msg error error-context",
+			      title:"Error message.  Click to remove"
+			    },
+			    chmark,
+			    $(error.data)[0],
+			    $.el.span({class:"glyphicon glyphicon-remove-circle"}));
 	var widget = data.cm.addLineWidget(error.location.line-1, elem);
 
-	$(elem).on("click", function() {
+	if ( error.error_context )
+	  $(elem).data("error_context", error.error_context);
+	$(elem).on("click", function(ev) {
+	  if ( error.error_handler &&
+	       error.error_handler(ev) == false )
+	    return;
 	  widget.clear();
 	});
 	$(elem).data("cm-widget", widget);
@@ -682,6 +754,25 @@ define([ "cm/lib/codemirror",
 
       return this;
     },
+
+    /**
+     * Execute a command on the editor from the menu.  The trick is to
+     * find the current editor.  For that purpose we make "blur" trigger
+     * the 'prepare' command that sets the last editor.  On the
+     * following menu action we execute on the last editor.
+     */
+   execCommand: function(command) {
+     if ( command == 'prepare' ) {
+       lastEditor = this[0];
+     } else if ( lastEditor == this[0] ) {
+       elem = $(lastEditor);
+       var data = elem.data(pluginName);
+       data.cm.execCommand(command);
+       elem.find(".Codemirror-dialog input").focus();
+     }
+
+     return this;
+   },
 
     /**
      * @param {String} file is the file as known to Prolog,
@@ -897,6 +988,15 @@ define([ "cm/lib/codemirror",
 
 	if ( cm._searchMarkers.length > 0 )
 	  cm.on("cursorActivity", clearSearchMarkers);
+      } else {					/* mark entire line */
+	cm._searchMarkers.push(
+	      cm.markText({line:line, ch:0},
+			  {line:line, ch:cm.getLine(line).length},
+			  {className:"CodeMirror-search-match",
+			   clearOnEnter: true,
+			   clearWhenEmpty: true,
+			   title: "Target line"
+			  }));
       }
 
       return this;
