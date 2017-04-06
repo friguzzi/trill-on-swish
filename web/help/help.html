@@ -1,21 +1,10 @@
-<!DOCTYPE HTML>
-<!-- 
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2016, University of Ferrara
--->
-
 <html>
   <head>
-  <title>TRILL on SWISH</title>
+  <title>SWISH: SWI-Prolog for SHaring</title>
   </head>
 <body>
 <style>
-body {
- 	overflow: scroll;
-	margin: 10px;
-  }
-  p.note { margin-left: 5%; position: relative }
+p.note { margin-left: 5%; position: relative }
 p.note span.glyphicon-hand-right {
 float: left; font-size: 150%; color: orange; padding-right: 0.2em;
 }
@@ -26,31 +15,26 @@ float: left; font-size: 150%; color: orange; padding-right: 0.2em;
     <li><a href="#help-basics">Basic operation</a></li>
     <li><a href="#help-examples">Embedding examples in the program text</a></li>
     <li><a href="#help-share">Save or share your program</a></li>
-    <li><a href="#help-preload">Preload TRILL on SWISH with data</a></li>
+    <li><a href="#help-include">Include other programs</a></li>
     <li><a href="#help-csv">Download query results as CVS</a></li>
-    <li><a href="#help-trill">TRILL manual</a></li>
-    <li><a href="#help-write-kb">Writing knowledge bases</a></li>
-    <ul>
-    	<li><a href="#help-trill-syntax">TRILL syntax</a></li>
-    	<li><a href="#help-rdf-syntax">RDF/XML syntax and tools</a></li>
-    </ul>
+    <li><a href="#help-preload">Preload SWISH with data</a></li>
   </ul>
 
 <h2 id="help-basics">Basic operation</h2>
 <p>
-TRILL is about running a <i>query</i> against a <i>knowledge base</i>. 
-It can handle <i>SHOQ</i> knowledge bases writtend in RDF/XML format or using a OWL Functional Syntax like format.
-</p>
+Prolog is about running a <i>query</i> against a <i>program</i>. The
+<i>query</i> goes into the bottom-right editor and the <i>program</i>
+into the left editor.  The program can be empty, executing queries
+against the <i>built-in</i> predicates of Prolog.  For example:
+
+<pre style="font-size:80%">
+?- format("Hello world!~n").</pre>
+
 <p>
-TRILL is a tableau reasoner written in Prolog, the queries available are listed in TRILL manual section.
-The <i>query</i> goes into the bottom-right editor and the <i>program</i>
-into the left editor. 
-</p>
-<p>
-A query can be executed by hitting <code>RETURN</code> if the query
-is complete and the caret is behind the '.' that terminates the query
-or by using the <a class="btn btn-xs btn-primary">Run!</a> button. 
-At this moment, the following happens:
+A query can be executed by hitting <code>RETURN</code> if the query is
+<em>complete</em> (i.e., ends in a full-stop) or by using the <a
+class="btn btn-xs btn-primary">Run!</a> button. At this moment, the
+following happens:
 
 <ol>
   <li>The interface creates a <em>runner</em> in the top-right window
@@ -90,24 +74,10 @@ first goal show in the Goal input field.
 <pre style="font-size:80%">
 /** &lt;examples&gt;
 
-?- instanceOf("http://my.ontology.org/ontologies/foo#myClass","http://my.ontology.org/ontologies/foo#myIndividual",ListExpl).
+?- loves(X, mia).
+?- jealous(X, Y).
 
 */</pre>
-<p>
-The examples blocks can be defined also in RDF/XML part surrounded by XML standard comment.
-</p>
-<pre style="font-size:80%">
-&lt;!--
-/** &lt;examples&gt;
-
-?- instanceOf("http://my.ontology.org/ontologies/foo#myClass","http://my.ontology.org/ontologies/foo#myIndividual",ListExpl).
-
-*/
---&gt;</pre>
-<p class="note">
-<span class="glyphicon glyphicon-hand-right"></span> If a complex string containing special characters (s.a. &#35;), surround it with single or double quote, also escaped if needed (\'). See TRILL manual section for a list of possible queries.
-</p>
-
 
 <h2 id="help-share">Save or share your program</h2>
 <p>
@@ -132,33 +102,29 @@ are several options:
 The <b>Info &amp; History ...</b> menu can be used to examine and use
 old versions of the program.
 
+<h2 id="help-include">Include other programs</h2>
+<p>
+If you know the name of a saved program (see above), you can reuse this
+program using Prolog's <b>include/1</b> predicate as illustrated below.
+
+<pre style="font-size:80%">
+:- include(clever).
+</pre>
+
+You can also include a <em>specific version</em> of a program by including
+its <em>hash</em>.  You can find the hash of a specific version using
+<b>Info &amp; History ...</b>, selecting the desired version and opening
+it using the <em>play</em> button.  This will display the hash in the
+browser's address field.  Now, include this version using e.g.,
+
+<pre style="font-size:80%">
+:- include('23dacada6952ec6701da2dc9d4ebcf5c7b860380').
+</pre>
+
 <p>
 Using <b>File/Collaborate ...</b>, you create a
 <a target="_blank" href="https://togetherjs.com/">TogetherJS</a> session
 that provides shared editing, chat and voice communication.
-</p>
-
-<h2 id="help-preload">Preload TRILL on SWISH with data</h2>
-<p>
-You can make <span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span
-style="color:maroon">SH</span>
-start with a loaded program using the URL <code>http://trill.lamping.unife.it/swish/</code> and
-providing the parameters below.  The URL accepts both `GET` and `POST` requests.
-
-  <dl>
-  <dt>code<dd>
-  The value can be either the KB or a URL from which the KB is available and downloadable.
-  </dd>
-  <dt>q<dd>
-  The query to set in the query pane.
-  </dd>
-  </dl>
-
-<p>The URL below opens <span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span
-style="color:maroon">SH</span> on a file from GitHub with a default query.
-
-<pre style="font-size:80%">
-http://my.url/trill_on_swish/?code=https://github.com/friguzzi/trill-on-swish/raw/master/examples/BRCA.owl</pre>
 
 <h2 id="help-csv">Download query results as CSV</h2>
 <p>
@@ -176,7 +142,7 @@ results to return. The latter is by default set to 10&nbsp;000 to avoid
 sending huge documents by accident. The field can be cleared to return
 all results.
 
-<!--h3>Download query results through an API</h3>
+<h3>Download query results through an API</h3>
 <p>
 The CSV results can also be downloaded programmatically by directly
 approaching the Pengine API. Example client code is <a
@@ -248,354 +214,6 @@ providing the parameters below.  The URL accepts both `GET` and `POST` requests.
 <pre>
 http://swish.swi-prolog.org/?code=https://github.com/SWI-Prolog/swipl-devel/raw/master/demo/likes.pl&amp;q=likes(sam,Food).</pre>
 <a target="_blank" href="http://swish.swi-prolog.org/?code=https://github.com/SWI-Prolog/swipl-devel/raw/master/demo/likes.pl&amp;q=likes(sam,Food).">Try it!</a> (launches a new tab)
--->
 
-
-<h2 id="help-trill">TRILL manual</h2>
-<p>
-TRILL ("Tableau Reasoner for descrIption Logics in Prolog") implements a tableau algorithm in
-Prolog to compute the set of all the explanations of a query. After generating the explanations, TRILL can computes the probability of the query. The management of the tableau rules' non-determinism is delegated to the Prolog language.
-</p>
-<p>
-TRILL can compute the probability of queries using the commands shown below:
-<dl>
-  <dt><b>prob_instanceOf(Class,Individual,Prob)</b><dd>
-  Concept membership queries.
-  </dd>
-  <dt><b>prob_property_value(Property,Individual1,Individual2,Prob)</b><dd>
-  Role assertion queries.
-  </dd>
-  <dt><b>prob_sub_class(Class1,Class2,Prob)</b>
-  <dd>
-  Subsumption queries.
-  </dd>
-  <dt><b>prob_unsat(ClassExpression,Prob)</b><dd>
-  Unsatifiability of a concept.
-  </dd>
-  <dt><b>prob_inconsistent_theory(Prob)</b><dd>
-  Inconsistency of the knowledge base.
-  </dd>
-  </dl>
-TRILL can test entailment or find an explanation <code>Expl</code> using the queries below:
-<dl>
-  <dt><b>instanceOf(Class,Individual),
-instanceOf(Class,Individual,Expl)</b><dd>
-  Concept membership queries.
-  </dd>
-  <dt><b>property_value(Property,Individual1,Individual2),
-property_value(Property,Individual1,Individual2,Expl)</b><dd>
-  Role assertion queries.
-  </dd>
-  <dt><b>sub_class(Class1,Class2),
-sub_class(Class1,Class2,Expl)</b>
-  <dd>
-  Subsumption queries.
-  </dd>
-  <dt><b>unsat(ClassExpression),
-unsat(ClassExpression,Expl)</b><dd>
-  Unsatifiability of a concept.
-  </dd>
-  <dt><b>inconsistent_theory,
-inconsistent_theory(Expl)</b><dd>
-  Inconsistency of the knowledge base.
-  </dd>
-  </dl>
-</p>
-<h2 id="help-write-kb">Writing knowledge bases</h3>
-<p>A knowledge base consists of a set of possibly annotated axioms.
- An axiom is a proposition that models an information of the domain. There are several different axioms:
- <dl>
-  <dt>Concept membership axioms<dd>
-  An individual belongs to a certain class.
-  </dd>
-  <dt>Role membership axioms<dd>
-  Two individuals are connected through a certain role.
-  </dd>
-  <dt>Transitivity axioms<dd>
-  The role is transitive.
-  </dd>
-  <dt>Role inclusion axioms<dd>
-  Hierarchy between roles.
-  </dd>
-  <dt>Concept inclusion axioms<dd>
-  Hierarchy between concepts.
-  </dd>
- </dl>
- </p>
- <p>
-Regarding the definition of knowledge bases, TRILL allows the use of two different syntaxes used together or individually:
-<ul>
-  <li>RDF/XML</li>
-  <li>TRILL syntax</li>
-</ul>
-RDF/XML syntax can be used by exploiting the predicate <code>owl_rdf/1</code>. For example:
-<pre style="font-size:80%">
-owl_rdf('
-&lt;?xml version="1.0"?&gt;
-
-&lt;!DOCTYPE rdf:RDF [
-    &lt;!ENTITY owl "http://www.w3.org/2002/07/owl#" &gt;
-    &lt;!ENTITY xsd "http://www.w3.org/2001/XMLSchema#" &gt;
-    &lt;!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#" &gt;
-    &lt;!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#" &gt;
-]&gt;
-
-&lt;rdf:RDF xmlns="http://here.the.IRI.of.your.ontology#"
-     xml:base="http://here.the.IRI.of.your.ontology"
-     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-     xmlns:owl="http://www.w3.org/2002/07/owl#"
-     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"&gt;
-    &lt;owl:Ontology rdf:about="http://here.the.IRI.of.your.ontology"/&gt;
-
-    &lt;!-- 
-    Axioms
-    --&gt;
-
-&lt;/rdf:RDF&gt;
-').
-</pre>
-For a brief introduction on RDF/XML syntax see <i>RDF/XML syntax and tools</i> section below.
-</p>
-<p>
-Note that each single <code>owl_rdf/1</code> must be self contained and well formatted, it must start and end with <code>rdf:RDF</code> tag and contain all necessary declarations (namespaces, entities, ...).
-</p>
-<p>
-An example of the combination of both syntaxes is shown below. It models that <i>john</i> is an <i>employee</i> and that employees are <i>workers</i>, which are in turn people (modeled by the concept <i>person</i>).
-<pre style="font-size:80%">
-owl_rdf('&lt;?xml version="1.0"?&gt;
-&lt;rdf:RDF xmlns="http://example.foo#"
-     xml:base="http://example.foo"
-     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-     xmlns:owl="http://www.w3.org/2002/07/owl#"
-     xmlns:xml="http://www.w3.org/XML/1998/namespace"
-     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"&gt;
-    &lt;owl:Ontology rdf:about="http://example.foo"/&gt;
-
-    &lt;!-- Classes --&gt;
-    &lt;owl:Class rdf:about="http://example.foo#worker"&gt;
-        &lt;rdfs:subClassOf rdf:resource="http://example.foo#person"/&gt;
-    &lt;/owl:Class&gt;
-
-&lt;/rdf:RDF&gt;').
-
-subClassOf('employee','worker').
-
-owl_rdf('&lt;?xml version="1.0"?&gt;
-&lt;rdf:RDF xmlns="http://example.foo#"
-     xml:base="http://example.foo"
-     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-     xmlns:owl="http://www.w3.org/2002/07/owl#"
-     xmlns:xml="http://www.w3.org/XML/1998/namespace"
-     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"&gt;
-    &lt;owl:Ontology rdf:about="http://example.foo"/&gt;
-    
-    &lt;!-- Individuals --&gt;
-    &lt;owl:NamedIndividual rdf:about="http://example.foo#john"&gt;
-        &lt;rdf:type rdf:resource="http://example.foo#employee"/&gt;
-    &lt;/owl:NamedIndividual&gt;
-&lt;/rdf:RDF&gt;').
-</pre>
-</p>
-
-<h3 id="help-trill-syntax">TRILL Syntax</h3>
-<p>
-<b>Declarations</b>
-</p>
-<p>
-TRILL syntax allows, as in standard OWL, the declaration of classes, properties, etc.
-<pre style="font-size:80%">
-class("classIRI").
-datatype("datatypeIRI").
-objectProperty("objectPropertyIRI").
-dataProperty("dataPropertyIRI").
-annotationProperty("annotationPropertyIRI").
-namedIndividual("individualIRI").
-</pre>
-However, TRILL properly works also in their absence.
-<p>
-</p>
-TRILL syntax allows also the declaration of aliases for namespaces by using the <code>kb_prefix/2</code> predicate.
-<pre style="font-size:80%">
-kb_prefix("foo","http://example.foo#").
-</pre>
-After this declaration, the prefix <code>foo</code> is available, thus, instead of <code>http://example.foo#john</code>, one can write <code>foo:john</code>.
-It is possible to define also an empty prefix as
-<pre style="font-size:80%">
-kb_prefix("","http://example.foo#").
-</pre>
-or as
-<pre style="font-size:80%">
-kb_prefix([],"http://example.foo#").
-</pre>
-In this way <code>http://example.foo#john</code> can be written only as <code>john</code>.<br/>
-</p>
-<p class="note">
-<span class="glyphicon glyphicon-hand-right"></span> Only one prefix per alias is allowed. Aliases defined in OWL/RDF part have the precedence, in case more than one prefix was assigned to the same alias, TRILL keeps only the first assignment.
-</p>
-<p>
-<b>Axioms</b>
-</p>
-<p>
-Axioms are modeled using the following predicates
-<pre style="font-size:80%">
-subClassOf("subClass","superClass").
-equivalentClasses([list,of,classes]).
-disjointClasses([list,of,classes]).
-disjointUnion([list,of,classes]).
-
-subPropertyOf("subProperty","superProperty").
-equivalentProperties([list,of,properties]).
-propertyDomain("propertyIRI","domainIRI").
-propertyRange("propertyIRI","rangeIRI").
-transitiveProperty("propertyIRI").
-
-sameIndividual([list,of,individuals]).
-differentIndividuals([list,of,individuals]).
-
-classAssertion("classIRI","individualIRI").
-propertyAssertion("propertyIRI","subjectIRI","objectIRI").
-annotationAssertion("annotationIRI",axiom,literal('value')).
-</pre>
-For example, for asserting that <i>employee</i> is subclass of <i>worker</i> one can use
-<pre style="font-size:80%">
-subClassOf(employee,worker).
-</pre>
-while the assertion <i>worker</i> is equal to <i>workingman</i> can be defined as
-<pre style="font-size:80%">
-equivalentClasses([worker,workingman]).
-</pre>
-</p>
-<p>
-Annotation assertions can be defined, for example, as
-<pre style="font-size:80%">
-annotationAssertion(foo:myAnnotation,subClassOf(employee,worker),'myValue').
-</pre>
-</p>
-<p>
-In particular, an axiom can be annotated with a probability which defines the degree of belief in the truth of the axiom. See [1] for details.
-</p>
-<p>
-Below, an example of an probabilistic axiom, following the TRILL syntax.
- <pre style="font-size:80%">
-annotationAssertion('disponte:probability',subClassOf(employee,worker),literal('0.6')).
-</pre>
-<p>
-<b>Concepts descriptions</b>
-<p>
-Complex concepts can be defined using different operators.
-</p>
-Existential and universal quantifiers
-<pre style="font-size:80%">
-someValuesFrom("propertyIRI","classIRI").
-allValuesFrom("propertyIRI","classIRI").
-</pre>
-Union and intersection of concepts
-<pre style="font-size:80%">
-unionOf([list,of,classes]).
-intersectionOf([list,of,classes]).
-</pre>
-Cardinality descriptions
-<pre style="font-size:80%">
-exactCardinality(cardinality,"propertyIRI").
-exactCardinality(cardinality,"propertyIRI","classIRI").
-maxCardinality(cardinality,"propertyIRI").
-maxCardinality(cardinality,"propertyIRI","classIRI").
-minCardinality(cardinality,"propertyIRI").
-minCardinality(cardinality,"propertyIRI","classIRI").
-</pre>
-Complement of a concept
-<pre style="font-size:80%">
-complementOf("classIRI").
-</pre>
-Nominal concept
-<pre style="font-size:80%">
-oneOf([list,of,classes]).
-</pre>
-For example, the class <i>workingman</i> is the intersection of <i>worker</i> with the union of <i>man</i> and <i>woman</i>. It can be defined as:
-<pre style="font-size:80%">
-equivalentClasses([workingman,intersectionOf([worker,unionOf([man,woman])])]).
-</pre>
-
-<h3 id="help-rdf-syntax">RDF/XML syntax and tools</h3>
- <p>As said before, TRILL is able to automatically translate RDF/XML knowledge bases when passed as a string using 
-the preticate <code>owl_rdf/1</code>.
-</p>
- 
- 
- <p>  Consider the following axioms 
-
- <pre style="font-size:80%">
-classAssertion(Cat,fluffy)
-subClassOf(Cat,Pet)
-propertyAssertion(hasAnimal,kevin,fluffy)
-</pre>
-</p>
-<p>The first axiom states that <i>fluffy</i> is a <i>Cat</i>. The second states that every <i>Cat</i> is also a <i>Pet</i>. The third states that the role <i>hasAnimal</i> links together <i>kevin</i> and <i>fluffy</i>.
-
-<p>RDF (Resource Descritpion Framework) is a standard W3C. See <a href="http://www.w3.org/TR/REC-rdf-syntax/">here</a> the syntax specification.
-RDF is a standard XML-based used for representing knowledge by means of triples.
-A representations of the three axioms seen above is shown below.
- <pre style="font-size:80%">
-&lt;owl:NamedIndividual rdf:about="fluffy"&gt;
-  &lt;rdf:type rdf:resource="Cat"/&gt;
-&lt;/owl:NamedIndividual&gt;
-
-&lt;owl:Class rdf:about="Cat"&gt;
-  &lt;rdfs:subClassOf rdf:resource="Pet"/&gt;
-&lt;/owl:Class&gt;
-
-&lt;owl:ObjectProperty rdf:about="hasAnimal"/&gt;
-&lt;owl:NamedIndividual rdf:about="kevin"&gt;
- &lt;hasAnimal rdf:resource="fluffy"/&gt;
-&lt;/owl:NamedIndividual&gt;
-</pre>
-</p>
-
-<p>
-Annotations are assertable using an extension of RDF/XML. For example the annotated axiom below, defined using the TRILL sintax
- <pre style="font-size:80%">
-annotationAssertion('disponte:probability',subClassOf('Cat','Pet'),literal('0.6')).
-</pre>
-is modeled using RDF/XML syntax as
- <pre style="font-size:80%">
-&lt;owl:Class rdf:about="Cat"&gt;
- &lt;rdfs:subClassOf rdf:resource="Pet"/&gt;
-&lt;/owl:Class&gt;
-&lt;owl:Axiom&gt;
- &lt;disponte:probability rdf:datatype="&amp;xsd;decimal"&gt;0.6&lt;/disponte:probability&gt;
- &lt;owl:annotatedSource rdf:resource="Cat"/&gt;
- &lt;owl:annotatedTarget rdf:resource="Pet"/&gt;
- &lt;owl:annotatedProperty rdf:resource="&amp;rdfs;subClassOf"/&gt;
-&lt;/owl:Axiom&gt;
-</pre>
-If you define the annotated axiom in the RDF/XML part, the annotation must be declared in the knowledge base as follow
-  <pre style="font-size:80%">
-&lt;!DOCTYPE rdf:RDF [
- ...
- &lt;!ENTITY disponte "https://sites.google.com/a/unife.it/ml/disponte#" &gt;
-]&gt;
-
-&lt;rdf:RDF
- ...
- xmlns:disponte="https://sites.google.com/a/unife.it/ml/disponte#"
- ...&gt;
-
- ...
- &lt;owl:AnnotationProperty rdf:about="&amp;disponte;probability"/&gt;
- ...
-&lt;/rdf:RDF&gt;
-</pre>
-</p>
-
-<p>There are many editors for developing knowledge bases, some of them are listed 
-<a href="http://www.w3.org/2001/sw/wiki/Category:Editor">here</a>.
-</p>
-
-<p>
-[1] Zese, R.: <i>Reasoning with Probabilistic Logics</i>. ArXiv e-prints <a href="http://arxiv.org/abs/1405.0915">1405.0915v3</a>. An extended abstract / full version of a paper accepted to be presented at the Doctoral Consortium of the 30th International Conference on Logic Programming (ICLP 2014), July 19-22, Vienna, Austria.
-</p>
 </body>
 </html>

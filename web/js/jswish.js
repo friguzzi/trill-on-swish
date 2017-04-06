@@ -143,6 +143,9 @@ preferences.setDefault("emacs-keybinding", false);
 	"Help ...": function() {
 	  menuBroadcast("help", {file:"help.html"});
 	},
+	"Help on TRILL ...": function() {
+	  menuBroadcast("help", {file:"help-trill.html"});
+	},
 	"Runner ...": function() {
 	  menuBroadcast("help", {file:"runner.html"});
 	},
