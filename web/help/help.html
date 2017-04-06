@@ -262,6 +262,9 @@ TRILL can compute the probability of queries using the commands shown below:
   <dt><b>prob_instanceOf(Class,Individual,Prob)</b><dd>
   Concept membership queries.
   </dd>
+  <dt><b>prob_property_value(Property,Individual1,Individual2,Prob)</b><dd>
+  Role assertion queries.
+  </dd>
   <dt><b>prob_sub_class(Class1,Class2,Prob)</b>
   <dd>
   Subsumption queries.
@@ -278,6 +281,10 @@ TRILL can test entailment or find an explanation <code>Expl</code> using the que
   <dt><b>instanceOf(Class,Individual),
 instanceOf(Class,Individual,Expl)</b><dd>
   Concept membership queries.
+  </dd>
+  <dt><b>property_value(Property,Individual1,Individual2),
+property_value(Property,Individual1,Individual2,Expl)</b><dd>
+  Role assertion queries.
   </dd>
   <dt><b>sub_class(Class1,Class2),
 sub_class(Class1,Class2,Expl)</b>
