@@ -340,7 +340,7 @@ swish_navbar(Options) -->
 	&(nbsp), &(nbsp),
 	a([href('/help/about.html'),target('_blank')],['About']),
 	&(nbsp), &(nbsp),
-	a([href('/help/help.html'),target('_blank')],['Help']),
+	a([href('/help/help-trill.html'),target('_blank')],['Help']),
 	&(nbsp), &(nbsp),
 	a([id('dismisslink'),href('')],['Dismiss'])
 	])
