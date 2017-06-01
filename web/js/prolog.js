@@ -74,7 +74,7 @@ define([ "jquery", "config", "form", "preferences",
       options.disposition = (options.disposition||
 			     options.filename||
 			     "swish-results.csv");
-
+	  
       if ( options.projection ) {
 	var formel;
 	var format = options.format||"prolog";

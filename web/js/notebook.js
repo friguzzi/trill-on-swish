@@ -31,10 +31,6 @@
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2016, University of Ferrara
 */
 
 /**
@@ -1191,8 +1187,8 @@ var cellTypes = {
 	  "Aggregate (count all)": wrapSolution,
 	  "--":			   null,
 	  "Projection":		   wrapSolution,
-	  /*"Order by":              wrapSolution,
-	  "Distinct":              wrapSolution,*/
+	  "Order by":              wrapSolution,
+	  "Distinct":              wrapSolution,
 	  "Limit":		   wrapSolution,
 	  "---":		   null,
 	  "Download answers as CSV": function() {

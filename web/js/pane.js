@@ -91,16 +91,6 @@ define([ "jquery", "splitter" ],
       });
     },
 
-    resize_start: function() {
-      return this.each(function() {
-	var elem    = $(this);
-	var info    = paneInfo(elem);
-
-	elem.find(".reactive-size").trigger("reactive-resize-start",
-					    info.splitter.orientation);
-      });
-    },
-
     /**
      * Save the current split location as a percentage, so we can
      * maintain this percentage at subsequent resize events.  This

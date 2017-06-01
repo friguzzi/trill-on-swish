@@ -1,16 +1,8 @@
-<<<<<<< HEAD
-# Copyright: VU University of Amsterdam, CWI Amsterdam & University of Ferrara
-=======
 # Copyright: VU University of Amsterdam, CWI Amsterdam
->>>>>>> bcdcd111ebf625bcbdb137c10135b5d3acb84d3d
 # License:   Simplified BSD license
 
 BOWER_ARCHIVE=swish-bower-components.zip
 BOWER_URL=http://www.swi-prolog.org/download/swish/${BOWER_ARCHIVE}
-<<<<<<< HEAD
-
-all: css js
-=======
 SWIPL=swipl
 
 # Packs to download and configure.  Run `git submodule` to see the
@@ -39,7 +31,6 @@ src::
 # Build and clean minimized versions
 
 min:: css js
->>>>>>> bcdcd111ebf625bcbdb137c10135b5d3acb84d3d
 
 css::
 	@$(MAKE) -C web/css
@@ -54,18 +45,13 @@ clean::
 	@$(MAKE) -C web/css clean
 	@$(MAKE) -C web/js clean
 
-<<<<<<< HEAD
-bower-components::
-=======
 # Install dependencies from downloaded zip holding bower components
 
 bower-zip::
->>>>>>> bcdcd111ebf625bcbdb137c10135b5d3acb84d3d
 	curl $(BOWER_URL) > $(BOWER_ARCHIVE)
 	unzip -u $(BOWER_ARCHIVE)
 	rm $(BOWER_ARCHIVE)
 
-<<<<<<< HEAD
 swish-bower-components.zip::
 	rm -f $@
 	zip -r $@ web/bower_components
@@ -73,7 +59,6 @@ swish-bower-components.zip::
 upload:	swish-bower-components.zip
 	rsync swish-bower-components.zip ops:/home/swipl/web/download/swish/swish-bower-components.zip
 
-=======
 # Create the above
 
 $(BOWER_ARCHIVE)::
@@ -96,4 +81,3 @@ packs: $(PACKFILES)
 $(PACKFILES):
 	git submodule update --init $(shell dirname $@)
 	$(SWIPL) $(ATTACH_PACKDIR) -g 'pack_rebuild($(shell basename $$(dirname $@)))' -t halt
->>>>>>> bcdcd111ebf625bcbdb137c10135b5d3acb84d3d

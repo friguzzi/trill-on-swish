@@ -107,13 +107,6 @@ preferences.setDefault("emacs-keybinding", false);
 	  },
 	  update: history.updateRecentUL
 	},
-	"Open recent": {
-	  type: "submenu",
-	  action: function(ev) {
-	    history.openRecent(ev, $(this).data('document'));
-	  },
-	  update: history.updateRecentUL
-	},
 	"Share": "--",
 	"Follow ...": config.http.locations.follow_file_options ?
 		      glyph("eye-open", function() {
@@ -158,10 +151,10 @@ preferences.setDefault("emacs-keybinding", false);
 	  menuBroadcast("edit-command", "jumpToLine");
 	},
 	"Options": "--",
-	/*"Semantic highlighting": {
+	"Semantic highlighting": {
 	  preference: "semantic-highlighting",
 	  type: "checkbox"
-	},*/
+	},
 	"Emacs Keybinding": {
 	  preference: "emacs-keybinding",
 	  type: "checkbox",
@@ -171,44 +164,8 @@ preferences.setDefault("emacs-keybinding", false);
       "Examples": function(navbar, dropdown) {
 	$("body").swish('populateExamples', navbar, dropdown);
       },
-/*<<<<<<< HEAD
-      "Help":
-      { "About ...": function() {
-	  menuBroadcast("help", {file:"about.html"});
-	},
-	"Topics": "--",
-	"Help ...": function() {
-	  menuBroadcast("help", {file:"help.html"});
-	},
-	"Help on TRILL ...": function() {
-	  menuBroadcast("help", {file:"help-trill.html"});
-	},
-	"Runner ...": function() {
-	  menuBroadcast("help", {file:"runner.html"});
-	},
-	//"Debugging ...": function() {
-	//  menuBroadcast("help", {file:"debug.html"});
-	//},
-	"Notebook ...": function() {
-	  menuBroadcast("help", {file:"notebook.html"});
-	},
-	"Editor ...": function() {
-	  menuBroadcast("help", {file:"editor.html"});
-	},
-	"Background": "--",
-	"Limitations ...": function() {
-	  menuBroadcast("help", {file:"beware.html"});
-	},
-	"Caveats ...": function() {
-	  menuBroadcast("help", {file:"caveats.html"});
-	},
-	"Background ...": function() {
-	  menuBroadcast("help", {file:"background.html"});
-	},
-=======*/
       "Help": function(navbar, dropdown) {
 	$("body").swish('populateHelp', navbar, dropdown);
-/* >>>>>>> bcdcd111ebf625bcbdb137c10135b5d3acb84d3d */
       }
     }
   }; // defaults;
@@ -707,13 +664,6 @@ preferences.setDefault("emacs-keybinding", false);
   function setupPanes() {
     $(".tile").tile();
     $(window).resize(function() { $(".tile").tile('resize'); });
-    $(".tabbed").tabbed();
-  }
-
-  function setupResize() {
-    $(window).resize(function() {
-      $(".reactive-size").trigger('reactive-resize');
-    });
     $(".tabbed").tabbed();
   }
 

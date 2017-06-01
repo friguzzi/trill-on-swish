@@ -423,33 +423,6 @@ gitty_reserved_meta(time).
 gitty_reserved_meta(data).
 gitty_reserved_meta(previous).
 
-		 /*******************************
-		 *	    FSCK SUPPORT	*
-		 *******************************/
-
-:- public
-	delete_object/2,
-	delete_head/2,
-	set_head/3.
-
-%%	delete_head(+Store, +Head) is det.
-%
-%	Delete Head from the administration.  Used if the head is
-%	inconsistent.
-
-delete_head(Store, Head) :-
-	store_driver_module(Store, Module),
-	Module:delete_head(Store, Head).
-
-%%	set_head(+Store, +File, +Head) is det.
-%
-%	Register Head as the Head hash for File, removing possible
-%	old head.
-
-set_head(Store, File, Head) :-
-	store_driver_module(Store, Module),
-	Module:set_head(Store, File, Head).
-
 
 %%	is_gitty_hash(@Term) is semidet.
 %

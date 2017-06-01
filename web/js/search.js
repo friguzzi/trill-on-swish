@@ -322,61 +322,6 @@ define([ "jquery", "config", "utils", "bloodhound", "typeahead" ],
 	}
 
 
-	var typeaheadProperties = {
-	  source:			/* local source */
-	  { name: "source",
-	    source: sourceMatcher,
-	    templates: { suggestion: renderSourceMatch }
-	  },
-	  sources:			/* remote sources */
-	  { name: "sources",
-	    source: sources.ttAdapter(),
-	    templates: { suggestion: renderSourceLine },
-	    limit: 15
-	  },
-	  files:			/* files in gitty on name and tags */
-	  { name: "files",
-	    source: files.ttAdapter(),
-	    templates: { suggestion: renderFile }
-	  },
-	  store_content:		/* file content in gitty */
-	  { name: "store_content",
-	    source: storeContent.ttAdapter(),
-	    templates: { suggestion: renderStoreSourceLine }
-	  },
-	  predicates:			/* built-in and library predicates */
-	  { name: "predicates",
-	    source: predicateMatcher,
-	    templates: { suggestion: renderPredicate }
-	  }
-	};
-
-	// Get the actual query string exchanged between
-	// typeahead and Bloodhound.
-	var of = typeaheadProperties.sources.source;
-	typeaheadProperties.sources.source = function(q, cb) {
-	  currentFile = null;
-	  currentAlias = null;
-	  sourceRE = new RegExp(RegExp.escape(q));
-	  return of(q, cb);
-	}
-
-	/**
-	 * Assemble the sources
-	 */
-
-	function ttSources(from) {
-	  var sources = [];
-	  var src = from.replace(/\s+/g, ' ').split(" ");
-
-	  for(var i=0; i<src.length; i++) {
-	    sources.push(typeaheadProperties[src[i]]);
-	  }
-
-	  return sources;
-	}
-
-
 		 /*******************************
 		 *	       USERS		*
 		 *******************************/
@@ -564,16 +509,6 @@ define([ "jquery", "config", "utils", "bloodhound", "typeahead" ],
 	    "Please select from auto completion list");
     }
   }; // methods
-
-  function bloodHoundURL(url, query) {
-    var url = url.replace('%QUERY',
-			  encodeURIComponent(query));
-    var match = $("label.active > input[name=smatch]").val();
-    if ( match )
-      url += "&match="+match;
-
-    return url;
-  }
 
   function bloodHoundURL(url, query) {
     var url = url.replace('%QUERY',

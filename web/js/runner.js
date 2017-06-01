@@ -1277,12 +1277,6 @@ define([ "jquery", "config", "preferences",
     elem.prologRunner('ping', this.data);
   }
 
-  function handlePing() {
-    var elem = this.pengine.options.runner;
-
-    elem.prologRunner('ping', this.data);
-  }
-
   /**
    * @param {Object} answer a positive answer from the Pengine
    * @returns {Boolean} true if the answer has printable part, i.e., no

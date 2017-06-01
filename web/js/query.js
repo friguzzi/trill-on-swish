@@ -31,10 +31,6 @@
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2016, University of Ferrara
 */
 
 /**
@@ -398,12 +394,12 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
       [ "Aggregate (count all)",
 	"--",
 	"Projection",
-	/*"Order by",
-	"Distinct",*/
+	"Order by",
+	"Distinct",
 	"Limit",
 	"--",
 	"Time",
-	/*"Debug (trace)"*/
+	"Debug (trace)"
       ];
     var ul;
 

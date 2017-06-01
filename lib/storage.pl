@@ -613,4 +613,3 @@ search_file(File, Meta, Data, Query, FileInfo, Options) :-
 
 prolog:message(moved_old_store(Old, New)) -->
 	[ 'Moving SWISH file store from ~p to ~p'-[Old, New] ].
-

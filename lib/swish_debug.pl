@@ -416,4 +416,3 @@ sandbox:safe_primitive(swish_debug:pengine_stale_module(_,_)).
 sandbox:safe_primitive(swish_debug:swish_statistics(_)).
 sandbox:safe_primitive(swish_debug:swish_stats(_, _)).
 sandbox:safe_primitive(swish_debug:swish_died_thread(_, _)).
-

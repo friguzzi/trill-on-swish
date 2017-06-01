@@ -53,4 +53,3 @@ run_swish :-
     option(port(Port), Options, 3050),
     server(localhost:Port).
 
-

@@ -1,9 +1,5 @@
 /* Specify icons for a file type.  Elements that must be styles this way
    need the style "type-icon" and the file extension.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2016, University of Ferrara
 */
 
 .type-icon.pl {
@@ -31,5 +27,4 @@
 .type-icon.togetherjs {
   background-image: url("../icons/togetherjs.png");
 }
-
 

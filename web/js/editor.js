@@ -199,7 +199,7 @@ define([ "cm/lib/codemirror",
 
 	  if ( options.role == "source" ) {
 	    options.continueComments = "Enter";
-	    // options.gutters = ["Prolog-breakpoints"]
+	    options.gutters = ["Prolog-breakpoints"]
 	  }
 
 	  /*
@@ -312,7 +312,6 @@ define([ "cm/lib/codemirror",
 	      data.traceMark = null;
 	    }
 	  });
-	  /*
 	  data.cm.on("gutterClick", function(cm, n) {
 	    var info = cm.lineInfo(n);
 
@@ -325,7 +324,6 @@ define([ "cm/lib/codemirror",
 	    else
 	      cm.setGutterMarker(n, "Prolog-breakpoints", makeMarker());
 	  });
-	  */
 	} /* end if prolog source */
 
 	data.cm.on("change", function(cm, change) {

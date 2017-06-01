@@ -1,7 +1,7 @@
 /*  Part of SWISH
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@vu.nl
+    E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
     Copyright (C): 2017, VU University Amsterdam
 			 CWI Amsterdam
@@ -164,11 +164,11 @@ current_user_property(email(_Email),              broadcast).
 
 :- multifile pengines:authentication_hook/3.
 
-%pengines:authentication_hook(Request, _Application, User) :-
-%    authenticate(Request, User).
+pengines:authentication_hook(Request, _Application, User) :-
+    authenticate(Request, User).
 
-pengines:authentication_hook(_Request, _Application, anonymous) :- !.
+%pengines:authentication_hook(_Request, _Application, anonymous) :- !.
 
-pengines:not_sandboxed(_User, _Application).
+%pengines:not_sandboxed(_User, _Application).
 
 

@@ -50,21 +50,6 @@ http://localhost:3050/
 @see	run.pl and daemon.pl
 */
 
-/** <module> Load the SWISH server for local usage
-
-This module loads the SWISH server for default local usage, i.e., mostly
-for developing SWISH. The file `daemon.pl` can be used as a start to run
-it as a server process.
-
-This file is normally used from  `run.pl`,   which  is started like this
-from   the   shell   to   start   the   SWISH   server   accessible   on
-http://localhost:3050/
-
-    swipl run.pl
-
-@see	run.pl and daemon.pl
-*/
-
 %%   server is det.
 %%   server(?Port) is det.
 %

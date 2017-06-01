@@ -31,10 +31,6 @@
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2016, University of Ferrara
 */
 
 /**
@@ -302,122 +298,6 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 		 label("tags", "Tags"),
 		 $.el.div({class:valgridw()},
 			  tagInput("tags", "Tags help finding this code", tags)));
-	return elem;
-      },
-
-      projection: function(projection) {
-	var elem =
-	$.el.div({class:"form-group"},
-		 label("projection", "Projection"),
-		 $.el.div({class:"col-xs-10"},
-			  textInput("projection",
-				    {placeholder:"Columns", value:projection})));
-	return elem;
-      },
-
-      csvFormat: function(list, format) {
-	var elem;
-
-	list = list||["prolog"];
-	format = format||list[0];
-
-	if ( list.length == 1 ) {
-	  elem = $.el.input({type:"hidden", name:"format", value:list[0]});
-	} else {
-	  elem = $.el.div({class:"form-group"},
-			  label("format", "Format"),
-			  $.el.div({class:"col-xs-10"},
-				   select("format",
-					  list,
-					  {value:format})));
-	}
-
-	return elem;
-      },
-
-      /**
-       * Ask for limit and distinct to modify the solution set.
-       * @param {Number} [limit] is the max number of solutions to
-       * return
-       * @param {Boolean} [distinct] requests only to return distinct
-       * solutions.
-       */
-      limit: function(limit, distinct) {
-	var elem =
-	$.el.div({class:"form-group"},
-		 label("name", "Limit"),
-		 $.el.div({class:"col-xs-10"},
-			  /*$.el.div({class:"input-group"},
-				   $.el.span({class:"input-group-addon",
-				              title:"If checked only return distinct results"
-				             },
-					     checkbox("distinct",
-						      { checked: distinct
-						      })),*/
-				   textInput("limit",
-					     {placeholder:"Maximum result count (blank for unlimited)",
-					      title:"Limit results",
-					      value:limit}))); //));
-	return elem;
-      },
-
-      /**
-       * @param {Object} options
-       * @param {String} options.label
-       * @param {Boolean} options.value
-       */
-      checkboxes: function(boxes) {
-	var boxel;
-	var elem =
-	$.el.div({class:"form-group"},
-		 label("options", "Options", 3),
-		 boxel = $.el.div({class:"col-xs-9"}));
-	for(var k=0; k<boxes.length; k++) {
-	  var box = boxes[k];
-	  var opts = {type: "checkbox", name:box.name, autocomplete:"false"};
-	  if ( box.value )
-	    opts.checked = "checked";
-	  $(boxel).append($.el.label({class:"checkbox-inline"},
-				     $.el.input(opts), box.label));
-	}
-
-	return elem;
-      },
-
-      chunk: function(value) {
-	var elem =
-	$.el.div({class:"form-group"},
-		 label("count", "Initial solutions", 3),
-		 $.el.div({class:"col-xs-9"},
-			  $.el.div({class:"input-group"},
-				   textInput("chunk",
-					     { title:"Initial number of solutions",
-					       type:"number",
-					       value:value}))));
-	return elem;
-      },
-
-      name: function(name, col) {
-	col = col||3;
-	var elem =
-	$.el.div({class:"form-group"},
-		 label("name", "Name", col),
-		 $.el.div({class:"col-xs-"+(12-col)},
-			  textInput("name",
-				    {placeholder:"Name",
-				     value:name})));
-	return elem;
-      },
-
-      filename: function(name, col) {
-	col = col||3;
-	var elem =
-	$.el.div({class:"form-group"},
-		 label("filename", "File name", col),
-		 $.el.div({class:"col-xs-"+(12-col)},
-			  textInput("filename",
-				    {placeholder:"File name",
-				     value:name})));
 	return elem;
       },
 

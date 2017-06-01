@@ -760,4 +760,3 @@ read_data(media(Type,_), Request, Data, Meta) :-
 	del_dict(data, Dict, Data, Meta).
 read_data(media(text/_,_), Request, Data, _{}) :-
 	http_read_data(Request, Data, [to(string)]).
-
