@@ -60,7 +60,7 @@ define([ "jquery", "splitter" ],
 	var pos   = elem.attr("data-split");
 	var panes = elem.children();
 
-	if ( !pos ) pos = "50%";
+	pos = pos||"50%";
 
 	panes.each(function() {
 	  $(this).wrap('<div class="pane-wrapper"></div>')
@@ -74,6 +74,20 @@ define([ "jquery", "splitter" ],
 		     onDragEnd: function() { elem.tile('resize_save'); }
 	           });
 	elem.tile('resize_save');
+
+	elem.on('fullscreen', function(ev, val) {
+	  elem.tile('resize');
+	});
+      });
+    },
+
+    resize_start: function() {
+      return this.each(function() {
+	var elem    = $(this);
+	var info    = paneInfo(elem);
+
+	elem.find(".reactive-size").trigger("reactive-resize-start",
+					    info.splitter.orientation);
       });
     },
 
@@ -132,6 +146,81 @@ define([ "jquery", "splitter" ],
 	  splitter.settings.onDrag(elem);
 	}
       });
+    },
+
+    /**
+     * Split a pane, adding a new pane above/below/left/right of the
+     * splitted pane.  `this` must be the pane content!
+     * @param {Element} pane is a `<div>` element providing the content
+     * for the new tile.
+     * @param {String} [rel] is one of `above`/`below`/`left`/`right`.
+     * Default is `"below"`
+     * @param {Number} [pos] is percentage of the height/width taken by
+     * the new pane
+     * @param {Number} [minheight] is the minimum height of the new tab
+     * in the case of a vertical split.
+     * @return {jQuery} parent `pane-container` that hold me and the note
+     * that was added next to me.
+     */
+    split: function(pane, rel, pos, minheight) {
+      rel = rel||"below";
+
+      var relto  = this;
+      var dir    = (rel == "above" || rel == "below") ? "horizontal" : "vertical";
+      var parent = relto.wrap('<div class="pane-container tile "' +
+			      flipdir(dir) +
+			      '></div>')
+                        .parent();
+
+      if ( pos == undefined )
+	pos = 50;
+      else if ( pos < 10 )
+	pos = 10;
+      else if ( pos > 90 )
+	pos = 90;
+
+      if ( minheight && dir == "horizontal" ) {
+	sumh = this.height();
+	left = sumh*pos/100;
+	if ( left < minheight && minheight < sumh*0.9 ) {
+	  pos = (minheight*100/sumh);
+	}
+      }
+
+      if ( rel == "above" || rel == "left" ) {
+	parent.prepend(pane);
+      } else {
+	pos = 100 - pos;
+	parent.append(pane);
+      }
+
+      var panes = $(relto).add(pane);
+      panes.wrap('<div class="pane-wrapper"></div>');
+
+      parent.split({ orientation:dir,
+		     position:pos+"%",
+		     limit:10,
+		     onDragStart: function() { parent.tile('resize_start'); },
+		     onDrag:      function() { panes.trigger("pane.resize"); },
+		     onDragEnd:   function() { parent.tile('resize_save'); }
+		   });
+      parent.tile('resize_save');
+      panes.trigger("pane.resize");
+
+      return parent;
+    },
+
+    /**
+     * Remove a tile from the DOM, causing the remaining half to occupy
+     * the whole space.  Again, `this` is the content pane.
+     */
+     close: function() {
+      var pane = this;
+      var splitContainer = pane.closest(".pane-container");
+
+      splitContainer.split().destroy();
+      pane.parent().remove();
+      splitContainer.children().first().children().first().unwrap().unwrap();
     }
   }; // methods
 
@@ -142,6 +231,10 @@ define([ "jquery", "splitter" ],
              first:    $(panes[0]).children()[0],
 	     second:   $(panes[2]).children()[0]
            };
+  }
+
+  function flipdir(dir) {
+    return dir == "horizontal" ? "vertical" : "horizontal";
   }
 
   /**
@@ -179,43 +272,4 @@ define([ "jquery", "splitter" ],
     }
   };
 }(jQuery));
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-Stuff left here for future addition and deletion of tiles subwindows.
-Must be turned into a plugin.
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
-function addPane(relto, pane, rel)
-{ var parent = relto.wrap('<div class="pane-container"></div>').parent();
-
-  if ( rel == "above" || rel == "left" )
-    parent.prepend(pane);
-  else
-    parent.append(pane);
-
-  relto.wrap('<div class="pane-wrapper"></div>');
-  pane.wrap('<div class="pane-wrapper"></div>');
-
-  if ( rel == "above" || rel == "below" )
-    dir = "horizontal";
-  else
-    dir = "vertical";
-
-  parent.split({orientation:dir, limit:10});
-}
-
-
-/* closePane() removes a pane and the accompagnying splitter from
-   the DOM.  Note that .split() on a splitted div returns the splitter
-   object. After removing this, we are left with our two wrapper layers.
-*/
-
-function closePane(pane)
-{ var splitContainer = pane.parents(".pane-container").first();
-
-  splitContainer.split().destroy();
-  pane.parent().remove();
-  splitContainer.children().first().children().first().unwrap().unwrap();
-}
-
 });

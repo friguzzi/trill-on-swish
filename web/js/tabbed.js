@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2015, VU University Amsterdam
+    Copyright (C): 2014-2017, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -357,12 +357,15 @@ var tabbed = {
       li.remove();
 					/* HACK: close embedded runners */
       tab.find(".prolog-runner").prologRunner('close');
+      tab.find(".storage").storage('close');
       tab.remove();
       if ( new_active && new_active.length > 0 ) {
 	new_active.find("a").first().tab('show');
       } else if ( this.tabbed('navContent').children().length == 0 ) {
 	this.tabbed('newTab');
       }
+
+      $(".storage").storage('chat_status', true);
     },
 
     /**
@@ -373,8 +376,9 @@ var tabbed = {
       var a = this.tabbed('navTab', id);
       if ( a ) {
 	a.tab('show');
-	return this;
       }
+
+      $(".storage").storage('chat_status', true);
     },
 
     /**
@@ -388,6 +392,7 @@ var tabbed = {
      */
     tabLabel: function(id, label, close, type) {
       var close_button;
+      var chat;
 
       if ( close )
       { close_button = glyphicon("remove", "xclose");
@@ -398,13 +403,46 @@ var tabbed = {
       var a1 = $.el.a({class:"compact", href:"#"+id, "data-id":id},
 		      $.el.span({class:"tab-icon type-icon "+type}),
 		      $.el.span({class:"tab-dirty",
-		                 title:"Tab is modified.  See File/Save and Edit/View changes"}),
+		                 title:"Tab is modified. "+
+				       "See File/Save and Edit/View changes"}),
+	       chat = $.el.a({class:"tab-chat",
+			      title:"Chat messages available"
+			     },
+			     form.widgets.glyphIcon("bell"),
+			     $.el.span({class:"tab-chat-count"})),
 		      $.el.span({class:"tab-title"}, label),
 		      close_button);
       var li = $.el.li({role:"presentation"}, a1);
 
+      $(chat).on("click", function(ev) {
+	var id = $(ev.target).closest("a.compact").data("id");
+	$("#"+id).find(".storage").storage('chat');
+	return false;
+      });
+
       return li;
     },
+
+    /**
+     * Calling obj.tabbed('anchor') finds the <a> element
+     * represeting the tab label from the node obj that appears
+     * somewhere on the tab
+     */
+    anchor: function() {
+      var tab    = this.closest(".tab-pane");
+
+      if ( tab.length == 0 ) {
+	return undefined;		/* e.g., fullscreen mode */
+      }
+
+      var tabbed = tab.closest(".tabbed");
+      var id     = tab.attr("id");
+      var ul	 = tabbed.tabbed('navTabs');
+      var a      = ul.find("a[data-id="+id+"]");
+
+      return a;
+    },
+
 
     /**
      * This method is typically _not_ called on the tab, but on some
@@ -413,28 +451,40 @@ var tabbed = {
      * @param {String} [type="pl"] is the new type for the tab.
      */
     title: function(title, type) {
-      var tab    = this.closest(".tab-pane");
+      var a = this.tabbed('anchor');
 
-      /* if no tab, we might be in fullscreen mode */
-      if ( tab.length == 0 ) {
-	fsorg = this.data("fullscreen_origin");
-	if ( fsorg )
-	  tab = $(fsorg).closest(".tab-pane");
+      if ( a ) {
+	a.find(".tab-title").text(title);
+	if ( type ) {
+	  var icon = a.find(".tab-icon");
+	  icon.removeClass();
+	  icon.addClass("tab-icon type-icon "+type);
+	}
       }
 
-      var tabbed = tab.closest(".tabbed");
-      var id     = tab.attr("id");
-      var ul	 = tabbed.tabbed('navTabs');
-      var a      = ul.find("a[data-id="+id+"]");
+      return this;
+    },
 
-      a.find(".tab-title").text(title);
-      if ( type ) {
-	var icon = a.find(".tab-icon");
-	icon.removeClass();
-	icon.addClass("tab-icon type-icon "+type);
+    /**
+     * Set the chat message feedback for this tab
+     * @param {Object} [chats]
+     * @param {Number} [chats.count] number of pending chat messages
+     */
+    chats: function(chats) {
+      var a = this.tabbed('anchor');
+
+      if ( a ) {
+	var span = a.find(".tab-chat");
+
+	if ( chats && chats.count ) {
+	  span.find(".tab-chat-count").text(chats.count);
+	  span.addClass('chat-alert');
+	} else {
+	  span.removeClass('chat-alert');
+	}
       }
 
-      return tabbed;
+      return this;
     },
 
     /**

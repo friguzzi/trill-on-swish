@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2016, VU University Amsterdam
+    Copyright (C): 2014-2017, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -31,16 +31,26 @@
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
 */
 
+:- use_module(library(main)).
+:- use_module(library(option)).
 :- use_module(server).
 
-% Using `localhost:3050`, we only bind to localhost interface!
+% Usage:
+%
+%   swipl run.pl [--port=Port]
+
+% Using `localhost:Port`, we only bind to localhost interface!
 % Use plain `3050` (or any port number you like) to make the server
 % accessible from all network interfaces.
 
-%:- initialization server(localhost:3050).
-:- initialization server(3050).
+:- initialization run_swish.
+
+run_swish :-
+    current_prolog_flag(argv, Argv),
+    argv_options(Argv, _, Options),
+    option(port(Port), Options, 3050),
+    server(localhost:Port).
+
+

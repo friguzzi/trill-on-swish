@@ -11,7 +11,6 @@
 
 ## Window handling
 
-  - Add/remove new windows to the tile (pane.js can do that).
   - Specify more about sized: minimum size, flexibility.  Probably
     requires extending jquery.splitter.
   - Allow moving panes around using drag/drop.  Allow organizing
@@ -41,6 +40,27 @@
     - Allow for rewriting answer terms?
     - Allow generating HTML?  How to deal with security?
 
+## Dashboard
+
+Dashboard entry is basically a query. We will specify the parameters as
+
+```
+paramters(
+    [ Param1: Option ("+" Option)*
+      ...
+    ]),
+
+Goal
+```
+
+parameters/1 creates a dialog from the  provided argument types. We will
+do that server side. Initially we will  use the Pengine _prompt_ to fill
+the dialog, so parameters/1 acts as  read/1.   In  later versions we can
+provide a setting to the query that   will perform the generation of the
+dialog at notebook load time  and  replace   the  query  by  its dialog.
+Possibly we can implement that as part of the server-side highlighting?
+
+
 ## Sharing
 
 First option was TogetherJS.  Now doubting, as it my be much better to
@@ -48,12 +68,53 @@ _not_ see exactly the same UI for cooperation.  What about
 
   - Allow for sharing editors
   - Allow sharing runners (= query+program)
-  - Provide chat and whiteboard (Anne)
+
+## File ownership and rights
+
+  - If a user is logged in
+    - Store the profile-id with a saved program			[OK]
+    - Do not show E-mail					[OK]
+    - Provide options:
+      - Allow save a new version
+        - Anyone						[OK]
+	- Logged on						[OK]
+	- Team
+	- Only me						[OK]
+      - Set/unset follow (docid, profile-id)
+        - When saving a file					[OK]
+	- From File/Follow menu					[OK]
+      - Vote up/down
+      - Profile options for email				[OK]
+    - Email notifications
+      - Exclude sending mail to self `self'			[OK]
+      - Provide `stop following this file' link			[OK]
+      - Provide `stop sending email' link			[OK]
+      - Styling						        [Not yet pretty]
+
+## Make teams
+
+  - A team has a homepage, which is a notebook.
+  - Workflow:
+    - Save a copy of the "Team homepage" example notebook.
+    - Turn into team homepage
+      - Add "team" tag
+      - Have a members query, returning a table.  Using an
+        HTML cell?
+      - Create as a copy from an example page?
+    - Invite team members (is this a general page behaviour)
+      - Input with look-ahead for searching people (or type
+	email).
+      - Text area for invitation
+      - Sends e-mail.
+  - Thus a team is
+    - A page
+    - Link to members
+  - Small installations can automatically add all users to the
+    one team.
+
 
 ## Saving files
 
-  - Look at [Dillinger markup editor](http://dillinger.io/)
-    - Save to github
   - Save/Info dialogs
     - Fork from history
       - Now: Play, Save, clear/fill name.
@@ -64,14 +125,6 @@ _not_ see exactly the same UI for cooperation.  What about
     - Indicate branch points in history?
       - Requires complete graph in memory.
   - Re-map Control-S (google-docs ignores save)
-
-## Login
-
-  - Social login
-    - login-with-google (oauth2)
-    - etc ...
-  - Make it easy to add HTTPS certificate based login.
-    - not SWISH specific
 
 ## Search
 

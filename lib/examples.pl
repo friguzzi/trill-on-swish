@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (c)  2014-2015, VU University Amsterdam
+    Copyright (c)  2014-2017, VU University Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,7 @@
 :- use_module(library(lists)).
 :- use_module(library(settings)).
 
-:- use_module(gitty).
+:- use_module(storage).
 
 /** <module> Serve example files
 
@@ -154,9 +154,8 @@ storage_examples(List) :-
 storage_examples([]).
 
 gitty_example(json{title:Title, file:File, type:"store"}) :-
-	setting(web_storage:directory, Store),
-	gitty_file(Store, File, _),
-	gitty_commit(Store, File, Meta),
+	storage_file(File),
+	storage_meta_data(File, Meta),
 	Meta.get(example) == true,
 	(   Title = Meta.get(title), Title \== ""
 	->  true

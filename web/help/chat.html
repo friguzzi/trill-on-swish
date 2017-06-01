@@ -1,0 +1,93 @@
+<!DOCTYPE HTML>
+
+<html>
+  <head>
+  <title>SWISH chat service</title>
+  </head>
+  <body>
+
+<div class="dropup">
+<p>
+The <span style="color:darkblue">SWI</span><span
+style="color:maroon">SH</span> chat services allows you to chat with
+users about a file. <span style="color:darkblue">SWI</span><span
+style="color:maroon">SH</span> displays an <i>avatar</i> for each user
+with whom you share an open file. If you select <b>File/Chat ...</b> the
+current notebook or program gets a chat window displayed below it,
+preloaded with older chat messages about this file.  A chat message
+may include one or more <b>payload</b> objects that are made visible
+as buttons.  Most payloads are added using the <a class="btn
+btn-xs btn-primary">Send <b class="caret"></b></a> button menu.  Defined
+payloads are:
+</p>
+
+  <ul>
+    <li>The <b>selection</b>.  If you have made a selection on the
+        page, this is sent along with the chat message.  Clicking
+        on the <a class="btn btn-xs btn-primary"><span
+	class="glyphicon glyphicon-eye-open"></span></a> button restores
+	this selection.  Note that you can make <b>multiple selections</b>
+	using <b>Control-click</b> in the CodeMirror editor.
+    <li>Your current <b>query</b> can be included using the <a class="btn
+        btn-xs btn-primary">Send <b class="caret"></b></a>.
+    <li>System generated <b>update messages</b> include a payload that
+        allows you to open the file in <b>before/after</b> mode as well
+	as examine the <b>differences</b>
+  </ul>
+
+<p>
+Finally, the <a class="btn btn-xs btn-primary">Send <b class="caret"></b></a>
+button may be used to create a link from the <b>shared chatroom</b> to this
+file to <b>ask for support</b>.
+</p>
+
+
+<h3 id="chat-help">The shared chat room</h3>
+
+<p class="dropup">
+The notebook <a href="/p/Help.swinb">Help.swinb</a> provides a place to
+find buddies. It can be opened from <b>File/Chat help room ...</b> and
+messages may be cross-posted to this shared space using <b>Broadcast to
+help room</b> from the <a class="btn btn-xs btn-primary">Send <b
+class="caret"></b></a> button. The message that appears in the shared
+room contains a link to the file from which it was created.
+<p>
+
+<h3 id="chat-markdown">Markdown in chat messages</h3>
+
+<p>
+Chat messages are subject to a limited form of Markdown processing.
+Currently, the patterns below replaced.  Note that these are simplied
+forms of the actual regular expressions which use stronger boundary
+conditions.
+</p>
+
+<table class="table table-condensed" style="width:80%; margin:auto">
+<tr><th>Pattern<th>Example<th>Meaning
+<tr><td>\b\w+.pl<td>program.pl<td>Link to Prolog program
+<tr><td>\b\w+.swinb<td>notebook.swinb<td>Link to SWISH notebook
+<tr><td>\w+/\d<td>between/3<td>Link to documentation on predicate
+<tr><td>`[^`]+`<td>`A is 1+1`<td><code>A is 1+1</code>
+<tr><td>*[^*]+*<td>*never*<td><b>never</b>
+<tr><td>__[^_]+__<td>__always__<td><b>always</b>
+<tr><td>_[^_]+_<td>_italic_<td><i>italic</i>
+</table>
+
+
+<h3 id="chat-status">Status of the SWISH sharing service</h3>
+
+<p>
+What you are seeing are the first steps to allow users of SWISH to communicate.
+There are many facilities we have in mind, such as:
+</p>
+
+<ul>
+  <li>Connect editors for collaborative editing
+  <li>Make <i>teams</i> that connect people also if they are not editing
+      the same file.
+  <li>Allow Prolog programs to exchange messages through the chat room.
+</ul>
+</div>
+
+</body>
+</html>

@@ -147,7 +147,7 @@ render_dot(DOTString, Program, _Options) -->	% <svg> rendering
 	  call_cleanup((   read_string(XDotOut, _, SVG),
 			   read_string(ErrorOut, _, Error)
 		       ),
-		       (   process_wait(PID, _Status),
+		       (   process_wait_0(PID),
 			   close(ErrorOut, [force(true)]),
 			   close(XDotOut)
 		       ))
@@ -159,6 +159,13 @@ render_dot(DOTString, Program, _Options) -->	% <svg> rendering
 		     \svg(SVG, [])))
 	;   html(div(style('color:red;'),
 		     [ '~w'-[Program], ': ', Error]))
+	).
+
+process_wait_0(PID) :-
+	process_wait(PID, Status),
+	(   Status == exit(0)
+	->  true
+	;   print_message(error, format('Process ~q died on ~q', [PID, Status]))
 	).
 
 %%	svg(+SVG:string, +Options:list)//
@@ -205,6 +212,7 @@ svg(SVG, _Options) -->
        updateSize()
        pan = svgPanZoom(svg[0], {
 			  // controlIconsEnabled: true
+			  minZoom: 0.1,
 			  maxZoom: 50
 			});
     });
@@ -244,6 +252,8 @@ graphviz_program(fdp).
 graphviz_program(sfdp).
 graphviz_program(twopi).
 graphviz_program(circo).
+graphviz_program(osage).
+graphviz_program(patchwork).
 
 graph_type(graph).
 graph_type(digraph).
@@ -265,7 +275,7 @@ swish_send_graphviz(Request) :-
 				      [ dialect(xml) ]),
 		       read_string(ErrorOut, _, Error)
 		     ),
-		     (	 process_wait(PID, _Status),
+		     (	 process_wait_0(PID),
 			 close(ErrorOut, [force(true)]),
 			 close(XDotOut)
 		     )),
@@ -273,7 +283,7 @@ swish_send_graphviz(Request) :-
 	->  true
 	;   print_message(error, format('~w', [Error]))
 	),
-	rewrite_sgv_dom(SVGDom0, SVGDom),
+	rewrite_svg_dom(SVGDom0, SVGDom),
 	format('Content-type: ~w~n~n', ['image/svg+xml; charset=UTF-8']),
 	xml_write(current_output, SVGDom,
 		  [ layout(false)
@@ -292,7 +302,7 @@ graphviz_stream(Data, PID, XDotOut, Error) :-
 		      [ detached(true) ]).
 
 
-rewrite_sgv_dom([element(svg, Attrs, Content)],
+rewrite_svg_dom([element(svg, Attrs, Content)],
 		[element(svg, Attrs,
 			 [ element(script, ['xlink:href'=SVGPan], []),
 			   element(g, [ id=viewport
@@ -300,7 +310,7 @@ rewrite_sgv_dom([element(svg, Attrs, Content)],
 				   Content)
 			 ])]) :-
 	http_absolute_location(js('SVGPan.js'), SVGPan, []).
-rewrite_sgv_dom(DOM, DOM).
+rewrite_svg_dom(DOM, DOM).
 
 send_to_dot(Data, Out) :-
 	call_cleanup(format(Out, '~s', [Data]),

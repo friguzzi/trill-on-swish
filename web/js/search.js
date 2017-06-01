@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2015, VU University Amsterdam
+    Copyright (C): 2014-2017, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -49,8 +49,8 @@
  * @requires jquery
  */
 
-define([ "jquery", "config", "typeahead" ],
-       function($, config) {
+define([ "jquery", "config", "utils", "bloodhound", "typeahead" ],
+       function($, config, utils, Bloodhound) {
 
 (function($) {
   var pluginName = 'search';
@@ -59,8 +59,13 @@ define([ "jquery", "config", "typeahead" ],
   var methods = {
     /**
      * Turn Bootstrap search input into a typeahead widget
+     * @param {Object}  [options]
+     * @param {Boolean} [options.search=true] If false, merely use
+     * typeahead to fill a value.
      */
     _init: function(options) {
+      options = options||{};
+
       return this.each(function() {
 	var elem = $(this);
 	var query;			/* current query */
@@ -71,8 +76,10 @@ define([ "jquery", "config", "typeahead" ],
 
 	var files = new Bloodhound({
 			name: "files",
-			remote: config.http.locations.swish_typeahead +
-				"?set=file&q=%QUERY",
+			remote: { url: config.http.locations.swish_typeahead +
+				       "?set=file&q=%QUERY",
+				  wildcard: '%QUERY'
+			},
 			datumTokenizer: fileTokenizer,
 			queryTokenizer: Bloodhound.tokenizers.whitespace
 	               });
@@ -94,7 +101,7 @@ define([ "jquery", "config", "typeahead" ],
 	          + filetype(f.name)
 	          + "\">"
 		  + "<span class=\"tt-label\">"
-		  + htmlEncode(filebase(f.name));
+		  + utils.htmlEncode(filebase(f.name));
 	          + "</span>";
 
 	  if ( f.tags ) {
@@ -102,7 +109,7 @@ define([ "jquery", "config", "typeahead" ],
 	    for(var i=0; i<f.tags.length; i++) {
 	      var tag = f.tags[i];
 	      str += "<span class=\"tt-tag\">"
-		   + htmlEncode(tag)
+		   + utils.htmlEncode(tag)
 		   + "</span>";
 	    }
 	    str += "</span>";
@@ -110,7 +117,7 @@ define([ "jquery", "config", "typeahead" ],
 
 	  if ( f.title )
 	    str += "<div class=\"tt-title file\">"
-		 + htmlEncode(f.title)
+		 + utils.htmlEncode(f.title)
 		 + "</div>";
 	  str += "</div>";
 
@@ -146,7 +153,7 @@ define([ "jquery", "config", "typeahead" ],
 	    currentAlias = hit.alias;
 	    str = "<div class=\"tt-file-header type-icon "+ext+"\">"
 		+ "<span class=\"tt-path-file\">"
-		+ htmlEncode(hit.file)
+		+ utils.htmlEncode(hit.file)
 		+ "</span>"
 		+ "</div>";
 	  }
@@ -185,9 +192,9 @@ define([ "jquery", "config", "typeahead" ],
 	    currentAlias = hit.alias;
 	    str = "<div class=\"tt-file-header type-icon "+hit.ext+"\">"
 	        + "<span class=\"tt-path-alias\">"
-	        + htmlEncode(hit.alias)
+	        + utils.htmlEncode(hit.alias)
 		+ "</span>(<span class=\"tt-path-file\">"
-		+ htmlEncode(hit.file)
+		+ utils.htmlEncode(hit.file)
 		+ ")</span>"
 		+ "</div>";
 	  }
@@ -238,7 +245,7 @@ define([ "jquery", "config", "typeahead" ],
 
 	  str += "\">"
                + "<span class=\"tt-label\">"
-	       + htmlEncode(p.name)
+	       + utils.htmlEncode(p.name)
 	       + "/"
 	       + p.arity
 	       + "</span>";
@@ -252,7 +259,7 @@ define([ "jquery", "config", "typeahead" ],
 
 	  if ( p.summary )
 	    str += "<div class=\"tt-title file\">"
-		 + htmlEncode(p.summary)
+		 + utils.htmlEncode(p.summary)
 		 + "</div>";
 	  str += "</div>";
 
@@ -306,7 +313,7 @@ define([ "jquery", "config", "typeahead" ],
 		  + hit.line
 		  + "</span>"
 		  + "<span class=\"tt-text\">"
-		  + htmlEncode(text)
+		  + utils.htmlEncode(text)
 	          + "</span>"
 	          + "</span>"
 		  + "</div>";
@@ -371,6 +378,115 @@ define([ "jquery", "config", "typeahead" ],
 
 
 		 /*******************************
+		 *	       USERS		*
+		 *******************************/
+
+	var users = new Bloodhound({
+			     name: "users",
+			     limit: 20,
+			     cache: false,
+			     remote: {
+			       url: config.http.locations.swish_typeahead +
+				     "?set=user&q=%QUERY",
+			       replace:bloodHoundURL
+			     },
+			     datumTokenizer: sourceLineTokenizer,
+			     queryTokenizer: Bloodhound.tokenizers.whitespace
+	                   });
+	users.initialize();
+
+	function renderUser(hit) {
+	  function avatar(hit) {
+	    if ( hit.avatar ) {
+	      return '<img class="avatar" src="'+encodeURI(hit.avatar)+'">';
+	    } else {
+	      return "";
+	    }
+	  }
+
+	  var str = '<div class="tt-match user">'
+		  + avatar(hit)
+		  + '<span class="tt-label">'
+		  + utils.htmlEncode(hit.name)
+		  + '</span>'
+		  + '</div>';
+
+	  return str;
+	}
+
+
+		 /*******************************
+		 *	      COMBINE		*
+		 *******************************/
+
+	var typeaheadProperties = {
+	  source:			/* local source */
+	  { name: "source",
+	    display: 'text',
+	    source: sourceMatcher,
+	    templates: { suggestion: renderSourceMatch }
+	  },
+	  sources:			/* remote sources */
+	  { name: "sources",
+	    display: 'file',
+	    source: sources.ttAdapter(),
+	    templates: { suggestion: renderSourceLine },
+	    limit: 15
+	  },
+	  files:			/* files in gitty on name and tags */
+	  { name: "files",
+	    display: 'name',
+	    source: files.ttAdapter(),
+	    templates: { suggestion: renderFile }
+	  },
+	  store_content:		/* file content in gitty */
+	  { name: "store_content",
+	    display: 'file',
+	    source: storeContent.ttAdapter(),
+	    templates: { suggestion: renderStoreSourceLine }
+	  },
+	  predicates:			/* built-in and library predicates */
+	  { name: "predicates",
+	    display: function(p) {
+	      return p.name+"/"+p.arity;
+	    },
+	    source: predicateMatcher,
+	    templates: { suggestion: renderPredicate }
+	  },
+	  users:			/* Users (profiles) */
+	  { name: "users",
+	    display: "name",
+	    source: users.ttAdapter(),
+	    templates: { suggestion: renderUser }
+	  }
+	};
+
+	// Get the actual query string exchanged between
+	// typeahead and Bloodhound.
+	var of = typeaheadProperties.sources.source;
+	typeaheadProperties.sources.source = function(q, cb) {
+	  currentFile = null;
+	  currentAlias = null;
+	  sourceRE = new RegExp(RegExp.escape(q));
+	  return of(q, cb);
+	}
+
+	/**
+	 * Assemble the sources
+	 */
+
+	function ttSources(from) {
+	  var sources = [];
+	  var src = from.replace(/\s+/g, ' ').split(" ");
+
+	  for(var i=0; i<src.length; i++) {
+	    sources.push(typeaheadProperties[src[i]]);
+	  }
+
+	  return sources;
+	}
+
+		 /*******************************
 		 *	     TYPEAHEAD		*
 		 *******************************/
 
@@ -379,54 +495,60 @@ define([ "jquery", "config", "typeahead" ],
 		       },
 		       ttSources(elem.data("search-in")))
 	  .on('typeahead:selected typeahead:autocompleted',
-	      function(ev, datum, set) {
+	      function(ev, datum) {
 
-		if ( datum.type == "store" ) {
-		  if ( datum.query ) {
-		    datum.regex = new RegExp(RegExp.escape(datum.query), "g");
-		    datum.showAllMatches = true;
-		  }
-		  $(ev.target).parents(".swish").swish('playFile', datum);
-		} else if ( datum.arity !== undefined ) {
-		  $(".swish-event-receiver").trigger("pldoc", datum);
-		} else if ( datum.editor !== undefined &&
-			    datum.line !== undefined ) {
-		  $(datum.editor).prologEditor('gotoLine', datum.line,
-					       { regex: datum.regex,
-						 showAllMatches: true
-					       });
-		} else if ( datum.alias !== undefined ) {
-		  var url = encodeURI("/"+datum.alias+
-				      "/"+datum.file+
-				      "."+datum.ext);
-		  var play = { url:url, line:datum.line };
-
-		  if ( datum.query ) {
-		    play.regex = new RegExp(RegExp.escape(datum.query), "g");
-		    play.showAllMatches = true;
-		  }
-
-		  $(ev.target).parents(".swish").swish('playURL', play);
+		if ( options.search == false ) {
+		  elem.data("json-value", datum);
 		} else {
-		  elem.data("target", {datum:datum, set:set});
-		  console.log(elem.data("target"));
+		  if ( datum.type == "store" ) {
+		    if ( datum.query ) {
+		      datum.regex = new RegExp(RegExp.escape(datum.query), "g");
+		      datum.showAllMatches = true;
+		    }
+		    $(ev.target).closest(".swish").swish('playFile', datum);
+		  } else if ( datum.arity !== undefined ) {
+		    $(".swish-event-receiver").trigger("pldoc", datum);
+		  } else if ( datum.editor !== undefined &&
+			      datum.line !== undefined ) {
+		    $(datum.editor).prologEditor('gotoLine', datum.line,
+						 { regex: datum.regex,
+						   showAllMatches: true
+						 });
+		  } else if ( datum.alias !== undefined ) {
+		    var url = encodeURI("/"+datum.alias+
+					"/"+datum.file+
+					"."+datum.ext);
+		    var play = { url:url, line:datum.line };
+
+		    if ( datum.query ) {
+		      play.regex = new RegExp(RegExp.escape(datum.query), "g");
+		      play.showAllMatches = true;
+		    }
+
+		    $(ev.target).closest(".swish").swish('playURL', play);
+		  } else {
+		    elem.data("json-value", datum);
+		    console.log(elem.data("json-value"));
+		  }
 		}
 	      });
 
-	elem.parents("form").submit(function(ev) {
-	  var data = elem.data("target");
-	  var str  = elem.val();
+	if ( options.search != false ) {
+	  elem.closest("form").submit(function(ev) {
+	    var data = elem.data("json-value");
+	    var str  = elem.val();
 
-	  if ( !(data && data.datum && data.datum.label == str) )
-	    data = str;
+	    if ( !(data && data.datum && data.datum.label == str) )
+	      data = str;
 
-	  elem.val("");
-	  elem.data("target", null);
+	    elem.val("");
+	    elem.data("json-value", null);
 
-	  elem.search('search', data);
+	    elem.search('search', data);
 
-	  return false;
-	});
+	    return false;
+	  });
+	}
       });
     },
 
@@ -443,18 +565,14 @@ define([ "jquery", "config", "typeahead" ],
     }
   }; // methods
 
-  function htmlEncode(html) {
-    if ( !html ) return "";
-    return document.createElement('a')
-                   .appendChild(document.createTextNode(html))
-		   .parentNode
-		   .innerHTML;
-  };
+  function bloodHoundURL(url, query) {
+    var url = url.replace('%QUERY',
+			  encodeURIComponent(query));
+    var match = $("label.active > input[name=smatch]").val();
+    if ( match )
+      url += "&match="+match;
 
-  if (typeof String.prototype.startsWith != 'function') {
-    String.prototype.startsWith = function(str) {
-      return this.lastIndexOf(str, 0) === 0;
-    };
+    return url;
   }
 
   function bloodHoundURL(url, query) {

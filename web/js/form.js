@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2016, VU University Amsterdam
+    Copyright (C): 2014-2017, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -50,27 +50,52 @@
 
 define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
        function($, config, modal) {
+
+  var LABELWIDTH = 3;
+
   var form = {
     /**
      * Serialize a form as an object. The following normalizations are
      * performed:
-     *   - Form fields that have an empty string are ignored
+     *   - Form fields that have an empty string are ignored unless
+     *     `ignore_empty` is `true`
      *   - The value from a `<input type="checkbox">`is converted
      *     into a JavaScript boolean.
      *	 - The value of a tag-list is converted into a list of strings.
      * @returns {Object} holding the name/value pairs of the form
      */
-    serializeAsObject: function(form) {
-      var arr = form.serializeArray(0);
+    serializeAsObject: function(form, ignore_empty) {
+      var arr = form.serializeArray();
+      var inset = [];
       var obj = {};
+
+      // get arrays of checkboxes
+      form.find("div.checkboxes.array").each(function() {
+	var elem = $(this);
+	var set = [];
+
+	elem.find("input:checked").each(function() {
+	  var name = $(this).attr("name");
+	  set.push(name);
+	});
+	elem.find("input").each(function() {
+	  var name = $(this).attr("name");
+	  inset.push(name);
+	});
+
+	obj[elem.attr("name")] = set;
+      });
 
       for(var i=0; i<arr.length; i++) {
 	var name  = arr[i].name;
 	var value = arr[i].value;
 	var input = form.find('[name="'+name+'"]');
 	var type  = input.prop("type");
+	var jvalue;
 
-	if ( value != "" ) {
+	if ( (jvalue = input.data('json-value')) ) {
+	  obj[name] = jvalue;
+	} else if ( value != "" || ignore_empty == true ) {
 	  // deal with tag lists
 	  if ( type == "hidden" && name.indexOf("hidden-") == 0 ) {
 	    name = name.slice("hidden-".length);
@@ -89,7 +114,8 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 	  } else if ( type == "number" ) {
 	    obj[name] = parseInt(value);
 	  } else if ( type == "checkbox" ) {
-	    obj[name] = (value == "on" ? true : false);
+	    if ( inset.indexOf(name) == -1 )
+	      obj[name] = (value == "on" ? true : false);
 	  } else {
 	    obj[name] = value;
 	  }
@@ -100,7 +126,9 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
       form.find("[type=checkbox]").each(function() {
 	var checkbox = $(this);
 	var name = checkbox.prop('name');
-	if ( obj[name] === undefined )
+	if ( checkbox.prop("disabled") != true &&
+	     obj[name] === undefined &&
+	     inset.indexOf(name) == -1 )
 	  obj[name] = false;
       });
 
@@ -163,10 +191,12 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
     fields: {
       fileName: function(name, public, example, disabled) {
 	var labeltext = config.swish.community_examples ? "Public | Example | name" : "Public | name"
-	var elem =
+	var empty = "(leave empty for generated random name)"
+	var fork, input;
+        var elem =
 	$.el.div({class:"form-group"},
 		 label("name", labeltext),
-		 $.el.div({class:"col-xs-10"},
+		 $.el.div({class:valgridw()},
 			  $.el.div({class:"input-group"},
 				   $.el.span({class:"input-group-addon",
 				              title:"If checked, other users can find this program"
@@ -181,12 +211,23 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 					     checkbox("example",
 						      { checked: example
 						      })) : undefined,
-				   textInput("name",
-					     {placeholder:"Name (leave empty for generated random name)",
+			   input = textInput("name",
+					     {placeholder:"Name " + empty,
 					      title:"Public name of your program",
 					      value:name,
-					      disabled:disabled})),
-			  helpBlock("Make saved file public or give it a meaningful name")));
+					      disabled:disabled}),
+			    fork = $.el.span({class:"input-group-btn"
+				             },
+					     $.el.button({ class: "btn btn-success",
+							   type: "button"
+							 }, "Fork"))
+				  )));
+	$(fork).on("click", function() {
+	  var btn = $(input).closest("form").find(".btn.btn-primary");
+	  $(input).attr("placeholder", "Fork as " + empty);
+	  $(input).val("");
+	  btn.text(btn.text().replace("Update", "Fork"));
+	});
 	return elem;
       },
 
@@ -194,20 +235,30 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 	var elem =
 	$.el.div({class:"form-group"},
 		 label("title", "Title"),
-		 $.el.div({class:"col-xs-10"},
+		 $.el.div({class:valgridw()},
 			  textInput("title",
 				    {placeholder:"Descriptive title",
 				     value:title})));
 	return elem;
       },
 
-      author: function(author) {
+      /**
+       * @param {String} [identity] if provided, this indicates that the
+       * author cannot be changed.
+       */
+      author: function(author, identity) {
+	var options = { placeholder:"Your name", value:author };
+
+	if ( author && identity ) {
+	  options.readonly = true;
+	  options.title    = "Verified author name";
+	}
+
 	var elem =
 	$.el.div({class:"form-group"},
 		 label("author", "Author"),
-		 $.el.div({class:"col-xs-10"},
-			  textInput("author",
-				    {placeholder:"Your name", value:author})));
+		 $.el.div({class:valgridw()},
+			  textInput("author", options)));
 	return elem;
       },
 
@@ -216,7 +267,7 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 	var elem =
 	$.el.div({class:"form-group"},
 		 label(name, labels),
-		 $.el.div({class:"col-xs-10"},
+		 $.el.div({class:valgridw()},
 			  textInput(name,
 				    {disabled: true,
 				     value:new Date(stamp*1000).toLocaleString()
@@ -228,7 +279,7 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 	var elem =
 	$.el.div({class:"form-group"},
 		 label("description", "Description"),
-		 $.el.div({class:"col-xs-10"},
+		 $.el.div({class:valgridw()},
 			  textarea("description", {value:description})));
 	return elem;
       },
@@ -237,7 +288,7 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 	var elem =
 	$.el.div({class:"form-group"},
 		 label("commit_message", "Changes"),
-		 $.el.div({class:"col-xs-10"},
+		 $.el.div({class:valgridw()},
 			  textarea("commit_message",
 				   { value:msg,
 				     placeholder:"Describe your changes here"
@@ -249,7 +300,7 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 	var elem =
 	$.el.div({class:"form-group"},
 		 label("tags", "Tags"),
-		 $.el.div({class:"col-xs-10"},
+		 $.el.div({class:valgridw()},
 			  tagInput("tags", "Tags help finding this code", tags)));
 	return elem;
       },
@@ -371,18 +422,192 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
       },
 
       /**
+       * Provide checkboxes for determining who may save a new version
+       * of this file
+       */
+      modify: function(who, canmodify) {
+	var fields = [];
+	var opts = { name:"modify", label:"Can save new version",
+		     type:"array"
+		   };
+
+	function add(key, label) {
+	  fields.push({ name:key,
+			label:label,
+			value:who.indexOf(key) != -1,
+			readonly: !canmodify
+		      });
+	}
+
+	add("any",   "Anyone");
+	add("login", "Logged in users");
+	add("owner", "Only me");
+
+	if ( !canmodify )
+	  opts.title = "Only logged in users and owners can set permissions";
+	else
+	  opts.title = "Specify who can save an updated version of this file";
+
+	return form.fields.checkboxes(fields, opts);
+      },
+
+      follow: function(email) {
+	return form.fields.checkboxes(
+		 [ { name: "follow", label: "Follow this document",
+		     value:!!email, readonly:!email
+		   }
+		 ],
+		 { name:"options", label:"",
+		   title: "Notify about activity (updates, chat)\n"+
+			  "Requires being logged in with valid email"
+		 });
+      },
+
+      projection: function(projection) {
+	var elem =
+	$.el.div({class:"form-group"},
+		 label("projection", "Projection"),
+		 $.el.div({class:valgridw()},
+			  textInput("projection",
+				    {placeholder:"Columns", value:projection})));
+	return elem;
+      },
+
+      csvFormat: function(list, format) {
+	var elem;
+
+	list = list||["prolog"];
+	format = format||list[0];
+
+	if ( list.length == 1 ) {
+	  elem = $.el.input({type:"hidden", name:"format", value:list[0]});
+	} else {
+	  elem = $.el.div({class:"form-group"},
+			  label("format", "Format"),
+			  $.el.div({class:valgridw()},
+				   select("format",
+					  list,
+					  {value:format})));
+	}
+
+	return elem;
+      },
+
+      /**
+       * Ask for limit and distinct to modify the solution set.
+       * @param {Number} [limit] is the max number of solutions to
+       * return
+       * @param {Boolean} [distinct] requests only to return distinct
+       * solutions.
+       */
+      limit: function(limit, distinct) {
+	var elem =
+	$.el.div({class:"form-group"},
+		 label("name", "Distinct | limit"),
+		 $.el.div({class:valgridw()},
+			  $.el.div({class:"input-group"},
+				   $.el.span({class:"input-group-addon",
+				              title:"If checked only return distinct results"
+				             },
+					     checkbox("distinct",
+						      { checked: distinct
+						      })),
+				   textInput("limit",
+					     {placeholder:"Maximum result count (blank for unlimited)",
+					      title:"Limit results",
+					      value:limit}))));
+	return elem;
+      },
+
+      /**
+       * @param {Array} boxes is a list of checkbox specifications.
+       * Uses .name, .label, .value (Boolean) and .readonly
+       */
+      checkboxes: function(boxes, options) {
+	var boxel;
+
+	options = $.extend({name:"options", label:"Options", col:LABELWIDTH},
+			   options||{});
+
+	var dopts = { class: "checkboxes col-xs-"+(12-options.col),
+	              name:  options.name
+		    };
+	if ( options.title ) dopts.title = options.title;
+	if ( options.type  ) dopts.class += " "+options.type;
+	var elem =
+	$.el.div({class:"form-group"},
+		 label(options.name, options.label, options.col),
+		 boxel = $.el.div(dopts));
+
+	for(var k=0; k<boxes.length; k++) {
+	  var box = boxes[k];
+	  var opts = {type: "checkbox", name:box.name, autocomplete:"false"};
+	  if ( box.value )
+	    opts.checked = "checked";
+	  if ( box.readonly )
+	    opts.disabled = "disabled";
+	  $(boxel).append($.el.label({class:"checkbox-inline"},
+				     $.el.input(opts), box.label));
+	}
+
+	return elem;
+      },
+
+      chunk: function(value) {
+	var elem =
+	$.el.div({class:"form-group"},
+		 label("count", "Initial solutions", 3),
+		 $.el.div({class:"col-xs-9"},
+			  $.el.div({class:"input-group"},
+				   textInput("chunk",
+					     { title:"Initial number of solutions",
+					       type:"number",
+					       value:value}))));
+	return elem;
+      },
+
+      name: function(name, col) {
+	col = col||3;
+	var elem =
+	$.el.div({class:"form-group"},
+		 label("name", "Name", col),
+		 $.el.div({class:"col-xs-"+(12-col)},
+			  textInput("name",
+				    {placeholder:"Name",
+				     value:name})));
+	return elem;
+      },
+
+      filename: function(name, col) {
+	col = col||3;
+	var elem =
+	$.el.div({class:"form-group"},
+		 label("filename", "File name", col),
+		 $.el.div({class:"col-xs-"+(12-col)},
+			  textInput("filename",
+				    {placeholder:"File name",
+				     value:name})));
+	return elem;
+      },
+
+      hidden: function(name, value) {
+	if ( value !== undefined )
+	  return $.el.input({type:"hidden", name:name, value:value});
+      },
+
+      /**
        * @param {Object} options
        * @param {String} options.label is the label used for the
        * primary button.
        * @param {Function} options.action is called with two arguments,
        * the _event_ and the serialized data from the embedded form
-       * @param {Number} options.offset determinis the begin column in
+       * @param {Number} options.offset determines the begin column in
        * the grid (default 2)
        */
       buttons: function(options) {
 	options    = options||{};
 	var label  = options.label||"Save program";
-	var offset = options.offset||2;
+	var offset = options.offset||LABELWIDTH;
 	var button = $.el.button({ name:"save",
 				   class:"btn btn-primary"
 				 },
@@ -416,15 +641,16 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
        * @param {Array(Object)} buttons is an array of objects with
        * .active, .label and .value
        */
-      radio: function(name, buttons) {
+      radio: function(name, buttons, type) {
 	var elem = $.el.div({class:"btn-group", "data-toggle":"buttons"});
+	type = type||"radio"
 
 	for(var i=0; i<buttons.length; i++) {
 	  var cls = "btn btn-default btn-xs";
 	  if ( buttons[i].active )
 	    cls += " active";
 
-	  var opts = { type:"radio", name:name,
+	  var opts = { type:type, name:name,
 	               autocomplete:"off",
 		       value:buttons[i].value
 		     };
@@ -441,16 +667,22 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
     },
 
     widgets: {
+      glyphIcon: function(glyph) {
+	return $.el.span({class:"glyphicon glyphicon-"+glyph});
+      },
+
+      typeIcon: function(type) {
+	return $.el.span({class:"dropdown-icon type-icon "+type});
+      },
+
       glyphIconButton: function(glyph, options) {
-	var attrs = {class:"btn btn-info", type:"button"};
+	var attrs = {class:"btn", type:"button"};
 
 	if ( options.action ) attrs['data-action'] = options.action;
 	if ( options.title )  attrs.title          = options.title;
+	if ( options.class )  attrs.class	  += " "+options.class;
 
-	elem =
-	$.el.button(attrs,
-		    $.el.span({class:"glyphicon "+glyph}));
-	return elem;
+	return $.el.button(attrs, form.widgets.glyphIcon(glyph));
       },
 
       /**
@@ -488,23 +720,23 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
       populateMenu: function(menu, client, actions) {
 	var ul = menu.find(".dropdown-menu");
 
-	function runMenu(a) {
+	function runMenu(ev, a) {
 	  var action = $(a).data('action');
 
 	  if ( action )
 	    action.call(client, a);
-
-	  return false;
 	}
 
 	function addMenuItem(label, onclick) {
-	  if ( label.indexOf("--") == 0 ) {
-	    ul.append($.el.li({class:"divider"}));
-	  } else {
-	    var a = $.el.a(label);
+	  if ( onclick !== undefined ) {
+	    if ( label.indexOf("--") == 0 ) {
+	      ul.append($.el.li({class:"divider"}));
+	    } else {
+	      var a = $.el.a(label);
 
-	    $(a).data('action', onclick);
-	    ul.append($.el.li(a));
+	      $(a).data('action', onclick);
+	      ul.append($.el.li(a));
+	    }
 	  }
 	}
 
@@ -514,7 +746,7 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 	  }
 	}
 
-	ul.on("click", "a", function() { runMenu(this); } );
+	ul.on("click", "a", function(ev) { runMenu(ev, this); } );
 
 	return menu;
       }
@@ -525,8 +757,17 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
 		 *	     FUNCTIONS		*
 		 *******************************/
 
+  function valgridw(n) {
+    if ( n === undefined ) n = LABELWIDTH;
+    return "col-xs-"+(12-n);
+  }
+  function colgridw(n) {
+    if ( n === undefined ) n = LABELWIDTH;
+    return "col-xs-"+n;
+  }
+
   function label(elemName, text, width) {
-    width = width || 2;
+    width = width || LABELWIDTH;
     return $.el.label({class:"control-label col-xs-"+width+"", for:elemName}, text);
   }
 
@@ -545,6 +786,7 @@ define([ "jquery", "config", "modal", "laconic", "tagmanager" ],
     if ( options.title )       attrs.title       = options.title;
     if ( options.value )       attrs.value       = options.value;
     if ( options.disabled )    attrs.disabled    = options.disabled;
+    if ( options.readonly )    attrs.readonly    = options.readonly;
     if ( options.type )        attrs.type        = options.type;
     return $.el.input(attrs);
   }

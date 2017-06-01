@@ -1,9 +1,9 @@
 // list of examples, represented as a JSON list
 
 [ { "file":"trill/examples_trill.swinb",	"title":"TRILL example programs" },
-  { "file":"examples_swish.swinb",		"title":"Prolog example programs" }, 
-  { "file":"prolog_tutorials.swinb", 		"title":"Prolog tutorials" },
-  { "file":"swish_tutorials.swinb",  		"title":"SWISH tutorials" },
+  { "file":"examples.swinb",	     "title":"Example programs" },
+  { "file":"prolog_tutorials.swinb", "title":"Prolog tutorials" },
+  { "file":"swish_tutorials.swinb",  "title":"SWISH tutorials" },
   "--",
-  { "file":"stats.swinb",	     		"title":"Usage statistics" }
+  { "file":"stats.swinb",	     "title":"Usage statistics" }
 ]

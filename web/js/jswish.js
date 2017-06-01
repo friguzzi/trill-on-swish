@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2016, VU University Amsterdam
+    Copyright (C): 2014-2017, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -51,7 +51,7 @@ define([ "jquery",
 	 "preferences",
 	 "history",
 	 "modal",
-	 "jquery-ui",
+	 "chat",
 	 "splitter",
 	 "bootstrap",
 	 "pane",
@@ -64,6 +64,8 @@ define([ "jquery",
 	 "runner",
 	 "term",
 	 "laconic",
+	 "login",
+	 "chatroom",
 	 "d3",
 	 "c3",
 	 "svg-pan-zoom"
@@ -75,14 +77,35 @@ preferences.setDefault("emacs-keybinding", false);
 (function($) {
   var pluginName = 'swish';
 
+  function glyph(name, func) {
+    func.glyph = name;
+    return func;
+  }
+
+  function icon(name, func) {
+    func.typeIcon = name;
+    return func;
+  }
+
   var defaults = {
     menu: {
       "File":
-      { "Save ...": function() {
+      { "Save ...": glyph("cloud-upload", function() {
 	  menuBroadcast("save", "as");
-	},
-	"Info & history ...": function() {
+	}),
+	"Info & history ...": glyph("info-sign", function() {
 	  menuBroadcast("fileInfo");
+	}),
+	"Reload": glyph("refresh", function() {
+	  menuBroadcast("reload");
+	}),
+	"Open recent": {
+	  type: "submenu",
+	  glyph: "paperclip",
+	  action: function(ev) {
+	    history.openRecent(ev, $(this).data('document'));
+	  },
+	  update: history.updateRecentUL
 	},
 	"Open recent": {
 	  type: "submenu",
@@ -92,16 +115,29 @@ preferences.setDefault("emacs-keybinding", false);
 	  update: history.updateRecentUL
 	},
 	"Share": "--",
-	"Download": function() {
-	  menuBroadcast("download");
-	},
-	"Start TogetherJS ...": function() {
+	"Follow ...": config.http.locations.follow_file_options ?
+		      glyph("eye-open", function() {
+	  menuBroadcast("follow-file");
+	}) : undefined,
+	"Chat ...": icon("chat", function() {
+	  menuBroadcast("chat-about-file");
+	}),
+	"Chat help room ...": icon("chathelp", function() {
+	  $("body").swish('playFile', {
+	    file:"Help.swinb",
+	    chat:'large'
+	  });
+	}),
+	"Start TogetherJS ...": icon("togetherjs", function() {
 	  $("body").swish('collaborate');
-	},
-	"Print group": "--",
-	"Print ...": function() {
+	}),
+	"Export": "--",
+	"Download": glyph("floppy-save", function() {
+	  menuBroadcast("download");
+	}),
+	"Print ...": glyph("print", function() {
 	  menuBroadcast("print");
-	}
+	})
       },
       "Edit":
       { "Clear messages": function() {
@@ -135,6 +171,7 @@ preferences.setDefault("emacs-keybinding", false);
       "Examples": function(navbar, dropdown) {
 	$("body").swish('populateExamples', navbar, dropdown);
       },
+/*<<<<<<< HEAD
       "Help":
       { "About ...": function() {
 	  menuBroadcast("help", {file:"about.html"});
@@ -149,9 +186,9 @@ preferences.setDefault("emacs-keybinding", false);
 	"Runner ...": function() {
 	  menuBroadcast("help", {file:"runner.html"});
 	},
-	/*"Debugging ...": function() {
-	  menuBroadcast("help", {file:"debug.html"});
-	},*/
+	//"Debugging ...": function() {
+	//  menuBroadcast("help", {file:"debug.html"});
+	//},
 	"Notebook ...": function() {
 	  menuBroadcast("help", {file:"notebook.html"});
 	},
@@ -168,6 +205,10 @@ preferences.setDefault("emacs-keybinding", false);
 	"Background ...": function() {
 	  menuBroadcast("help", {file:"background.html"});
 	},
+=======*/
+      "Help": function(navbar, dropdown) {
+	$("body").swish('populateHelp', navbar, dropdown);
+/* >>>>>>> bcdcd111ebf625bcbdb137c10135b5d3acb84d3d */
       }
     }
   }; // defaults;
@@ -199,6 +240,7 @@ preferences.setDefault("emacs-keybinding", false);
 	var data = {};			/* private data */
 
 	$("#navbar").navbar(defaults.menu);
+	$("#login").login();
 
 	var  editor = $(".prolog-editor").prologEditor({save:true});
 	data.runner = $(".prolog-runners").prologRunners();
@@ -224,6 +266,12 @@ preferences.setDefault("emacs-keybinding", false);
 
 	if ( window.location.href.indexOf("&togetherjs=") > 0 )
 	  elem.swish('collaborate');
+
+	$("#chat").chat('');
+
+	setInterval(function(){
+	  $(".each-minute").trigger("minute");
+	}, 60000);
       });
     },
 
@@ -290,7 +338,7 @@ preferences.setDefault("emacs-keybinding", false);
 		 copyAttrs([ "line",
 			     "regex", "showAllMatches",
 			     "newTab", "noHistory",
-			     "prompt"
+			     "prompt", "chat"
 			   ]);
 
 		 elem.swish('setSource', reply);
@@ -441,6 +489,47 @@ preferences.setDefault("emacs-keybinding", false);
     },
 
     /**
+     * Populate the help dropdown of the navigation bar. This
+     * method is used by the navigation bar initialization.
+     * @param {Object} navbar is the navigation bar
+     * @param {Object} dropdown is the examples dropdown
+     */
+    populateHelp: function(navbar, dropdown) {
+      var that = this;
+
+      function openHelpFunction(help) {
+	return function() {
+	  menuBroadcast("help", {file:help.file});
+	};
+      }
+
+      $.ajax(config.http.locations.swish_help_index,
+	     { dataType: "json",
+	       success: function(data) {
+		 for(var i=0; i<data.length; i++) {
+		   var help = data[i];
+		   var title;
+		   var options;
+
+		   if ( help == "--" || help.type == "divider" ) {
+		     title = "--";
+		     options = "--";
+		   } else {
+		     var name = help.file;
+		     title = help.title;
+		     options = openHelpFunction(help);
+		   }
+
+		   $("#navbar").navbar('extendDropdown', dropdown,
+				       title, options);
+		 }
+	       }
+	     });
+      return this;
+    },
+
+
+    /**
      * pick up all Prolog sources, preparing to execute a query. Currently
      * picks up:
      *
@@ -507,17 +596,28 @@ preferences.setDefault("emacs-keybinding", false);
 
     /**
      * Make DOM element fullscreen
-     * @param {DOM} node is the element to turn into fullscreen.
+     * @param {jQuery} node is the element to turn into fullscreen.
      * Currently this only works for a notebook.
+     * @patam {jQuery} main is the node getting the `fullscreen
+     * hamburger` class.
      */
-    fullscreen: function(node) {
-      if ( !node.hasClass("fullscreen") ) {
-	var content = this.find(".container.swish");
+    fullscreen: function(node, main) {
+      var content = this.find(".container.swish");
 
-	node.addClass("fullscreen hamburger");
-	node.data("fullscreen_origin", node.parent()[0]);
+      if ( !content.hasClass("fullscreen") ) {
+	var data = this.data("fullscreen");
+	if ( !data ) {
+	  data = {};
+	  this.data("fullscreen", data);
+	}
+	content.addClass("fullscreen");
+	main = main||node;
+	main.addClass("fullscreen hamburger");
+	data.fullscreen_origin = node.parent()[0];
+	data.fullscreen_main = main[0];
 	$(content.children()[0]).hide();
 	content.append(node);
+	main.trigger('fullscreen', true);
       }
 
       return this;
@@ -530,13 +630,19 @@ preferences.setDefault("emacs-keybinding", false);
      */
     exitFullscreen: function() {
       var content = this.find(".container.swish");
-      var node = $(content.children()[1]);
 
-      if ( node && node.hasClass("fullscreen") ) {
-	node.removeClass("fullscreen hamburger");
-	$(node.data("fullscreen_origin")).append(node);
-	$.removeData(node, "fullscreen_origin");
+      if ( content.hasClass("fullscreen") ) {
+	var data = this.data("fullscreen");
+	var node = $(content.children()[1]);
+	var main = data.fullscreen_main;
+
+	content.removeClass("fullscreen");
+	$(data.fullscreen_main).removeClass("fullscreen hamburger");
+	$(data.fullscreen_origin).append(node);
+	data.fullscreen_origin = null;
+	data.fullscreen_main = null;
 	$(content.children()[0]).show();
+	$(main).trigger('fullscreen', false);
 
 	return true;
       }
@@ -601,8 +707,12 @@ preferences.setDefault("emacs-keybinding", false);
   function setupPanes() {
     $(".tile").tile();
     $(window).resize(function() { $(".tile").tile('resize'); });
-    $('body').on("click", "button.close-pane", function() {
-      closePane($(this).parent());
+    $(".tabbed").tabbed();
+  }
+
+  function setupResize() {
+    $(window).resize(function() {
+      $(".reactive-size").trigger('reactive-resize');
     });
     $(".tabbed").tabbed();
   }

@@ -42,8 +42,11 @@
  * @requires jquery
  */
 
-define([ "config", "preferences", "links", "jquery", "laconic", "bootstrap" ],
-       function(config, preferences, links) {
+define([ "jquery", "config", "preferences", "links", "form",
+	 "laconic", "bootstrap" ],
+       function($, config, preferences, links, form) {
+
+/* NOTE: form dependency is circular.  Form is initialized later. */
 
 (function($) {
   var pluginName = 'swishModal';
@@ -83,6 +86,12 @@ define([ "config", "preferences", "links", "jquery", "laconic", "bootstrap" ],
 	});
 	elem.on("feedback", function(ev, options) {
 	  elem.swishModal('feedback', options);
+	});
+	elem.on("show", function(ev, options) {
+	  elem.swishModal('show', options);
+	});
+	elem.on("server_form", function(ev, options) {
+	  elem.swishModal('server_form', options);
 	});
       });
     },
@@ -181,6 +190,8 @@ define([ "config", "preferences", "links", "jquery", "laconic", "bootstrap" ],
      * function result is added to the content using `$.append()`.
      * @param {String} options.notagain Identifier to stop this dialog
      * showing
+     * @param {function} [options.onclose] If present, call this
+     * function if the modal window is closed.
      */
     show: function(options) {
       var content = $.el.div({class:"modal-body"});
@@ -214,10 +225,94 @@ define([ "config", "preferences", "links", "jquery", "laconic", "bootstrap" ],
 		.on("click", "a", links.followLink)
 	        .on("shown.bs.modal", initTagsManagers)
 	        .on("hidden.bs.modal", function() {
+		  if ( options.onclose )
+		    options.onclose();
 		  $(this).remove();
 		});
 
       return this
+    },
+
+    /**
+     * Show a server-generated form and act on the buttons.
+     * @arg {Object} options
+     * @arg {String} options.url is the URL that generates the form
+     * content
+     * @arg {String} options.title sets the title of the form.
+     * @arg {Function} options.onreply is called after the form has
+     * been submitted.  `this` points at the submitting button and
+     * the first argument contains the server reply.
+     */
+
+    server_form: function(options) {
+      var modalel = $(this);
+
+      if ( form === undefined )			/* circular dependency */
+	form = require("form");
+
+      return this.swishModal('show', {
+	title: options.title,
+	body: function() {
+	  elem = $(this);
+	  $.ajax({ url: options.url,
+		   data: options.data,
+		   success: function(data) {
+		     elem.append(data);
+		   },
+		   error: function(jqXHDR) {
+		     modalel.swishModal('showAjaxError', jqXHDR);
+		   }
+	         });
+
+	  elem.on("click", "button[data-action]", function(ev) {
+	    var formel = $(ev.target).closest("form");
+	    var data   = form.serializeAsObject(formel, true);
+	    var button = $(ev.target).closest("button");
+
+	    if ( button.data("form_data") == false ) {
+	      $.ajax({ url: button.data("action"),
+	               success: function(obj) {
+			 button.closest(".modal").modal('hide');
+			 if ( options.onreply )
+			   options.onreply.call(button[0], obj);
+			 ev.preventDefault();
+			 return false;
+		       },
+		       error: function(jqXHDR) {
+			 modalel.swishModal('showAjaxError', jqXHDR);
+		       }
+	      });
+	    } else {
+	      $.ajax({ url: button.data("action"),
+		       data: JSON.stringify(data),
+		       dataType: "json",
+		       contentType: "application/json",
+		       type: "POST",
+		       success: function(obj) {
+			 if ( obj.status == "success" ) {
+			   button.closest(".modal").modal('hide');
+			   if ( options.onreply )
+			     options.onreply.call(button[0], obj);
+			   ev.preventDefault();
+			   return false;
+			 } else if ( obj.status == "error" ) {
+			   form.formError(formel, obj.error);
+			 } else {
+			   alert("Updated failed: " +
+				 JSON.serializeAsObject(obj));
+			 }
+		       },
+		       error: function(jqXHDR) {
+			 modalel.swishModal('showAjaxError', jqXHDR);
+		       }
+	      });
+	    }
+
+	    ev.preventDefault();
+	    return false;
+	  });
+	}
+      });
     },
 
     /**
@@ -269,13 +364,15 @@ define([ "config", "preferences", "links", "jquery", "laconic", "bootstrap" ],
     $(button)
 	.html("&times;")
 	.on("click", function(ev) {
-	  var modalel = $(this).parents(".modal");
-	  var input   = modalel.find("[data-notagain]");
 	  ev.preventDefault();
-	  if ( input && input.prop('checked') ) {
-	    var id = input.attr("data-notagain");
-	    preferences.setNotAgain(id);
-	  }
+	  $(ev.target).closest(".modal")
+	              .find("[data-notagain]")
+		      .each(function() {
+	    if ( $(this).prop("checked") ) {
+	      preferences.setNotAgain($(this).attr("data-notagain"));
+	      return false;
+	    }
+	  });
 	});
 
     return button;
@@ -355,6 +452,12 @@ define([ "config", "preferences", "links", "jquery", "laconic", "bootstrap" ],
     },
     alert: function(options) {
       $(".swish-event-receiver").trigger("alert", options);
+    },
+    show: function(options) {
+      $(".swish-event-receiver").trigger("show", options);
+    },
+    server_form: function(options) {
+      $(".swish-event-receiver").trigger("server_form", options);
     }
   };
 });

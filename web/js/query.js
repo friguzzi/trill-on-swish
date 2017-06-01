@@ -396,13 +396,14 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror",
     var cls = "aggregate";
     var list = options.aggregates ||
       [ "Aggregate (count all)",
-	/*"--",
-	"Order by",
+	"--",
+	"Projection",
+	/*"Order by",
 	"Distinct",*/
 	"Limit",
 	"--",
-	"Time"/*,
-	"Debug (trace)"*/
+	"Time",
+	/*"Debug (trace)"*/
       ];
     var ul;
 

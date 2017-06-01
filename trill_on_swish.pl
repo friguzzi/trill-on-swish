@@ -40,10 +40,12 @@
 	  ]).
 :- use_module(library(pengines)).
 :- use_module(library(http/http_dispatch)).
-:- use_module(library(http/http_path)).
 :- use_module(library(option)).
+:- use_module(library(apply)).
 :- use_module(library(settings)).
 
+:- use_module(lib/messages).
+:- use_module(lib/paths).
 :- use_module(lib/config, []).
 :- use_module(lib/page, []).
 :- use_module(lib/storage).
@@ -53,29 +55,8 @@
 :- use_module(lib/profiles).
 :- use_module(lib/highlight).
 :- use_module(lib/markdown).
+:- use_module(lib/chat, []).
 :- use_module(lib/template_hint, []).
-
-
-		 /*******************************
-		 *	       PATHS		*
-		 *******************************/
-
-user:file_search_path(swish_web, swish(web)).
-user:file_search_path(js,        swish_web(js)).
-user:file_search_path(css,       swish_web(css)).
-user:file_search_path(icons,     swish_web(icons)).
-user:file_search_path(trill,	 swish(lib/trill)).
-
-set_swish_path :-
-	absolute_file_name(swish('trill_on_swish.pl'), _,
-			   [file_errors(fail), access(read)]), !.
-set_swish_path :-
-	prolog_load_context(directory, Dir),
-	asserta(user:file_search_path(swish, Dir)).
-
-:- set_swish_path.
-
-http:location(swish, root(.), [priority(-100)]).
 
 
 		 /*******************************
@@ -85,6 +66,30 @@ http:location(swish, root(.), [priority(-100)]).
 % By default, enable CORS
 
 :- set_setting_default(http:cors, [*]).
+
+
+		 /*******************************
+		 *         LOCAL CONFIG		*
+		 *******************************/
+
+%!	load_config
+%
+%	Load files from config-enabled if  present. Currently loads from
+%	a single config-enabled directory, either  found locally or from
+%	the swish directory.
+
+load_config :-
+	absolute_file_name(config_enabled(.), Path,
+			   [ file_type(directory),
+			     access(read),
+			     file_errors(fail)
+			   ]), !,
+	atom_concat(Path, '/*.pl', Pattern),
+	expand_file_name(Pattern, Files),
+	maplist(ensure_loaded, Files).
+load_config.
+
+:- initialization(load_config, now).
 
 
 		 /*******************************
@@ -127,8 +132,10 @@ http:location(swish, root(.), [priority(-100)]).
 %	  - ping
 %	  Ping pengine status every N seconds.  Updates sparkline
 %	  chart with stack usage.
-%	  - nb_eval_script
-%	  Evaluate scripts in HTML cells of notebooks?
+%	  - notebook
+%	  Dict holding options for notebooks.
+%	  - chat
+%	  Activate the chat interface
 
 % Allow other code to overrule the defaults from this file.
 term_expansion(swish_config:config(Config, _Value), []) :-
@@ -143,6 +150,7 @@ swish_config:config(public_access,      false).
 swish_config:config(include_alias,	example).
 swish_config:config(ping,		10).
 swish_config:config(notebook,		_{eval_script: true}).
+swish_config:config(chat,		true).
 
 %%	swish_config:source_alias(Alias, Options) is nondet.
 %
@@ -156,6 +164,10 @@ swish_config:config(notebook,		_{eval_script: true}).
 %	    Only provide access to the file if it is loaded.
 
 
+% setup HTTP session management
+:- use_module(lib/session).
+
+
                  /*******************************
                  *   CREATE SWISH APPLICATION   *
                  *******************************/
@@ -166,7 +178,9 @@ swish_config:config(notebook,		_{eval_script: true}).
 :- pengine_application(swish).
 :- use_module(swish:lib/render).
 :- use_module(swish:lib/trace).
+:- use_module(swish:lib/projection).
 :- use_module(swish:lib/jquery).
+:- use_module(swish:lib/dashboard).
 :- use_module(swish:lib/swish_debug).
 :- use_module(swish:library(pengines_io)).
 :- use_module(swish:library(solution_sequences)).

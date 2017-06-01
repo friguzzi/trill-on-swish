@@ -13,6 +13,12 @@ your programs online for at least multiple years.
 
 ## Installation
 
+### Get submodules
+
+`cd` to your swish root directory and
+
+    git submodule update --init
+
 ### Get JavaScript requirements
 
 #### Using bower
@@ -38,7 +44,10 @@ http://www.swi-prolog.org/download/swish/swish-bower-components.zip.
 Unpack the zip file, maintaining the directory structure, from the swish
 root directory to create the directory web/bower_components.
 
-Last updated: Apr 1, 2016: Added sparklines
+Last updated: Apr 8, 2017: upgraded. Notably typeahead.js is forward nor
+backward compatible and you need SWISH with commit
+042d93a66409ef6460052c46394e4f83dcab3d90 (April 7, 2017) together with
+this zip file.
 
 ### Get the latest SWI-Prolog
 
@@ -50,7 +59,15 @@ you            need            the             [nightly            build
 system    from    the     current      git     development    repository
 [swipl-devel.git](https://github.com/SWI-Prolog/swipl-devel).
 
-Apr 15, 2016: SWI-Prolog 7.3.20 supports SWISH completely.
+Apr 8, 2017: SWI-Prolog 7.5.3 works fine.
+
+### Other dependencies
+
+The   avatar   system   requires    the     `convert`    utility    from
+[ImageMagic](http://www.imagemagick.org). This is available as a package
+for virtually any Linux system, e.g., on Debian based systems do
+
+    sudo apt-get install imagemagick
 
 ## Running SWISH
 
@@ -63,14 +80,35 @@ Now direct your browser to http://localhost:3050/
 If you want  to  know  what  the   latest  version  looks  like,  go  to
 http://swish.swi-prolog.org/
 
+### Configuring SWISH
+
+There is a lot that can be configured in SWISH.  Roughly:
+
+  - Make additional libraries available, e.g., RDF support, database
+    connections, link to R, etc.
+
+  - Configure authentication and authorization.  The default is not
+    to demand and run commands sandboxed.  At the other extreme you
+    can configure the system to demand login for all access and provide
+    full access to Prolog.
+
+Configuration is done  by  reading  `*.pl`   files  from  the  directory
+`config-enabled`. The directory `config-available`   contains  templates
+that can be copied and optionally edited to create a configuration.
+
+See [README.md in
+config-available](https://github.com/SWI-Prolog/swish/tree/master/config-available)
+for details.
+
 
 ### Running SWISH without sandbox limitations
 
 By default, SWISH does not require the user   to  login but lets you run
 only _safe_ commands.  If  you  want   to  use  SWISH  for  unrestricted
-development, load the authentication module:
+development, enable the config file `auth_http_always.pl`:
 
-    ?- [lib/authenticate].
+    mkdir -p config-enabled
+    (cd config-enabled && ln -s ../config-available/auth_http_always.pl)
 
 Next, for first usage, you need  to   create  a user. The authentication
 module defines swish_add_user/0, which asks for   details about the user
@@ -97,10 +135,31 @@ that old credentials cannot be re-used   by  an attacker. Unfortunately,
 the server stores the password as the   SHA1 hash created from the user,
 password and _realm_.  This  is   relatively  vulnerable  to brute-force
 attacks for anyone who gains access to the  password file due to the low
-computational overhead of SHA1. Also note   that  the exchanged commands
-and replies are not encrypted. Secure servers  should use HTTPS. This is
-supported by SWISH, but creating and   deploying the certificates can be
-rather involved.
+computational overhead of SHA1 and the   lack of a user-specific _salt_.
+Also note that the exchanged  commands   and  replies are not encrypted.
+Secure servers should use HTTPS.
+
+### Optional login
+
+Instead of using `auth_http_always.pl` you can use `auth_http.pl`, which
+allows for unauthenticated -sandboxed- usage as   well  as logging in to
+the server and get unrestricted  access.   In  addition, several _social
+login_ modules are provided to login  using Google, etc. Currently these
+provide no additional rights. A more   fine grained authorization scheme
+is planned.
+
+
+## Running as a service
+
+The script daemon.pl is provided to run SWISH  as a service or daemon on
+Unix systems. Run this to get an overview of the options.
+
+    ./daemon.pl --help
+
+This script can be used to start  SWISH   as  a  daemon from the command
+line, start SWISH from service managers   such as `upstart` or `systemd`
+and    simplifies    running    as     an      HTTPS     server.     See
+https://github.com/triska/letswicrypt.
 
 
 ## Design
@@ -125,9 +184,9 @@ installations you probably want to create   the  minified JavaScript and
 CSS files to reduce network traffic and startup time. You need some more
 tools for that:
 
-    % [sudo] npm install -g jsdoc
-    % [sudo] npm install -g requirejs
-    % [sudo] npm install -g clean-css
+    % sudo npm install -g jsdoc
+    % sudo npm install -g requirejs
+    % sudo npm install -g clean-css-cli
 
 You also need GNU make installed as   `make`  and SWI-Prolog as `swipl`.
 With all that in  place,  the   following  command  creates the minified

@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2016, VU University Amsterdam
+    Copyright (C): 2014-2017, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -47,17 +47,18 @@
  * @requires jquery
  */
 
-define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
-
+define([ "jquery", "config", "modal", "form", "gitty",
+	 "history", "tabbed", "utils",
 	 "laconic", "diff"
        ],
-       function($, config, modal, form, gitty, history, tabbed) {
+       function($, config, modal, form, gitty, history, tabbed, utils) {
 
 (function($) {
   var pluginName = 'storage';
 
   var defaults = {
     typeName: "program",
+    is_clean: true,
     markClean: function(clean) {}
   }
 
@@ -79,6 +80,10 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 	var elem = $(this);
 	var data = $.extend({}, defaults, options);
 
+	elem.data(pluginName, data);	/* store with element */
+	elem.addClass("storage");
+	elem.storage('update_tab_title');
+
 	/**
 	 * Execute a method on the storage plugin. This particularly
 	 * avoids handling events that have bubbled up from children
@@ -96,16 +101,6 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 	      return;
 	  }
 	  ev.stopPropagation();
-	}
-
-	elem.addClass("storage");
-	if ( options.title||options.file||options.url ) {
-	  var file = options.file;
-	  if ( !file && options.url )
-	    file = options.url.split("/").pop();
-	  elem.tabbed('title',
-		      options.title||filebase(file),
-		      file ? file.split('.').pop() : "pl");
 	}
 
 	elem.on("source", function(ev, src) {
@@ -126,15 +121,31 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 	elem.on("revert", function(ev) {
 	  onStorage(ev, 'revert');
 	});
+	elem.on("reload", function(ev) {
+	  onStorage(ev, 'reload');
+	});
+	elem.on("chat-about-file", function(ev) {
+	  onStorage(ev, 'chat');
+	});
+	elem.on("follow-file", function(ev) {
+	  onStorage(ev, 'follow');
+	});
 	elem.on("activate-tab", function(ev) {
 						/* TBD: What exactly? */
+	});
+	elem.on("data-is-clean", function(ev, clean) {
+	  elem.storage('markClean', clean);
+	});
+	elem.on("fullscreen", function(ev, val) {
+	  if ( !val )
+	    elem.storage('update_tab_title');
 	});
 
 	$(window).bind("beforeunload", function(ev) {
 	  return elem.storage('unload', "beforeunload", ev);
 	});
 
-	elem.data(pluginName, data);	/* store with element */
+	elem.storage('chat', (data.meta||{}).chat||'update');
       });
     },
 
@@ -170,33 +181,48 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 	data.file = src.meta.name;
 	data.meta = src.meta;
 	data.url  = null;
+	if ( src.meta.symbolic == "HEAD" )
+	  src.url = config.http.locations.web_storage + src.meta.name;
       } else {
 	data.file = null;
 	data.meta = null;
       }
-      data.url     = src.url     || undefined;
-      data.st_type = src.st_type || undefined;
+      data.url     = src.url;
+      data.st_type = src.st_type;
+      data.chats   = src.chats;
 
       data.setValue(src);
       data.cleanGeneration = data.changeGen();
       data.cleanData       = src.data;
       data.cleanCheckpoint = src.cleanCheckpoint || "load";
 
-      function basename(path) {
-	return path ? path.split('/').pop() : null;
-      }
-      var title = (filebase(data.file) ||
-		   filebase(basename(src.url)) ||
-		   type.label);
+      this.storage('update_tab_title');
 
-      if ( !src.url )
-	src.url = config.http.locations.swish;
+      if ( !src.url       ) src.url = config.http.locations.swish;
+      if ( !src.noHistory ) history.push(src);
 
-      this.tabbed('title', title, type.dataType);
-      if ( !src.noHistory )
-	history.push(src);
+      this.storage('chat', src.chat||(src.meta||{}).chat||'update');
+      $(".storage").storage('chat_status', true);
 
       return this;
+    },
+
+    /**
+     * Update the label and icon shown in the tab
+     */
+    update_tab_title: function() {
+      return this.each(function() {
+	var elem = $(this);
+	var data = elem.data(pluginName);
+	var type = tabbed.tabTypes[data.typeName];
+
+	var title = (filebase(data.file) ||
+		     filebase(basename(data.url)) ||
+		     type.label);
+
+	elem.tabbed('title', title, type.dataType);
+	elem.tabbed('chats', data.chats);
+      });
     },
 
     /**
@@ -253,6 +279,11 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 		 reply.st_type = "gitty";
 		 reply.noHistory = true;
 		 elem.storage('setSource', reply);
+		 $("#chat").trigger('send',
+				    { type:'reloaded',
+				      file:data.file,
+				      commit:reply.meta.commit
+				    });
 	       },
 	       error: function(jqXHR) {
 		 modal.ajaxError(jqXHR);
@@ -298,7 +329,8 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
       }
 
       if ( data.file &&
-	   (!meta || !meta.name || meta.name == data.file) ) {
+	   !(meta && meta.default) &&
+	   (!meta || meta.name == data.file) ) {
 	url += encodeURI(data.file);
 	method = "PUT";
       }
@@ -354,7 +386,11 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 				    owner: elem
 		                  });
 
-		   elem.tabbed('title', data.meta.name);
+		   if ( method == "POST" )
+		     data.chats = 0;	/* forked file has no chats */
+		   elem.storage('update_tab_title');
+		   elem.storage('chat', (data.meta||{}).chat||'update');
+		   $(".storage").storage('chat_status', true);
 		   history.push(reply);
 		 }
 	       },
@@ -362,6 +398,8 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
 		 if ( jqXHR.status == 409 ) {
 		   elem.storage('resolveEditConflict',
 				JSON.parse(jqXHR.responseText));
+		 } else if ( jqXHR.status == 403 ) {
+		   modal.alert("Permission denied.  Please try a different name");
 		 } else {
 		   alert('Save failed; click "ok" to try again');
 		   elem.storage('saveAs');
@@ -380,37 +418,56 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
       var meta    = data.meta||{};
       var editor  = this;
       var update  = Boolean(data.file);
-      var fork    = data.meta && meta.symbolic != "HEAD";
+      var fork    = data.meta && meta.symbolic != "HEAD" && !meta.default;
       var type    = tabbed.tabTypes[data.typeName];
-      var author  = config.swish.user ?
-        ( config.swish.user.realname && config.swish.user.email ?
-	    config.swish.user.realname + " <" + config.swish.user.email + ">" :
-	    config.swish.user.user
-        ) :
-	meta.author;
+      var profile = $("#login").login('get_profile',
+				      [ "display_name", "avatar", "email",
+					"identity"
+				      ]);
+      var author  = profile.display_name;
+      var modify  = meta.modify;
+      var canmodify;
 
       if ( meta.public === undefined )
 	meta.public = true;
 
+      if ( !modify ) {
+	if ( profile.identity )
+	  modify = ["login", "owner"];
+	else
+	  modify = ["any", "login", "owner"];
+      }
+
+      canmodify = ( profile.identity == meta.identity ||
+		    (profile.identity && !(meta.identity||meta.user)) );
+
       options = options||{};
 
       function saveAsBody() {
-	this.append($.el.form({class:"form-horizontal"},
-			      form.fields.fileName(fork ? null: data.file,
-						   meta.public, meta.example),
-			      form.fields.title(meta.title),
-			      form.fields.author(author),
-			      update ? form.fields.commit_message() : undefined,
-			      form.fields.tags(meta.tags),
-			      form.fields.buttons(
-				{ label: fork   ? "Fork "+type.label :
-					 update ? "Update "+type.label :
-						  "Save "+type.label,
-				  action: function(ev, as) {
-				            editor.storage('save', as);
-					    return false;
-				          }
-				})));
+	this.append($.el.form(
+          { class:"form-horizontal"},
+	    form.fields.hidden("identity", profile.identity),
+	    form.fields.hidden("default", meta.default),
+	    form.fields.hidden("chat", meta.chat),
+	    profile.identity ? undefined :
+			       form.fields.hidden("avatar", profile.avatar),
+	    form.fields.fileName(fork ? null: data.file,
+				 meta.public, meta.example),
+	    form.fields.title(meta.title),
+	    form.fields.author(author, profile.identity),
+	    update ? form.fields.commit_message() : undefined,
+	    form.fields.tags(meta.tags),
+	    form.fields.modify(modify, canmodify),
+	    form.fields.follow(profile.email),
+	    form.fields.buttons(
+	      { label: fork   ? "Fork "+type.label :
+		       update ? "Update "+type.label :
+				"Save "+type.label,
+		action: function(ev, as) {
+			  editor.storage('save', as);
+			  return false;
+			}
+	      })));
       }
 
       form.showDialog({ title: options.title ? options.title :
@@ -806,6 +863,178 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
     },
 
     /**
+     * Get a description of the selection to be transferred with a
+     * chat message.
+     */
+    getSelection: function() {
+      if ( this.hasClass("prolog-editor") ) {	/* plain editor */
+	var sel = this.prologEditor('getSelection');
+	return sel ? sel[0].selections : null;
+      } else if ( this.hasClass("notebook") ) {
+	return this.notebook('getSelection');
+      } else {
+	console.log(sel);
+      }
+    },
+
+    /**
+     * @returns {String} description of the selection to use inside
+     * a link or button
+     */
+    getSelectionLabel: function(sel) {
+      function editorLabel(sels) {
+	var label = "";
+	for(var i=0; i<sels.length; i++) {
+	  var s = sels[i];
+	  if ( label != "" )
+	    label += ";";
+	  label += "@L"+(s.from.line+1);
+	  if ( s.to.line != s.from.line )
+	    label += "-"+(s.to.line+1);
+	}
+	return label;
+      }
+
+      if ( sel[0].cell ) {
+	var label = "";
+
+	for(var i=0; i<sel.length; i++) {
+	  var ed = sel[i];
+	  if ( label != "" )
+	    label += ",";
+	  label += ed.cell + editorLabel(ed.selections);
+	}
+	return label;
+      } else {
+	return editorLabel(sel);
+      }
+    },
+
+    /**
+     * Restore a selection retrieved using `getSelection`.
+     */
+    restoreSelection: function(sel) {
+      if ( this.hasClass("prolog-editor") ) {	/* plain editor */
+	return this.prologEditor('restoreSelection', sel);
+      } else if ( this.hasClass("notebook") ) { /* notebook */
+	return this.notebook('restoreSelection', sel);
+      } else {
+	console.log(sel);
+      }
+    },
+
+    /**
+     * Get a document identification string for chats, status, etc.
+     * @param {String} [type] defines the type of storage supported
+     * @param {Object} [data] is the data object from which to derive
+     * the id.
+     * @return {String} identifier for the document
+     */
+    docid: function(type, data) {
+      data = data||this.data(pluginName);
+
+      if ( !type || type == data.st_type ) {
+	var meta = data.meta||{};
+
+	if ( data.st_type == "gitty" ) {
+	  return "gitty:"+meta.name;
+	} else if ( data.st_type == "filesys" ) {
+	  return "filesys:"+meta.path;
+	} else if ( data.st_type == "external" ) {
+	  return "url:"+data.url;
+	}
+      }
+    },
+
+    /**
+     * Open the chat window for the current file
+     */
+    chat: function(action) {
+      var data = this.data(pluginName);
+      var docid = this.storage('docid', 'gitty');
+
+      if ( docid ) {
+	var chat = this.closest(".tab-pane").find(".chatroom");
+
+	if ( chat.length > 0 ) {
+	  if ( action == 'update' )
+	    chat.chatroom('docid', docid, 'close');
+	  else
+	    utils.flash(chat);
+	} else if ( action != 'update' ) {
+	  var percentage = (action == 'large' ? 60 : 20);
+	  chat = $($.el.div({class:"chatroom"}));
+
+	  chat.chatroom({docid:docid});
+	  this.tile('split', chat, "below", percentage, 150)
+	      .addClass("chat-container");
+	}
+      } else if ( action == 'update' ) {
+	this.storage('close_chat');
+      } else if ( !data.st_type ) {
+	modal.alert("The chat facility is bound to named documents.<br>"+
+		    "Please save your document and try again.");
+      } else {
+	modal.alert("The chat facility is only available for "+
+		    "user-saved files.<br>"+
+		    "You can use the <b>File/Chat help room</b> menu to "+
+		    "access the shared chat room.");
+      }
+
+      return this;
+    },
+
+    /**
+     * Close associated chat
+     */
+    close_chat: function() {
+      this.closest(".chat-container").find(".chatroom").chatroom('close');
+    },
+
+    /**
+     * Act upon the arrival of a chat message.  Update the tab title.
+     * If the message is not displayed and it is not permanent
+     * (`create == false`) we should not update the counter.
+     */
+    chat_message: function(msg) {
+      if ( !msg.displayed && msg.create == false )
+	return this;
+
+      return this.each(function() {
+	var elem = $(this);
+
+	if ( msg.docid == elem.storage('docid') ) {
+	  var data = elem.data(pluginName);
+
+	  if ( data.chats && data.chats.count )
+	    data.chats.count++;
+	  else
+	    data.chats = {count:1};
+
+	  elem.storage('update_tab_title');
+	}
+      });
+    },
+
+    /**
+     * Edit the _follow_ options for this file.
+     */
+
+    follow: function() {
+      var docid = this.storage('docid', 'gitty');
+
+      if ( docid ) {
+	modal.server_form({
+	  title: "Follow file options",
+	  url:   config.http.locations.follow_file_options,
+	  data:  {docid: docid}
+	});
+      } else {
+	modal.alert("Sorry, can only follow files");
+      }
+    },
+
+    /**
      * Called if the editor is destroyed to see whether it has pending
      * modifications.
      *
@@ -846,6 +1075,51 @@ define([ "jquery", "config", "modal", "form", "gitty", "history", "tabbed",
       }
 
       return undefined;
+    },
+
+    /**
+     * Called if this element is inside a tab this is being closed
+     */
+    close: function() {
+    },
+
+    /**
+     * maintain `data.is_clean`
+     */
+    markClean: function(clean) {
+      var data = this.data(pluginName);
+
+      data.is_clean = clean;
+    },
+
+    /**
+     * Broadcast all open (gitty) files. This is used to synchronise
+     * state.  Each state object has the property `file`.  If the file
+     * is locally modified, `state.modified` is `true` and if the file
+     * is the visible one, `state.visible` is true
+     * @param {Bool} [always] if `true`, also report if no files are
+     * open.
+     */
+    chat_status: function(always) {
+      var opened = [];
+
+      this.each(function() {
+	var data = $(this).data(pluginName);
+
+	if ( data.st_type == "gitty" && data.meta && data.meta.name ) {
+	  var state = { file:  data.meta.name };
+
+	  if ( !data.is_clean ) state.modified = true;
+	  if ( $(this).is(":visible") ) state.visible = true;
+	  opened.push(state);
+	}
+      });
+
+      if ( always || opened.length > 0 )
+	$("#chat").trigger('send',
+			   { type:'has-open-files',
+			     files:opened
+			   });
     }
   }; // methods
 

@@ -1,0 +1,73 @@
+div.notification
+{ display: inline-block;
+  position: absolute;
+  min-width: 10em;
+  background: #cff;
+  padding: 5px 1em;
+  display: none;
+  z-index: 1000;
+}
+
+a.dropdown-toggle.avatar
+{ padding: 0px;
+  margin-left: 2px;
+}
+
+img.avatar
+{ width: 24px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+img.avatar:hover
+{ width: 32px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+div.user-count
+{ clear: both;
+  text-align:center;
+  color: #888;
+  font-style: italic;
+  font-size: 75%;
+  display: none;
+}
+
+li.myself
+{ border-bottom: 3px solid green;
+}
+
+li.user.lost
+{ opacity: 0.2;
+}
+
+/* http://www.cssarrowplease.com/ */
+
+.notify-arrow {
+	background: #cff;
+	border: 1px solid #888;
+        border-radius: 5px;
+        box-shadow: 6px 6px 3px #aaa;
+}
+.notify-arrow:after, .notify-arrow:before {
+	bottom: 100%;
+	right: 12px;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+}
+.notify-arrow:after {
+	border-color: rgba(192, 255, 255, 0);
+	border-bottom-color: #cff;
+	border-width: 14px;
+	margin-left: -14px;
+}
+.notify-arrow:before {
+	border-color: rgba(128, 128, 128, 0);
+	border-bottom-color: #888;
+	border-width: 15px;
+	margin-left: -15px;
+}

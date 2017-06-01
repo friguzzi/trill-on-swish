@@ -6,10 +6,9 @@
   ],
   "dependencies":
   { "jquery": "*",
-    "jquery-ui": "*",
     "jquery.splitter": "0.15",
     "bootstrap": "*",
-    "typeahead.js": "0.10.5",
+    "typeahead.js": "git://github.com/twitter/typeahead.js.git#master",
     "laconic": "*",
     "requirejs": "*",
     "codemirror": "*",

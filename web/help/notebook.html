@@ -11,7 +11,7 @@ p.note span.glyphicon-hand-right {
 float: left; font-size: 120%; color: orange; padding-right: 0.2em;
 }
 
-a.nb-cell.program { margin: 0px; }
+a.nb-no-cell.program { margin: 0px; }
 </style>
 <p>
 A notebook is a list of <i>cells</i>. Notebooks are different from a
@@ -26,6 +26,9 @@ A Prolog notebook supports three types of cells:
   <ul>
     <li><b>Markdown</b> cells allow you to write text in the SWI-Prolog
     <a href="/pldoc/man?section=wiki">PlDoc</a> variation of markdown.
+    <li><b>HTML</b> cells allow you to write custom style web pages
+    as well as interative web applications.  See the
+    <a class="file" href="/example/htmlcell.swinb">HTML cell</a> demo.
     <li><b>Program</b> cells contain a (part of a) knowledge base.
     <li><b>Query</b> cells contain a TRILL query, operating
     on the nearest knowledge base above it.
@@ -59,13 +62,24 @@ markdown notation <code>[label](myfile.pl)</code>, e.g.,
 <p>
 A notebook <em>query</em> cell is executed against the program cell
 <strong>above it</strong> and all program cells marked as
-<em>background</em> using the <a class="btn btn-success btn-xs"><span
-style="color:#bef" class="glyphicon glyphicon-cloud"></span></a> button.
+<em>background</em> using the <a class="nb-no-cell btn-default program
+background btn btn-image btn-xs"><span
+class="image-icon"></span></a> button. Click the <a class="nb-no-cell
+btn-default program btn btn-image btn-xs"><span
+class="image-icon"></span></a> button to turn a normal program cell
+into a <i>background</i> cell.
 
 <p class="note"><span class="glyphicon glyphicon-hand-right"></span>
 Longer fragments of code that are required throughout a notebook and
 possibly on multiple notebooks are defined in a <em>program</em> tab,
 saved and included using, e.g., <code>:- include(mybasics).</code> in a
 background program kept at the bottom of the notebook.
+
+<p class="note"><span class="glyphicon glyphicon-hand-right"></span>
+If you want to have multiple related queries in a notebook you can
+add a <i>background</i> program at the end of the notebook and above
+this program pairs of a normal program and query where the normal
+program provides data and/or parameters by defining predicates that
+are missing from the background program.
 </body>
 </html>

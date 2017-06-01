@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2016, VU University Amsterdam
+    Copyright (C): 2014-2017, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -45,10 +45,11 @@
  */
 
 define([ "jquery", "config", "preferences",
-	 "cm/lib/codemirror", "form", "prolog", "links",
-	 "answer", "laconic", "sparkline", "download"
+	 "cm/lib/codemirror", "form", "prolog", "links", "modal",
+	 "answer", "laconic", "sparkline", "download", "search"
        ],
-       function($, config, preferences, CodeMirror, form, prolog, links) {
+       function($, config, preferences,
+		CodeMirror, form, prolog, links, modal) {
 
 		 /*******************************
 		 *	  THE COLLECTION	*
@@ -322,14 +323,14 @@ define([ "jquery", "config", "preferences",
 	  return div;
 	}
 
-	elem.addClass("prolog-runner");
+	elem.addClass("prolog-runner panel panel-default");
 	if ( query.tabled )
 	  elem.addClass("tabled");
 	if ( query.title != false ) {
 	  var qspan = $.el.span({class:"query cm-s-prolog"});
 	  CodeMirror.runMode(query.query, "prolog", qspan);
 	  elem.append($.el.div(
-	    {class:"runner-title ui-widget-header"},
+	    {class:"runner-title panel-heading"},
 	    titleBarButton("remove-circle", "Close",        'close'),
 	    titleBarButton("minus",         "Iconify",      'toggleIconic'),
 	    titleBarButton("download",      "Download CSV", 'downloadCSV'),
@@ -344,7 +345,7 @@ define([ "jquery", "config", "preferences",
 	}
 	if ( query.chunk )
 	  data.chunk = query.chunk;
-	elem.append($.el.div({class:"runner-results"}));
+	elem.append($.el.div({class:"runner-results panel-body"}));
 	elem.append(controllerDiv());
 
 	elem.data('prologRunner', data);
@@ -619,6 +620,43 @@ define([ "jquery", "config", "preferences",
     },
 
     /**
+     * Handle a (dashboard) form.  This opens dialog from the supplied
+     * `html`.
+     * @param {Object} prompt
+     * @param {String} prompt.html contains the HTML content of the form
+     */
+    form: function(prompt) {
+      var data = this.data('prologRunner');
+
+      modal.show({
+	title: "Please enter parameters",
+	body: function() {
+	  this.html(prompt.data.html);
+	  this.find("[data-search-in]").search({search:false});
+
+	  this.on("click", "button[data-action]", function(ev) {
+	    var button = $(ev.target).closest("button");
+	    var action = button.data('action');
+
+	    if ( action == 'run' ) {
+	      var formel = $(ev.target).closest("form");
+	      var fdata  = form.serializeAsObject(formel, true);
+	      var s      = Pengine.stringify(fdata);
+	      data.prolog.respond(s);
+	    } else if ( action == 'cancel' ) {
+	      data.prolog.respond("cancel");
+	    }
+	    button.closest(".modal").modal('hide');
+
+	    ev.preventDefault();
+	    return false;
+	  });
+	}
+      });
+    },
+
+
+    /**
      * send a response (to pengine onprompt handler) to the
      * pengine and add the response to the dialogue as
      * `div class="response">`
@@ -688,7 +726,7 @@ define([ "jquery", "config", "preferences",
     },
 
     /**
-     * Abort the associated Prolog engines.
+     * Abort the associated Prolog engine.
      */
     abort: function() {
       return this.each(function() {
@@ -712,7 +750,7 @@ define([ "jquery", "config", "preferences",
 
 	  if ( elem.prologRunner('alive') ) {
 	    $(".prolog-editor").trigger('pengine-died', data.prolog.id);
-	    data.prolog.destroy();
+	    data.prolog.abort();
 	  }
 	});
 	this.remove();
@@ -768,7 +806,7 @@ define([ "jquery", "config", "preferences",
      */
     downloadCSV: function(options) {
       var data = this.data('prologRunner');
-      var query = data.query.query.replace(/\.\s*$/,"");
+      var query = termNoFullStop(data.query.query);
 
       prolog.downloadCSV(query, data.query.source, options);
 
@@ -812,17 +850,18 @@ define([ "jquery", "config", "preferences",
        } else if ( state == "wait-input" ) {
 	 this.find("input").focus();
        }
-       if ( !aliveState(state) ) {
-	 $(".prolog-editor").trigger('pengine-died', data.prolog.id);
-	 data.prolog.destroy();
-       }
      }
-     if ( state == "wait-next" || state == "true" ) {
+
+     if ( !aliveState(state) ) {
+       $(".prolog-editor").trigger('pengine-died', data.prolog.id);
+       data.prolog.destroy();
+     } else if ( state == "wait-next" || state == "true" ) {
        var runners = RS(this);
        setTimeout(function() { runners.prologRunners('scrollToBottom') }, 100);
      } else {
        RS(this).prologRunners('scrollToBottom');
      }
+
      return this;
    },
 
@@ -910,7 +949,7 @@ define([ "jquery", "config", "preferences",
 		 *******************************/
 
   function RS(from) {			/* find runners from parts */
-    return $(from).parents(".prolog-runners");
+    return $(from).closest(".prolog-runners");
   }
 
   function addAnswer(runner, html) {
@@ -1072,6 +1111,8 @@ define([ "jquery", "config", "preferences",
     if ( typeof(prompt) == "object" ) {
       if ( prompt.type == "trace" ) {
 	return elem.prologRunner('trace', this);
+      } else if ( prompt.type == "form" ) {
+	return elem.prologRunner('form', this);
       } else if ( prompt.type == "jQuery" ) {
 	return elem.prologRunner('jQuery', this);
       } else if ( prompt.type == "console" ) {
@@ -1139,9 +1180,12 @@ define([ "jquery", "config", "preferences",
 
   function handleOutput(msg) {
     var elem = msg.pengine.options.runner;
+    var data = elem.data(pluginName);
+
+    if ( !data )				/* runner is gone */
+      return;
 
     if ( typeof(msg.data) == 'string' ) {
-      var data = elem.data(pluginName);
       var econtext = {editor: data.query.editor};
 
       msg.data = msg.data.replace(/'[-0-9a-f]{36}':/g, "")  /* remove module */
@@ -1217,9 +1261,20 @@ define([ "jquery", "config", "preferences",
 
   function handleAbort() {
     var elem = this.pengine.options.runner;
+    var data = elem.data('prologRunner');
 
-    elem.prologRunner('error', "** Execution aborted **");
-    elem.prologRunner('setState', "aborted");
+    if ( data ) {
+      elem.prologRunner('error', "** Execution aborted **");
+      elem.prologRunner('setState', "aborted");
+    } else {
+      this.pengine.destroy();
+    }
+  }
+
+  function handlePing() {
+    var elem = this.pengine.options.runner;
+
+    elem.prologRunner('ping', this.data);
   }
 
   function handlePing() {
