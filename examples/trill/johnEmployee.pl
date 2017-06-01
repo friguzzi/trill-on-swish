@@ -1,5 +1,9 @@
 :-use_module(library(trill)).
 
+:- if(current_predicate(use_rendering/1)).
+:- use_rendering(graphviz).
+:- endif.
+
 :-trill.
 
 /** <examples>
