@@ -4,7 +4,7 @@
 :- use_rendering(graphviz).
 :- endif.
 
-:-trill.
+:- trill. % or :- trillp. or :- tornado.
 
 /** <examples>
 

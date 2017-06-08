@@ -4,7 +4,7 @@
 :- use_rendering(graphviz).
 :- endif.
 
-:-trill.
+:- trill. % or :- trillp. or :- tornado.
 
 /*
 This knowledge base is an extract of the Vicodi knowledge base that contains information on European history.

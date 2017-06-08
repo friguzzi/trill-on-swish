@@ -1,7 +1,7 @@
-% TRILL loaded with non probabilistic KB
+% TRILL loaded with OWL/RDF KB initialization
 :- use_module(library(trill)).
 
-:- trill.
+:- trill. % or :- trillp. or :- tornado.
 
 owl_rdf('<?xml version="1.0"?>
 
@@ -9,8 +9,8 @@ owl_rdf('<?xml version="1.0"?>
 
 /** <examples>
 
-Here examples of the form
-?- instanceOf(\'className\',\'indName\',Prob).
+ Here examples of the form
+ ?- prob_instanceOf(\'className\',\'indName\',Prob).
 
 */
 -->
@@ -20,6 +20,7 @@ Here examples of the form
     <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#" >
     <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#" >
     <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#" >
+    <!ENTITY disponte "https://sites.google.com/a/unife.it/ml/disponte#" >
 ]>
 
 
@@ -28,7 +29,8 @@ Here examples of the form
      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
      xmlns:owl="http://www.w3.org/2002/07/owl#"
      xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:disponte="https://sites.google.com/a/unife.it/ml/disponte#">
     <owl:Ontology rdf:about="http://here.the.IRI.of.your.ontology"/>
     
 
@@ -36,13 +38,30 @@ Here examples of the form
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
-    // Your Axioms Here
+    // Annotation properties
     //
     ///////////////////////////////////////////////////////////////////////////////////////
      -->
 
-</rdf:RDF>
-').
+    
+
+
+    <!-- https://sites.google.com/a/unife.it/ml/disponte#probability -->
+
+    <owl:AnnotationProperty rdf:about="&disponte;probability"/>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Other Axioms
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+</rdf:RDF>').
 
 /****************************
  * Other axioms here
