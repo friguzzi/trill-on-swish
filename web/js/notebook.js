@@ -192,11 +192,11 @@ var cellTypes = {
 	  copyData("st_type");
 	  copyData("chats");
 
-	  var docid = elem.storage('docid', undefined, storage);
-	  var prefs = preferences.getVal(docid)||{fullscreen:true};
+	  var docid      = elem.storage('docid', undefined, storage);
+	  var fullscreen = preferences.getDocVal(docid, 'fullscreen', true);
 
 	  elem.notebook('value', content.text(),
-			{ fullscreen: prefs.fullscreen
+			{ fullscreen: fullscreen
 			});
 	  content.remove();
 	} else {
@@ -212,9 +212,7 @@ var cellTypes = {
 	  }
 	});
 	elem.on("fullscreen", function(ev, val) {
-	  var prefs = preferences.getVal(docid)||{};
-	  prefs.fullscreen = val;
-	  preferences.setVal(docid, prefs);
+	  preferences.setDocVal(docid, 'fullscreen', val);
 	});
       }); /* end .each() */
     },
@@ -539,6 +537,8 @@ var cellTypes = {
 
       if ( val == undefined ) {
 	var dom = $.el.div({class:"notebook"});
+
+	this.notebook('assignCellNames', false);
 	this.find(".nb-cell").each(function() {
 	  cell = $(this);
 	  if ( !(options.skipEmpty && cell.nbCell('isEmpty')) )
@@ -591,9 +591,11 @@ var cellTypes = {
      * if functions are used that require named cells.  Calling this
      * method has no effect if all cells already have a name.
      */
-    assignCellNames: function() {
-      this.find(".nbCell").nbCell('assignName');
-      return this.notebook('checkModified');
+    assignCellNames: function(check) {
+      this.find(".nb-cell").nbCell('assignName');
+      if ( check != false )
+	this.notebook('checkModified');
+      return this;
     },
 
 

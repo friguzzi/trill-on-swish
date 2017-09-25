@@ -39,7 +39,8 @@
 	    chat_to_profile/2,		% +ProfileID, :HTML
 	    chat_about/2,		% +DocID, +Message
 
-	    notifications//1		% +Options
+	    notifications//1,		% +Options
+	    broadcast_bell//1		% +Options
 	  ]).
 :- use_module(library(http/hub)).
 :- use_module(library(http/http_dispatch)).
@@ -89,6 +90,11 @@ browsers which in turn may have multiple SWISH windows opened.
      HTTP authentication.
 */
 
+:- multifile swish_config:config/2.
+
+swish_config:config(hangout, 'Hangout.swinb').
+
+
 		 /*******************************
 		 *	ESTABLISH WEBSOCKET	*
 		 *******************************/
@@ -107,13 +113,13 @@ start_chat(Request) :-
 	start_chat(Request, [identity(Identity)]).
 
 start_chat(Request, Options) :-
-	authorized(chat, Options),
+	authorized(chat(open), Options),
 	(   http_in_session(Session)
 	->  CheckLogin = false
 	;   http_open_session(Session, []),
 	    CheckLogin = true
 	),
-	check_flooding,
+	check_flooding(Session),
 	http_parameters(Request,
 			[ avatar(Avatar, [optional(true)]),
 			  nickname(NickName, [optional(true)]),
@@ -124,6 +130,7 @@ start_chat(Request, Options) :-
 			 reconnect(Token),
 			 check_login(CheckLogin)
 		       ], Options, ChatOptions),
+	debug(chat(websocket), 'Accepting (session ~p)', [Session]),
 	http_upgrade_to_websocket(
 	    accept_chat(Session, ChatOptions),
 	    [ guarded(false),
@@ -139,12 +146,12 @@ extend_options([_|T0], Options, T) :-
 	extend_options(T0, Options, T).
 
 
-%!	check_flooding
+%!	check_flooding(+Session)
 %
 %	See whether the client associated with  a session is flooding us
 %	and if so, return a resource error.
 
-check_flooding :-
+check_flooding(_0Session) :-
 	get_time(Now),
 	(   http_session_retract(websocket(Score, Last))
 	->  Passed is Now-Last,
@@ -152,6 +159,8 @@ check_flooding :-
 	;   NewScore = 10,
 	    Passed = 0
 	),
+	debug(chat(flooding), 'Flooding score: ~2f (session ~p)',
+	      [NewScore, _0Session]),
 	http_session_assert(websocket(NewScore, Now)),
 	(   NewScore > 50
 	->  throw(http_reply(resource_error(
@@ -189,7 +198,10 @@ accept_chat_(Session, Options, WebSocket) :-
 	must_succeed(chat_broadcast(UserData.put(_{type:Reason,
 						   visitors:Visitors,
 						   wsid:WSID}))),
-	gc_visitors.
+	gc_visitors,
+	debug(chat(websocket), '~w (session ~p, wsid ~p)',
+	      [Reason, Session, WSID]).
+
 
 reconnect_token(WSID, Token, Options) :-
 	option(reconnect(Token), Options),
@@ -759,8 +771,8 @@ noble_avatar_url(HREF, _Options) :-
 		 *	   BROADCASTING		*
 		 *******************************/
 
-%%	chat_broadcast(+Message)
-%%	chat_broadcast(+Message, +Channel)
+%%	chat_broadcast(+Message) is det.
+%%	chat_broadcast(+Message, +Channel) is det.
 %
 %	Send Message to all known SWISH clients. Message is a valid JSON
 %	object, i.e., a dict or option list.
@@ -789,6 +801,9 @@ subscribed(Channel, WSID) :-
 	subscription(WSID, Channel, _).
 subscribed(Channel, SubChannel, WSID) :-
 	subscription(WSID, Channel, SubChannel).
+subscribed(gitty, SubChannel, WSID) :-
+	swish_config:config(hangout, SubChannel),
+	\+ subscription(WSID, gitty, SubChannel).
 
 
 		 /*******************************
@@ -921,11 +936,22 @@ json_message(Dict, WSID) :-
 	wsid_visitor(WSID, Visitor),
 	update_visitor_data(Visitor, _{name:Name}, 'set-nick-name').
 json_message(Dict, WSID) :-
-	_{type: "chat-message", docid:_} :< Dict, !,
+	_{type: "chat-message", docid:DocID} :< Dict, !,
 	chat_add_user_id(WSID, Dict, Message),
-	chat_relay(Message).
+	(   ws_authorized(chat(post(Message, DocID)), Message.user)
+	->  chat_relay(Message)
+	;   chat_spam(Msg),
+	    hub_send(WSID, json(json{type:forbidden,
+				     action:chat_post,
+				     about:DocID,
+				     message:Msg
+				    }))
+	).
 json_message(Dict, _WSID) :-
 	debug(chat(ignored), 'Ignoring JSON message ~p', [Dict]).
+
+chat_spam("Due to frequent spamming we were forced to limit \c
+	   posting chat messages to users who are logged in.").
 
 dict_file_name(Dict, File) :-
 	atom_string(File, Dict.get(file)).
@@ -1175,8 +1201,6 @@ html_string(HTML, String) :-
 		 *	       UI		*
 		 *******************************/
 
-:- multifile swish_config:config/2.
-
 %%	notifications(+Options)//
 %
 %	The  chat  element  is  added  to  the  navbar  and  managed  by
@@ -1195,6 +1219,35 @@ notifications(_Options) -->
 		       ])
 		 ])).
 notifications(_Options) -->
+	[].
+
+%!	broadcast_bell(+Options)//
+%
+%	Adds a bell to indicate central chat messages
+
+broadcast_bell(_Options) -->
+	{ swish_config:config(chat, true),
+	  swish_config:config(hangout, Hangout),
+	  atom_concat('gitty:', Hangout, HangoutID)
+	}, !,
+	html([ a([ class(['dropdown-toggle', 'broadcast-bell']),
+		   'data-toggle'(dropdown)
+		 ],
+		 [ span([ id('broadcast-bell'),
+			  'data-document'(HangoutID)
+			], []),
+		   b(class(caret), [])
+		 ]),
+	       ul([ class(['dropdown-menu', 'pull-right']),
+		    id('chat-menu')
+		  ],
+		  [ li(a('data-action'('chat-shared'),
+			 'Open hangout')),
+		    li(a('data-action'('chat-about-file'),
+			 'Open chat for current file'))
+		  ])
+	     ]).
+broadcast_bell(_Options) -->
 	[].
 
 

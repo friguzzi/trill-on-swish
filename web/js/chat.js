@@ -42,12 +42,15 @@
  * @requires jquery
  */
 
-define([ "jquery", "config", "preferences", "form", "utils" ],
-       function($, config, preferences, form, utils) {
+define([ "jquery", "config", "preferences", "form", "modal", "utils" ],
+       function($, config, preferences, form, modal, utils) {
+
+var MIN_RECONNECT_DELAY =   1000;
+var MAX_RECONNECT_DELAY = 300000;
 
 (function($) {
   var pluginName = 'chat';
-  var reconnect_delay = 10;
+  var reconnect_delay = MIN_RECONNECT_DELAY;
   var last_open = null;
 
   /** @lends $.fn.chat */
@@ -92,6 +95,10 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
       var data = this.data(pluginName);
       var url  = window.location.host + config.http.locations.swish_chat;
       var lead = "?";
+      var ws = window.location.protocol.replace("http", "ws");
+
+      if ( data.connection && data.connection.readyState == 1 )
+	return this;			/* already connected */
 
       function add_pref_param(name, pname) {
 	var value = preferences.getVal(pname);
@@ -115,7 +122,7 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
 	lead = "&";
       }
 
-      data.connection = new WebSocket("ws://" + url,
+      data.connection = new WebSocket(ws + "//" + url,
 				      ['v1.chat.swish.swi-prolog.org']);
 
       data.connection.onerror = function(error) {
@@ -123,13 +130,17 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
       };
       data.connection.onclose = function(ev) {
 	if ( last_open == null ) {
-	  if ( reconnect_delay < 60000 )
-	    reconnect_delay *= 2;
+	  reconnect_delay *= 2;
+	  if ( reconnect_delay > MAX_RECONNECT_DELAY )
+	    reconnect_delay = MAX_RECONNECT_DELAY;
 	} else {
 	  if ( getTime() - last_open > 300000 )
-	    reconnect_delay = 10;
-	  else if ( reconnect_delay < 300000 )
-	    reconnect_delay *= 2;
+	  { reconnect_delay = MIN_RECONNECT_DELAY;
+	  } else
+	  { reconnect_delay *= 2;
+	    if ( reconnect_delay > MAX_RECONNECT_DELAY )
+	      reconnect_delay = MAX_RECONNECT_DELAY;
+	  }
 	}
 	setTimeout(function() {
 	  elem.chat('connect');
@@ -144,15 +155,15 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
 	  console.log(e);
       };
       data.connection.onopen = function() {
-	elem.chat('empty_queue');
-	$(".storage").storage('chat_status');
       };
     },
 
     empty_queue: function() {
       var data = this.data(pluginName);
 
-      while(data.queue && data.queue != [] && data.connection.readyState == 1) {
+      while( data.queue &&
+	     data.queue.length > 0
+	     && data.connection.readyState == 1 ) {
 	var str = data.queue.shift();
 	data.connection.send(str);
       }
@@ -225,7 +236,7 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
      * user
      */
     welcome: function(e) {
-      var data = $(this).data(pluginName);
+      var data = this.data(pluginName);
 
       if ( data.wsid && data.wsid != e.wsid ) {
 	this.html("");				/* server restart? */
@@ -244,6 +255,8 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
 
       if ( e.check_login )
 	$("#login").login('update', "check");
+      $(".storage").storage('chat_status');
+      this.chat('empty_queue');
     },
 
     userCount: function(cnt) {
@@ -336,6 +349,12 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
     'chat-message': function(e) {
       var rooms = $("div.chatroom").chatroom('rooms', e.docid);
 
+      $(".storage").storage('chat_message', e);
+
+      if ( e.docid == "gitty:"+config.swish.hangout ) {
+	$("#broadcast-bell").chatbell('chat-message', e);
+      }
+
       if ( rooms.length > 0 ) {
 	rooms.chatroom('add', e);
 	e.displayed = true;
@@ -347,8 +366,25 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
 	  this.chat('notifyUser', msg);
 	}
       }
+    },
 
-      $(".storage").storage('chat_message', e);
+    /**
+     * Some action was forbidden
+     */
+
+     forbidden: function(e) {
+       modal.alert(e.message||"Action is forbidden");
+     },
+
+    /**
+     * Indicate we have read all messages upto a certain time stamp.
+     * @param {String} docid is the document id for which we should
+     * update the counter.
+     * @param {Number} time is the time of the last message read
+     * (seconds after 1/1/1970)
+     */
+    read_until: function(docid, time) {
+      preferences.setDocVal(docid, 'chatBar', time);
     },
 
 
@@ -357,53 +393,46 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
 		 *******************************/
 
     /**
-     * Present a notification associated with a user
-     *
-     * @param {Object} options
-     * @param {String} options.html provides the inner html of the message.
-     * @param {Number} [options.fadeIn=400] provide the fade in time.
-     * @param {Number} [options.fadeOut=400] provide the fade out time.
-     * @param {Number} [options.time=5000] provide the show time.  The
-     * value `0` prevents a timeout.
+     * Get the broadcast room
+     */
+     broadcast_room: function() {
+      return this.closest(".swish")
+                 .find(".storage")
+                 .storage('match', {file:config.swish.hangout});
+    },
+
+    /**
+     * Present a notification associated with a user. We do not
+     * add a user icon for open and close on the broadcast room if
+     * we do not have this open when the message arrives.
      */
     notifyUser: function(options) {
       var elem = this;
+
+      function isBroadcast(options) {
+	return ( ( options.event == 'opened' ||
+		   options.event == 'closed' ) &&
+		 options.event_argv &&
+		 options.event_argv[0] == config.swish.hangout
+	       );
+      }
+
+      if ( isBroadcast(options) && !this.chat('broadcast_room') )
+	options.create_user = false;
+
       var user_li = this.chat('addUser', options);
 
-      if ( user_li.length > 0 ) {
-	var div  = $.el.div({ class:"notification notify-arrow",
-			      id:"ntf-"+options.wsid
-			    });
-	var epos = user_li.offset();
-
-	$("body").append(div);
-	$(div).html(options.html)
-	      .css({ left: epos.left+user_li.width()-$(div).outerWidth()+15,
-		     top:  epos.top+user_li.height()+12
-		   })
-	      .on("click", function(){$(div).remove();})
-	      .show(options.fadeIn||400);
-
-	if ( options.time !== 0 ) {
-	  var time = options.time;
-
-	  if ( !time )
-	    time = user_li.hasClass("myself") ? 1000 : 5000;
-
-	  setTimeout(function() {
-	    $(div).hide(options.fadeOut||400, function() {
-	      elem.chat('unnotify', options.wsid);
-	    });
-	  }, time);
-	}
+      if ( user_li && user_li.length > 0 ) {
+	options.onremove = function() {
+	  elem.chat('unnotify', options.wsid);
+	};
+	modal.notify(user_li, options);
 
 	this.chat('updateFiles', options);
       }
     },
 
     unnotify: function(wsid) {
-      $("#ntf-"+wsid).remove();
-
       if ( $("#"+wsid).hasClass("removed") )
 	this.chat('removeUser', wsid);
 
@@ -436,8 +465,12 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
       var li = $("#"+options.wsid);
 
       if ( li.length == 0 )
-      { li = $(li_user(options.wsid, options));
-	this.prepend(li);
+      { if ( options.create_user != false ) {
+	  li = $(li_user(options.wsid, options));
+	  this.prepend(li);
+        } else {
+	  return null;
+	}
       } else {
 	this.chat('lost', li, false);
       }
@@ -489,8 +522,8 @@ define([ "jquery", "config", "preferences", "form", "utils" ],
 	if ( lost ) {
 	  elem.data('lost-timer',
 		    setTimeout(function() {
-		      if ( $("#"+wsid.wsid).hasClass("lost") )
-			$("#"+wsid.wsid).remove();
+		      if ( li.hasClass("lost") )
+			li.remove();
 		    }, 60000));
 	} else {
 	  var tmo = elem.data('lost-timer');

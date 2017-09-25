@@ -50,6 +50,7 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 
 (function($) {
   var pluginName = 'chatroom';
+  var lasthangoutwarning = 0;
 
   /** @lends $.fn.chatroom */
   var methods = {
@@ -61,15 +62,16 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
     _init: function(options) {
       return this.each(function() {
 	var elem = $(this);
-	var data = {};			/* private data */
+	var data = { messages: [] };		/* private data */
 	var btn, send;
 	var close;
 	var text;
+	var hangout = "gitty:"+config.swish.hangout;
 
 	data.docid = options.docid;
 	elem.data(pluginName, data);	/* store with element */
 
-	elem.addClass("chatroom each-minute");
+	elem.addClass("chatroom each-minute swish-event-receiver");
 
 					/* build DOM */
 
@@ -89,9 +91,13 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 	text = $.el.textarea({ placeholder:"Type chat message here ..."
 			     }),
 
-	elem.append($.el.div({class:"chat-conversation"},
-			     $.el.div({class:"stretch"}),
-			     $.el.div({class:"inner"})),
+	elem.append($.el.div(
+		      {class:"chat-conversation"},
+		      $.el.div({class:"chat-outer-wrapper"},
+			 $.el.div({class:"chat-inner-wrapper"},
+			   $.el.div({class:"chat-content-wrapper"},
+			      $.el.div({class:"chat-stretch"}),
+			      $.el.div({class:"chat-content"}))))),
 	    close = $.el.span({class:"glyphicon menu glyphicon-remove-circle"}),
 		    $.el.div({class:"chat-input"},
 			     $.el.table({class:"chat-input"},
@@ -112,31 +118,54 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 	    } else {
 	      modal.alert("Your query editor is empty");
 	    }
-	  },
-	  "Broadcast to help room": function() {
-	    if ( data.docid != "gitty:Help.swinb" ) {
-	      this.chatroom('send',
-			    { docid:"gitty:Help.swinb",
-			      payload: [{type:"about", docid:data.docid}],
-			      clear:false
-			    });
-	      this.chatroom('send');
-	    } else {
-	      modal.alert("Please use `Cry for help' from the document "+
-			  "about which you need help.");
-	    }
 	  }
 	});
+	if ( options.docid != hangout ) {
+	  form.widgets.populateMenu($(btn), elem, {
+	    "Broadcast to hangout": function() {
+	      this.chatroom('send',
+			    { broadcast: "gitty:"+config.swish.hangout
+			    });
+	    }
+	  });
+	}
 	$(close).on("click", function() {
 	  elem.tile('close');
 	});
-	$(text).keypress(function(ev) {
-	  if ( ev.which == 13 ) {
-	    elem.chatroom('send');
-	    ev.preventDefault();
-	    return false;
-	  }
-	});
+	if ( options.oneline ) {
+	  $(text).keypress(function(ev) {
+	    if ( ev.which == 13 ) {
+	      elem.chatroom('send');
+	      ev.preventDefault();
+	      return false;
+	    }
+	  });
+	} else {
+	  $(text).on('keyup', function() {
+	    var that = $(this);
+	    var h;
+
+	    if ( that.scrollTop() != 0 && (h=that.height()) < 500 ) {
+	      h += parseFloat(that.css('line-height'));
+
+	      that.animate({ height: h }, 200,
+			   function() { elem.chatroom('scrollToBottom'); });
+	    }
+	  });
+	}
+	if ( options.docid == hangout ) {
+	  $(text).focus(function() {
+	    if ( $(text).val() == "" ) {
+	      var now = new Date().getTime();
+
+	      if ( now-lasthangoutwarning > 300000 ) {
+		lasthangoutwarning = now;
+
+		modal.help({file:"hangout.html", notagain:"hangout"});
+	      }
+	    }
+	  });
+	}
 	elem.on("click", ".inner button", function(ev) {
 	  var button = $(ev.target).closest("button");
 	  var val;
@@ -150,13 +179,18 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 	  ev.preventDefault();
 	  return false;
 	});
-	elem.on("click", ".inner a", links.followLink);
+	elem.on("click", ".chat-content a", links.followLink);
 	elem.on("pane.resize", function() {
 	  elem.chatroom('scrollToBottom', true);
 	});
 	elem.on("minute", function() {
 	  elem.chatroom('update_time');
 	});
+	elem.on("activate-tab", function() {
+	  elem.chatroom('read_until');
+	});
+
+	$(text).height(parseFloat($(text).css('line-height'))+5);
 
 	elem.chatroom('load_from_server');
       });
@@ -171,6 +205,10 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
      * @param {Object} [options]
      * @param {Array}  [options.payload] Payloads (queries, etc)
      * @param {String} [options.docid] Addressed document of not self
+     * @param {String} [options.broadcast] Also broadcast the message
+     * to the indicated document id.
+     * @param {Bool}   [options.clear] if `false`, do not clear the
+     * message window after sending.
      */
     send: function(options) {
       options = options||{};
@@ -181,6 +219,7 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
       var payload = options.payload||[];
       var has_payload = false;
       var selection = this.chatroom('storage').storage('getSelection');
+      var hangout = "gitty:" + config.swish.hangout;
 
       if ( selection )
 	payload.push({type:"selection", selection:selection});
@@ -191,17 +230,31 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 	  break;
 	}
       }
+					/* send first message to hangout */
+      if ( !options.broadcast &&
+	   data.docid != hangout &&
+	   data.messages.length == 0 )
+	options.broadcast = hangout;
 
       if ( msg.text != "" || has_payload ) {
-	if ( options.clear !== false )
-	  ta.val("");
-
+	msg.uuid    = utils.generateUUID();
 	msg.payload = payload;
 	msg.docid   = options.docid||data.docid;
 	if ( options.class )
 	  msg.class = options.class;
 
+	if ( options.clear == true ) {
+	  this.chatroom('clear');
+	} else {
+	  data.clear = msg.uuid;
+	}
+
 	$("#chat").chat('send', msg);
+	if ( options.broadcast ) {
+	  msg.payload.unshift({type:"about", docid:data.docid});
+	  msg.docid = options.broadcast;
+	  $("#chat").chat('send', msg);
+	}
       } else if ( !options.payload ) {
 	modal.alert("No message to send");
       }
@@ -215,32 +268,58 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
     },
 
     /**
-     * Add a chat object to the conversation.
+     * @param {Object} msg is the chat message object
+     * @return {Bool} `true` if the msg is sent by the current user.
+     */
+    is_self: function(msg) {
+      var muser = msg.user||{};
+      var suser = config.swish.user||{};
+
+      var self = $("#chat").chat('self');
+
+      return ((muser.id && muser.id == self.id) ||
+	      (muser.avatar && muser.avatar == self.avatar) ||
+	      (muser.profile_id && muser.profile_id == suser.profile_id));
+    },
+
+    /**
+     * Indicate we have read all content
+     */
+    read_until: function(msg) {
+      var data;
+
+      if ( msg == undefined &&
+	   (data = this.data(pluginName)) &&
+	   data.messages.length > 0 )
+	msg = data.messages[data.messages.length-1];
+
+      if ( msg ) {
+	$("#chat").chat('read_until', msg.docid, msg.time);
+	$(".chat-bell").chatbell('read_until', msg.docid, msg.time);
+      }
+    },
+
+    /**
+     * Render a chat message.
      * @param {Object} msg
      * @param {String} msg.html is the HTML content of the object
      * @param {String} msg.text is the ext of the object
      * @param {Object} msg.user Sender description
      */
-    add: function(msg) {
-      var data  = this.data(pluginName);
+    render: function(msg) {
       var muser = msg.user||{};
       var suser = config.swish.user||{};
 
-      if ( msg.docid != data.docid )
-	return this;
+      if ( msg.is_self === undefined )
+	msg.is_self = this.chatroom('is_self', msg);
 
-      var self = $("#chat").chat('self');
-      var is_self = ((muser.id && muser.id == self.id) ||
-		     (muser.avatar && muser.avatar == self.avatar) ||
-		     (muser.profile_id && muser.profile_id == suser.profile_id));
-
-      elem = $($.el.div({class:"chat-message"+(is_self ? " self" : ""),
+      elem = $($.el.div({class:"chat-message"+(msg.is_self ? " self" : ""),
 			 'data-userid':muser.wsid}));
-      if ( !is_self && muser.avatar ) {
+      if ( !msg.is_self && muser.avatar ) {
 	elem.append($.el.img({ class:"avatar", src:muser.avatar }));
       }
       elem.append($.el.span({class:"chat-sender"},
-			    is_self ? "Me" : muser.name));
+			    msg.is_self ? "Me" : muser.name));
 
       if ( msg.time ) {
 	var title = new Date(msg.time*1000).toLocaleString();
@@ -248,8 +327,6 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 			      "(", ago(msg.time), ") "));
 	elem.data('time', msg.time);
       }
-
-      this.find(".inner").append(elem);
 
       if ( msg.payload ) {
 	for(var i=0; i<msg.payload.length; i++) {
@@ -275,9 +352,48 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 	elem.append(span);
       }
 
-      this.chatroom('scrollToBottom');
+      return elem;
+    },
+
+    /**
+     * Add a message to the chatroom.
+     * @param {Object} msg is the message to display
+     * @param {Bool} [seen] if `true`, claim that the message is read.
+     * When omitted it is `true` if the chatroom is visible.
+     */
+    add: function(msg, seen) {
+      var data = this.data(pluginName);
+
+      if ( msg.docid == data.docid )
+      { var elem;
+
+	if ( seen == undefined )
+	  seen = this.is(":visible");
+
+	if ( msg.is_self == undefined )
+	  msg.is_self = this.chatroom('is_self', msg);
+	data.messages.push(msg);
+
+	elem = this.chatroom('render', msg);
+	this.find(".chat-content").append(elem);
+	this.chatroom('scrollToBottom');
+
+	if ( seen )
+	  this.chatroom('read_until', msg);
+      }
+
+      if ( msg.uuid && msg.uuid == data.clear ) {
+	this.chatroom('clear');
+      }
 
       return this;
+    },
+
+    clear: function() {
+      var ta = this.find("textarea");
+
+      ta.val("");
+      ta.height(parseFloat(ta.css('line-height')+5));
     },
 
     load_from_server: function(ifempty) {
@@ -288,11 +404,14 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 	    { docid: data.docid
 	    },
 	    function(messages) {
-	      if ( ifempty && messages.length == 0 ) {
-		elem.chatroom('close');
+	      if ( messages.length == 0 ) {
+		if ( ifempty )
+		  elem.chatroom('close');
+		else if ( data.docid != "gitty:"+config.swish.hangout )
+		  modal.help({file:"newchat.html", notagain:"newchat"});
 	      } else {
 		for(var i=0; i<messages.length; i++) {
-		  elem.chatroom('add', messages[i]);
+		  elem.chatroom('add', messages[i], i == messages.length-1 );
 		}
 	      }
 	    }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -366,7 +485,7 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
       var data = this.data(pluginName);
 
       if ( data.docid != docid ) {
-	this.find(".inner").html("");
+	this.find(".chat-content").html("");
 	data.docid = docid;
 	this.chatroom('load_from_server', ifempty);
       }
@@ -392,14 +511,15 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
     scrollToBottom: function(onlydown) {
       this.each(function() {
 	var elem = $(this);
-	inner = elem.find("div.inner");
-	conv  = elem.find(".chat-conversation");
-	var height = inner.height();
-	var room   = conv.height() - height - 4 - 4;
+	scroll  =   elem.find("div.chat-inner-wrapper");
+	wrap    = scroll.find("div.chat-content-wrapper");
+	content =   wrap.find("div.chat-content");
+	var height = content[0].scrollHeight;
+	var room   = wrap.height() - height - 8;
 
 	if ( room > 0 || onlydown !== true ) {
-	  conv.find("div.stretch").height(room > 0 ? room : 0);
-	  conv.scrollTop(height);
+	  wrap.find("div.chat-stretch").height(room > 0 ? room : 0);
+	  scroll.scrollTop(height);
 	}
       });
 
@@ -414,14 +534,14 @@ define([ "jquery", "form", "cm/lib/codemirror", "utils", "config",
 
   var payload_handlers = {
     selection: function(selection) {
-      var storage = this.chatroom('storage');
-      var label   = storage.storage('getSelectionLabel', selection.selection);
+      var label   = $().storage('getSelectionLabel', selection.selection);
       var btn = $($.el.button({ class:"btn btn-xs btn-primary"
 			      },
 			      label + " ",
 			      form.widgets.glyphIcon("eye-open")));
-      btn.on("click", function() {
-	storage.storage('restoreSelection', selection.selection);
+      btn.on("click", function(ev) {
+	$(ev.target).chatroom('storage')
+	            .storage('restoreSelection', selection.selection);
       });
 
       this.append(" ", btn, " ");

@@ -3,8 +3,8 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2016, VU University Amsterdam
-			      CWI Amsterdam
+    Copyright (C): 2017, VU University Amsterdam
+			 CWI Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -33,56 +33,36 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-/**
- * @fileOverview
- *
- * Small utilities
- *
- * @version 0.2.0
- * @author Jan Wielemaker, J.Wielemaker@vu.nl
- */
+:- module(swish_attvar,
+          [ put_attr/2                  % +Var, :Attr.
+          ]).
+:- meta_predicate
+    put_attr(-, :).
 
-define(["jquery"],
-       function($) {
+%!  put_attr(+Var, :Value) is det.
+%
+%   Put an attribute on  the  current  module.   This  is  the  same  as
+%   put_attr(Var, Module, Value), where Module is the calling context.
 
-  var utils = {
-    /**
-     * @param   {String} text is the text to be encoded
-     * @returns {String} HTML encoded version of text
-     */
-    htmlEncode: function(text) {
-      if ( !text ) return "";
-      return document.createElement('a')
-                     .appendChild(document.createTextNode(text))
-		     .parentNode
-		     .innerHTML;
-    },
+put_attr(Var, M:Value) :-
+    put_attr(Var, M, Value).
 
-    /**
-     * @returns {String} (random) UUID
-     */
-    generateUUID: function() {
-      var d = new Date().getTime();
-      var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-	.replace(/[xy]/g, function(c) {
-	  var r = (d + Math.random()*16)%16 | 0;
-	  d = Math.floor(d/16);
-	  return (c=='x' ? r : (r&0x7|0x8)).toString(16);
-	});
-      return uuid;
-    },
+:- multifile sandbox:safe_meta/3.
 
-    flash: function(obj) {
-      obj.addClass("flash");
-      setTimeout(function() { obj.removeClass("flash"); }, 1500);
-    }
-  }
+sandbox:safe_meta(swish_attvar:put_attr(Var,Value), Context, Called) :-
+    Value \= _:_,
+    !,
+    attr_hook_predicates([ attr_unify_hook(Value, _),
+                           attribute_goals(Var,_,_),
+                           project_attributes(_,_)
+                         ], Context, Called).
 
-  if (typeof String.prototype.startsWith != 'function') {
-    String.prototype.startsWith = function(str) {
-      return this.lastIndexOf(str, 0) === 0;
-    };
-  }
 
-  return utils;
-});
+attr_hook_predicates([], _, []).
+attr_hook_predicates([H|T], M, Called) :-
+    (   predicate_property(M:H, defined)
+    ->  Called = [M:H|Rest]
+    ;   Called = Rest
+    ),
+    attr_hook_predicates(T, M, Rest).
+

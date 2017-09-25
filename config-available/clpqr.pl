@@ -3,8 +3,8 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2016, VU University Amsterdam
-			      CWI Amsterdam
+    Copyright (C): 2017, VU University Amsterdam
+			 CWI Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -33,56 +33,13 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-/**
- * @fileOverview
- *
- * Small utilities
- *
- * @version 0.2.0
- * @author Jan Wielemaker, J.Wielemaker@vu.nl
- */
+:- module(swish_config_clpqr, []).
 
-define(["jquery"],
-       function($) {
+/** <module> Pre-load library(clpq) and library(clpr)
 
-  var utils = {
-    /**
-     * @param   {String} text is the text to be encoded
-     * @returns {String} HTML encoded version of text
-     */
-    htmlEncode: function(text) {
-      if ( !text ) return "";
-      return document.createElement('a')
-                     .appendChild(document.createTextNode(text))
-		     .parentNode
-		     .innerHTML;
-    },
+This module preloads the library(clpq) and library(clpr) modules, making
+these available in anonymous SWISH instances.
+*/
 
-    /**
-     * @returns {String} (random) UUID
-     */
-    generateUUID: function() {
-      var d = new Date().getTime();
-      var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-	.replace(/[xy]/g, function(c) {
-	  var r = (d + Math.random()*16)%16 | 0;
-	  d = Math.floor(d/16);
-	  return (c=='x' ? r : (r&0x7|0x8)).toString(16);
-	});
-      return uuid;
-    },
-
-    flash: function(obj) {
-      obj.addClass("flash");
-      setTimeout(function() { obj.removeClass("flash"); }, 1500);
-    }
-  }
-
-  if (typeof String.prototype.startsWith != 'function') {
-    String.prototype.startsWith = function(str) {
-      return this.lastIndexOf(str, 0) === 0;
-    };
-  }
-
-  return utils;
-});
+:- use_module(library(clpq), []).
+:- use_module(library(clpr), []).

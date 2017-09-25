@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (c)  2014-2016, VU University Amsterdam
+    Copyright (c)  2014-2017, VU University Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -789,7 +789,11 @@ style(neck(Neck),     neck, [ text(Text) ]) :-
 style(head(Class, Head), Type, [ text, arity(Arity) ]) :-
 	goal_arity(Head, Arity),
 	head_type(Class, Type).
+style(goal_term(Class, {_}), brace_term_open-brace_term_close,
+      [ name({}), arity(1) | More ]) :-
+	goal_type(Class, _Type, More).
 style(goal(Class, Goal), Type, [ text, arity(Arity) | More ]) :-
+	Goal \= {_},
 	goal_arity(Goal, Arity),
 	goal_type(Class, Type, More).
 style(file_no_depend(Path), file_no_depends,		   [text, path(Path)]).
@@ -814,6 +818,7 @@ style(delimiter,	 delimiter,			   [text]).
 style(identifier,	 identifier,			   [text]).
 style(module(_Module),   module,			   [text]).
 style(error,		 error,				   [text]).
+style(constraint(Set),   constraint,			   [text, set(Set)]).
 style(type_error(Expect), error,		      [text,expected(Expect)]).
 style(syntax_error(_Msg,_Pos), syntax_error,		   []).
 style(instantiation_error, instantiation_error,	           [text]).

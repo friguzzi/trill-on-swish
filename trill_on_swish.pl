@@ -179,6 +179,7 @@ swish_config:config(chat,		true).
 :- use_module(swish:lib/render).
 :- use_module(swish:lib/trace).
 :- use_module(swish:lib/projection).
+:- use_module(swish:lib/attvar).
 :- use_module(swish:lib/jquery).
 :- use_module(swish:lib/dashboard).
 :- use_module(swish:lib/swish_debug).
@@ -218,3 +219,28 @@ pengines:prepare_module(Module, swish, _Options) :-
 :- use_module(library(trill)).
 :- use_module(library(clpb)).
 
+                 /*******************************
+                 *         ADD COLOURING        *
+                 *******************************/
+:- multifile prolog_colour:term_colours/2.
+
+prolog_colour:term_colours((:- trill),
+	neck(directive)-[trill_directive]):-!.
+
+prolog_colour:term_colours((:- trillp),
+	neck(directive)-[trill_directive]):-!.
+
+prolog_colour:term_colours((:- tornado),
+	neck(directive)-[trill_directive]):-!.
+
+prolog_colour:term_colours(owl_rdf(_), olwrdf_predicate-[classify]):-!.
+
+:- multifile prolog_colour:style/2.
+
+prolog_colour:style(trill_directive,                  [colour(firebrick),bold(true)]).
+prolog_colour:style(olwrdf_predicate,                  [colour(firebrick),bold(true)]).
+
+:- multifile swish_highlight:style/3.
+
+swish_highlight:style(trill_directive,  trill_directive, [text, base(atom)]).
+swish_highlight:style(olwrdf_predicate, olwrdf_predicate, [text, base(symbol)]).
