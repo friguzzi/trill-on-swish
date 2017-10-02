@@ -86,4 +86,4 @@ user:file_search_path(swish, SwishDir) :-
 	source_file(swish_daemon, ThisFile),
 	file_directory_name(ThisFile, SwishDir).
 
-:- [swish(swish)].
+:- [swish(trill_on_swish)].
