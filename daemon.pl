@@ -1,6 +1,6 @@
 #!/usr/bin/env swipl
 
-:- module(swish_daemon, []).
+:- module(trill_on_swish_daemon, []).
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Run
