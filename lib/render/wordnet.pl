@@ -1,10 +1,9 @@
 /*  Part of SWISH
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@cs.vu.nl
+    E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2017, VU University Amsterdam
-			 CWI Amsterdam
+    Copyright (c)  2017, VU University Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -33,24 +32,48 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-:- module(swish_config_logging, []).
-:- use_module(library(settings)).
-:- use_module(library(broadcast)).
-:- use_module(library(http/http_log)).
-:- use_module(swish(lib/logging)).
+:- module(swish_render_wordnet,
+	  [ term_rendering//3			% +Term, +Vars, +Options
+	  ]).
+:- use_module(library(http/html_write)).
+:- use_module('../render').
+:- use_module(library(wn)).			% from wordnet pack
 
-/** <module> Configure logging facilities
+:- register_renderer(wordnet, "Show WordNet synsets").
 
-The  settings  below  enable  extensive  logging  of  HTTP  and  pengine
-interaction. The log files are rotated every  week and logs are kept for
-6 months. The log files can  be   used  together  with lib/replay.pl and
-lib/replay_cm.pl  to  replay   Pengine    interaction   and   CodeMirror
-highlighting interaction.
+/** <module> SWISH wordnet renderer
+
+Renders a WordNet synset-id (integer) as a list of words.
 */
 
-:- set_setting_default(http:log_post_data, 1 000 000).
-:- set_setting_default(http:logfile, data('log/httpd.log')).
-:- http_schedule_logrotate(weekly(sun, 05:05),
-                           [ keep_logs(26)
-                           ]).
-:- listen(http(pre_server_start), create_log_dir).
+%%	term_rendering(+Synset, +Vars, +Options)//
+%
+%	Renders  a Synset as a list of words.
+
+term_rendering(Synset, _Vars, _Options) -->
+	{   integer(Synset),
+            Synset > 100000000,
+            Synset < 500000000,
+            findall(Word, wn_s(Synset, _, Word, _, _, _), Words),
+            Words \== [],
+            (   wn_g(Synset, Gloss)
+            ->  Attr = [title(Gloss)]
+            ;   Attr = []
+            )
+	},
+        html(span([class(synset)|Attr],
+                  [ span(class('synset-id'), Synset), ' (WN: ',
+                    \words(Words), ')'
+                  ])).
+
+words([]) --> [].
+words([H|T]) -->
+    word(H),
+    (   {T == []}
+    ->  []
+    ;   html(', '),
+        words(T)
+    ).
+
+word(H) -->
+    html(span(class('wn-word'), H)).

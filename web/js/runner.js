@@ -104,6 +104,9 @@ define([ "jquery", "config", "preferences",
 	elem.on("pane.resize", function() {
 	  elem.prologRunners('scrollToBottom', true);
 	});
+	elem.on("scroll-to-bottom", function(ev, arg) {
+	  elem.prologRunners('scrollToBottom', arg);
+	});
 
 	elem.data(pluginName, data);
       });
@@ -131,7 +134,7 @@ define([ "jquery", "config", "preferences",
 
       data.inner.append(runner);
       $(runner).prologRunner(query);
-      this.prologRunners('scrollToBottom');
+      this.trigger('scroll-to-bottom');
 
       return this;
     },
@@ -245,6 +248,13 @@ define([ "jquery", "config", "preferences",
      * results as a table.
      * @param {Boolean} [query.title=true] If `false`, suppress the
      * title.
+     * @param {Function} [query.success] Called when the query completed
+     * with success (`true`).  `this` is the runner, the first argument
+     * is the Pengine.
+     * @param {Function} [query.complete] Called when the query
+     * completed, regardless of the result. Passes the same arguments as
+     * `query.success`. The `state` property of the Pengine contains the
+     * result state.  See `this.setState()`.
      */
     _init: function(query) {
       return this.each(function() {
@@ -335,7 +345,8 @@ define([ "jquery", "config", "preferences",
 	    titleBarButton("minus",         "Iconify",      'toggleIconic'),
 	    titleBarButton("download",      "Download CSV", 'downloadCSV'),
 	    stateButton(),
-	    qspan));
+	    qspan,
+            $.el.br({clear:"all"})));
 	} else {
 	  var close = glyphButton("remove-circle", "Close");
 	  elem.append(close);
@@ -772,7 +783,7 @@ define([ "jquery", "config", "preferences",
      */
     close: function() {
       if ( this.length ) {
-	var runners = RS(this);
+	var parents = this.parent();
 
 	this.each(function() {
 	  var elem = $(this);
@@ -781,11 +792,12 @@ define([ "jquery", "config", "preferences",
 	  if ( elem.prologRunner('alive') ) {
 	    $(".prolog-editor").trigger('pengine-died', data.prolog.id);
 	    data.prolog.abort();
+	    elem.prologRunner('setState', 'aborted');
 	  }
 	});
 	this.remove();
 
-	runners.prologRunners('scrollToBottom', true);
+	parents.trigger('scroll-to-bottom', true);
       }
       return this;
     },
@@ -811,7 +823,7 @@ define([ "jquery", "config", "preferences",
 	this.removeClass("iconic");
       }
 
-      RS(this).prologRunners('scrollToBottom', true);
+      this.trigger('scroll-to-bottom', true);
 
       return this;
     },
@@ -871,6 +883,7 @@ define([ "jquery", "config", "preferences",
 
      if ( data.prolog.state != state ) {
        var stateful = this.find(".show-state");
+       var query = data.query;
 
        stateful.removeClass(data.prolog.state).addClass(state);
        data.prolog.state = state;
@@ -880,17 +893,24 @@ define([ "jquery", "config", "preferences",
        } else if ( state == "wait-input" ) {
 	 this.find("input").focus();
        }
+
+       if ( state == "true" && query.success )
+	 query.success.call(this, data.prolog);
+       if ( !aliveState(state) && query.complete )
+	 query.complete.call(this, data.prolog);
      }
 
      var runners = RS(this);
      if ( !aliveState(state) ) {
+       var elem = this;
        $(".prolog-editor").trigger('pengine-died', data.prolog.id);
        data.prolog.destroy();
-       setTimeout(function() { runners.prologRunners('scrollToBottom') }, 100);
+       setTimeout(function() { elem.trigger('scroll-to-bottom') }, 100);
      } else if ( state == "wait-next" || state == "true" ) {
-       setTimeout(function() { runners.prologRunners('scrollToBottom') }, 100);
+       var elem = this;
+       setTimeout(function() { elem.trigger('scroll-to-bottom') }, 100);
      } else {
-       runners.prologRunners('scrollToBottom');
+       this.trigger('scroll-to-bottom');
      }
 
      return this;
@@ -956,7 +976,7 @@ define([ "jquery", "config", "preferences",
 	   data.stacks[s].usage = data.stacks[s].usage.slice(1);
 	 data.stacks[s].usage.push(u);
 	 spark.sparkline(data.stacks[s].usage,
-			 { height: spark.parent().height(),
+			 { height: "2em",
 			   composite: i>0,
 			   chartRangeMin: 0,
 			   chartRangeMax: 4,
@@ -1268,7 +1288,7 @@ define([ "jquery", "config", "preferences",
     } else {
       console.log(msg.data);
     }
-    RS(elem).prologRunners('scrollToBottom');
+    elem.trigger('scroll-to-bottom');
   }
 
   function handleError() {

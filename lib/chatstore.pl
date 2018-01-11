@@ -58,12 +58,22 @@
 :- multifile
     swish_config:chat_count_about/2.	% +DocID, -Count
 
-:- initialization open_chatstore.
+:- listen(http(pre_server_start),
+          open_chatstore).
 
 :- dynamic  storage_dir/1.
 :- volatile storage_dir/1.
 
 open_chatstore :-
+    storage_dir(_),
+    !.
+open_chatstore :-
+    with_mutex(chat_store, open_chatstore_guarded).
+
+open_chatstore_guarded :-
+    storage_dir(_),
+    !.
+open_chatstore_guarded :-
     setting(directory, Spec),
     absolute_file_name(Spec, Dir,
 		       [ file_type(directory),
@@ -71,7 +81,7 @@ open_chatstore :-
 			 file_errors(fail)
 		       ]), !,
     asserta(storage_dir(Dir)).
-open_chatstore :-
+open_chatstore_guarded :-
     setting(directory, Spec),
     absolute_file_name(Spec, Dir,
 		       [ solutions(all)
@@ -82,7 +92,12 @@ open_chatstore :-
 	  fail), !,
     asserta(storage_dir(Dir)).
 
+%!  chat_dir_file(+DocID, -Path, -File)
+%
+%   True when Path/File is the place to store char messages about DocID.
+
 chat_dir_file(DocID, Path, File) :-
+    open_chatstore,
     sha_hash(DocID, Bin, []),
     hash_atom(Bin, Hash),
     sub_atom(Hash, 0, 2, _, D1),
@@ -91,10 +106,6 @@ chat_dir_file(DocID, Path, File) :-
     storage_dir(Dir),
     atomic_list_concat([Dir, D1, D2], /, Path),
     atomic_list_concat([Path, Name], /, File).
-
-chat_file(DocID, File) :-
-    chat_dir_file(DocID, Dir, File),
-    make_directory_path(Dir).
 
 %!  existing_chat_file(+DocID, -File) is semidet.
 %
@@ -115,12 +126,13 @@ existing_chat_file(DocID, File) :-
 chat_store(Message) :-
     chat{docid:DocIDS} :< Message,
     atom_string(DocID, DocIDS),
-    chat_file(DocID, File),
+    chat_dir_file(DocID, Dir, File),
     (	del_dict(create, Message, false, Message1)
     ->	exists_file(File)
     ;	Message1 = Message
     ),
     !,
+    make_directory_path(Dir),
     strip_chat(Message1, Message2),
     with_mutex(chat_store,
                (   setup_call_cleanup(

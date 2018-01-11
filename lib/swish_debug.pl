@@ -95,13 +95,21 @@ stale_module_property(M, thread_status, Status) :-
 	pengine_property(Pengine, module(M)),
 	pengine_property(Pengine, thread(Thread)),
 	catch(thread_property(Thread, status(Status)), _, fail).
+stale_module_property(M, module_class, Class) :-
+	module_property(M, class(Class)).
 stale_module_property(M, program_space, Space) :-
 	module_property(M, program_space(Space)).
 stale_module_property(M, program_size, Size) :-
 	module_property(M, program_size(Size)).
+stale_module_property(M, predicates, List) :-
+	current_module(M),
+	findall(PI, pi_in_module(M, PI), List).
 stale_module_property(UUID, highlight_state, State) :-
 	current_highlight_state(UUID, State).
 
+pi_in_module(M, Name/Arity) :-
+	'$c_current_predicate'(_, M:Head),
+	functor(Head, Name, Arity).
 
 %%	swish_statistics(?State)
 %

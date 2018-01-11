@@ -107,6 +107,7 @@ var cellTypes = {
 	elem.append(toolbar = $.el.div(
             {class:"nb-toolbar"},
 	    glyphButton("trash", "delete", "Delete cell", "warning"),
+	    sep(),
 	    glyphButton("copy", "copy", "Copy cell", "default"),
 	    glyphButton("paste", "paste", "Paste cell below", "default"),
 	    sep(),
@@ -114,6 +115,9 @@ var cellTypes = {
 	    glyphButton("chevron-down", "down", "Move cell down", "default"),
 	    sep(),
 	    glyphButton("plus", "insertBelow", "Insert cell below", "primary"),
+	    sep(),
+	    glyphButton("erase", "clear_all", "Clear all query output", "warning"),
+	    glyphButton("play", "run_all", "Run all queries", "primary"),
 	    glyphButton("fullscreen", "fullscreen", "Full screen", "default")
 	    ));
 	elem.append(notebookMenu());
@@ -171,6 +175,13 @@ var cellTypes = {
 	  }
 	});
 
+	/* monitor output on runners */
+	elem.on("scroll-to-bottom", function(ev, arg) {
+	  if ( arg != true ) {
+	    $(ev.target).closest(".nb-cell").nbCell('ensure_in_view', 'bottom');
+	  }
+	});
+
 	elem.data(pluginName, data);	/* store with element */
 
 					/* restore content */
@@ -193,7 +204,9 @@ var cellTypes = {
 	  copyData("chats");
 
 	  var docid      = elem.storage('docid', undefined, storage);
-	  var fullscreen = preferences.getDocVal(docid, 'fullscreen', true);
+	  var fullscreen = preferences.getDocVal(
+					   docid, 'fullscreen',
+					   config.swish.notebook.fullscreen);
 
 	  elem.notebook('value', content.text(),
 			{ fullscreen: fullscreen
@@ -568,6 +581,7 @@ var cellTypes = {
 	});
 
 	this.find(".nb-cell").nbCell('onload');
+	this.notebook('run_all', 'onload');
 	this.notebook('updatePlaceHolder');
       }
     },
@@ -620,6 +634,55 @@ var cellTypes = {
 	       }
              });
       this.find(".nb-content").append(placeholder);
+    },
+
+    /**
+     * Run the notebook
+     */
+    run_all: function(why) {
+      var queries = [];
+
+      why = why||'all';
+
+      this.notebook('clear_all');
+
+      this.find(".nb-cell.query").each(function() {
+	if ( why == 'all' || $(this).data('run') == why )
+	  queries.push(this);
+      });
+
+      function cont(pengine) {
+	switch(pengine.state) {
+	  case 'error':
+	  case 'aborted':
+	    return false;
+	}
+
+	return true;
+      }
+
+      if ( queries.length > 0 ) {
+	queries.current = 0;
+	var complete = function(pengine) {
+	  if ( cont(pengine) &&
+	       ++queries.current < queries.length ) {
+	    $(queries[queries.current]).nbCell('run', {
+	      complete: complete
+	    })
+	  }
+	};
+
+	$(queries[0]).nbCell('run', {
+	  complete: complete
+	});
+      }
+    },
+
+    /**
+     * Erase all query output, killing possibly running queries
+     */
+    clear_all: function() {
+      this.find(".prolog-runner").prologRunner('close');
     }
   }; // methods
 
@@ -805,6 +868,23 @@ var cellTypes = {
       }
     },
 
+    ensure_in_view: function(where) {
+      var top  = this.position().top;
+      var view = this.closest(".nb-view");
+      var stop = view.scrollTop();
+      var vh   = view.height();
+
+      if ( top > stop &&
+	   top + this.height() < stop + vh )
+	return;
+
+      if ( where != 'top' ) {
+	top = top + this.height() - vh + 40;
+      }
+
+      this.nbCell('active', true);
+      view.scrollTop(top);
+    },
 
     type: function(type) {
       var data = this.data(pluginName);
@@ -1334,9 +1414,13 @@ var cellTypes = {
    * Run a query cell.
    * @param {Object} [options]
    * @param {Any}    [options.bindings] Initial bindings.  If this is a
-		     string, it is simply prepended to the query.  If
-		     it is an object, it is translated into a sequence
-		     of Prolog unifications to bind the variables.
+   *		     string, it is simply prepended to the query.  If
+   *		     it is an object, it is translated into a sequence
+   *		     of Prolog unifications to bind the variables.
+   * @param {Function} [options.success] Function run on success.  See
+   *		     `prologRunner._init()`.
+   * @param {Function} [options.complete] Function run on complete.  See
+   *		     `prologRunner._init()`.
    */
   methods.run.query = function(options) {	/* query */
     var programs = this.nbCell('programs');
@@ -1368,8 +1452,9 @@ var cellTypes = {
 		  title:        false,
 		  query_editor: this.find(".prolog-editor.query")
                 };
-    if ( programs[0] )
-      query.editor = programs[0];
+    if ( programs[0]  )     query.editor   = programs[0];
+    if ( options.success  ) query.success  = options.success;
+    if ( options.complete ) query.complete = options.complete;
 
     var runner = $.el.div({class: "prolog-runner"});
     this.find(".prolog-runner").prologRunner('close');
@@ -1382,11 +1467,6 @@ var cellTypes = {
 		 *******************************/
 
 /* These methods are executed after all cells have been initialised */
-
-  methods.onload.query = function() {
-    if ( this.data("run") == "onload" )
-      this.nbCell("run");
-  };
 
   methods.onload.html = function() {
     return methods.run.html.call(this,
@@ -1766,7 +1846,7 @@ function glyphButtonGlyph(elem, action, glyph) {
 }
 
 function sep() {
-  return $.el.span({class:"thin-space"}, " ");
+  return $.el.span({class:"menu-space"}, " ");
 }
 
 		 /*******************************

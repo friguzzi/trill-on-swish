@@ -47,25 +47,23 @@ clean::
 
 # Install dependencies from downloaded zip holding bower components
 
-bower-zip::
-	curl $(BOWER_URL) > $(BOWER_ARCHIVE)
-	unzip -u $(BOWER_ARCHIVE)
-	rm $(BOWER_ARCHIVE)
+bower-zip: .bower-senitel
+.bower-senitel: $(BOWER_ARCHIVE)
+	unzip -q -u $(BOWER_ARCHIVE)
+	touch $@
 
-swish-bower-components.zip::
-	rm -f $@
-	zip -r $@ web/bower_components
-
-upload:	swish-bower-components.zip
-	rsync swish-bower-components.zip ops:/home/swipl/web/download/swish/swish-bower-components.zip
+$(BOWER_ARCHIVE)::
+	@if [ -e $(BOWER_ARCHIVE) ]; then \
+	  curl -o $(BOWER_ARCHIVE) -z $(BOWER_ARCHIVE) $(BOWER_URL) ; \
+	else \
+	  curl -o $(BOWER_ARCHIVE) $(BOWER_URL) ;\
+	fi
 
 # Create the above
 
-$(BOWER_ARCHIVE)::
-	rm -f $@
-	zip -r $@ web/bower_components
-
-upload:	$(BOWER_ARCHIVE)
+upload::
+	rm -f $(BOWER_ARCHIVE)
+	zip -r $(BOWER_ARCHIVE) web/bower_components
 	rsync $(BOWER_ARCHIVE) ops:/home/swipl/web/download/swish/$(BOWER_ARCHIVE)
 
 
@@ -78,6 +76,10 @@ ATTACH_PACKDIR=-g 'attach_packs(pack,[duplicate(replace),search(first)])'
 
 packs: $(PACKFILES)
 
-$(PACKFILES):
-	git submodule update --init $(shell dirname $@)
-	$(SWIPL) $(ATTACH_PACKDIR) -g 'pack_rebuild($(shell basename $$(dirname $@)))' -t halt
+$(PACKFILES)::
+	@echo "Checking $(shell dirname $@) ..."
+	@if [ ! "`git submodule status $(shell dirname $@) | head -c 1`" = " " ]; then \
+	  echo "  Updating $(shell dirname $@) ..." ; \
+	  git submodule update --init $(shell dirname $@) ; \
+	  $(SWIPL) $(ATTACH_PACKDIR) -g 'pack_rebuild($(shell basename $$(dirname $@)))' -t halt ;\
+	fi

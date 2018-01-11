@@ -73,6 +73,7 @@ define([ "jquery",
 
 preferences.setDefault("semantic-highlighting", true);
 preferences.setDefault("emacs-keybinding", false);
+preferences.setDefault("new-tab", true);
 
 (function($) {
   var pluginName = 'swish';
@@ -150,6 +151,11 @@ preferences.setDefault("emacs-keybinding", false);
 	  preference: "emacs-keybinding",
 	  type: "checkbox",
 	  value: "false"
+	},
+	"Open document in new tab": {
+	  preference: "new-tab",
+	  type: "checkbox",
+	  value: "true"
 	}
       },
       "Examples": function(navbar, dropdown) {

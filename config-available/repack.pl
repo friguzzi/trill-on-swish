@@ -33,24 +33,37 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-:- module(swish_config_logging, []).
-:- use_module(library(settings)).
-:- use_module(library(broadcast)).
-:- use_module(library(http/http_log)).
-:- use_module(swish(lib/logging)).
+:- module(swish_config_repack, []).
+:- use_module(swish(lib/cron)).
+:- use_module(swish(lib/storage)).
 
-/** <module> Configure logging facilities
+/** <module> Configure repacking of gitty store
 
-The  settings  below  enable  extensive  logging  of  HTTP  and  pengine
-interaction. The log files are rotated every  week and logs are kept for
-6 months. The log files can  be   used  together  with lib/replay.pl and
-lib/replay_cm.pl  to  replay   Pengine    interaction   and   CodeMirror
-highlighting interaction.
+This config file schedules optimization  of   the  versioned  file store
+(_gitty_). This process combines   files  from `data/storage/XX/YY/SHA1`
+into a pack file in `data/storage/pack`.  Packing reduces disk usage and
+scanning time, typically by a large margin because the average object in
+the store is much smaller than a disk allocation unit.
+
+The options fine tune the process:
+
+  - min_files(Count)
+  Specifies the minimum amount of file objects that must be
+  present before considering creating a pack.
+  - small_pack(Bytes)
+  Add the new files and possibly other small packs together
+  into a new pack for all packs that are smaller than the
+  given size.
+
+@bug Although the repacking can be performed  safely on a life system it
+is currently incompatible with sharing  the   same  gitty  store between
+multiple  SWISH  instances.  If  you  share  a  store  between  multiple
+instances it is possible to use  packing by stopping all-but-one-server,
+repack and restart the other servers.
 */
 
-:- set_setting_default(http:log_post_data, 1 000 000).
-:- set_setting_default(http:logfile, data('log/httpd.log')).
-:- http_schedule_logrotate(weekly(sun, 05:05),
-                           [ keep_logs(26)
-                           ]).
-:- listen(http(pre_server_start), create_log_dir).
+:- initialization
+    http_schedule_maintenance(weekly(sunday, 03:10),
+                              storage_repack([ min_files(1_000),
+                                               small_pack(10_000_000)
+                                             ])).

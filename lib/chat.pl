@@ -73,6 +73,7 @@
 :- use_module(chatstore).
 :- use_module(authenticate).
 :- use_module(pep).
+:- use_module(content_filter).
 
 :- html_meta(chat_to_profile(+, html)).
 
@@ -938,23 +939,82 @@ json_message(Dict, WSID) :-
 json_message(Dict, WSID) :-
 	_{type: "chat-message", docid:DocID} :< Dict, !,
 	chat_add_user_id(WSID, Dict, Message),
-	(   ws_authorized(chat(post(Message, DocID)), Message.user)
-	->  chat_relay(Message)
-	;   chat_spam(Msg),
-	    hub_send(WSID, json(json{type:forbidden,
+	(   forbidden(Message, DocID, Why)
+	->  hub_send(WSID, json(json{type:forbidden,
 				     action:chat_post,
 				     about:DocID,
-				     message:Msg
+				     message:Why
 				    }))
+	;   chat_relay(Message)
 	).
 json_message(Dict, _WSID) :-
 	debug(chat(ignored), 'Ignoring JSON message ~p', [Dict]).
 
-chat_spam("Due to frequent spamming we were forced to limit \c
-	   posting chat messages to users who are logged in.").
-
 dict_file_name(Dict, File) :-
 	atom_string(File, Dict.get(file)).
+
+%!	forbidden(+Message, +DocID, -Why) is semidet.
+%
+%	True if the chat Message about DocID must be forbidden, in which
+%	case Why is  unified  with  a   string  indicating  the  reason.
+%	Currently:
+%
+%	  - Demands the user to be logged on
+%	  - Limits the size of the message and its payloads
+
+forbidden(Message, DocID, Why) :-
+	\+ ws_authorized(chat(post(Message, DocID)), Message.user), !,
+	Why = "Due to frequent spamming we were forced to limit \c
+	       posting chat messages to users who are logged in.".
+forbidden(Message, _DocID, Why) :-
+	Text = Message.get(text),
+	string_length(Text, Len),
+	Len > 500,
+	Why = "Chat messages are limited to 500 characters".
+forbidden(Message, _DocID, Why) :-
+	Payloads = Message.get(payload),
+	member(Payload, Payloads),
+	large_payload(Payload, Why), !.
+forbidden(Message, _DocID, Why) :-
+	eval_content(Message.get(text), _WC, Score),
+	user_score(Message, Score, Cummulative, _Count),
+	Score*2 + Cummulative < 0,
+	!,
+	Why = "Chat messages must be in English and avoid offensive language".
+
+large_payload(Payload, Why) :-
+	Selections = Payload.get(selection),
+	member(Selection, Selections),
+	(   string_length(Selection.get(string), SelLen), SelLen > 500
+	;   string_length(Selection.get(context), SelLen), SelLen > 500
+	), !,
+	Why = "Selection too long (max. 500 characters)".
+large_payload(Payload, Why) :-
+	string_length(Payload.get(query), QLen), QLen > 1000, !,
+	Why = "Query too long (max. 1000 characters)".
+
+user_score(Message, MsgScore, Cummulative, Count) :-
+	Profile	= Message.get(user).get(profile_id), !,
+	block(Profile, MsgScore, Cummulative, Count).
+user_score(_, _, 0, 1).
+
+%!	block(+User, +Score, -Cummulative, -Count)
+%
+%	Keep a count and cummulative score for a user.
+
+:- dynamic
+	blocked/4.
+
+block(User, Score, Cummulative, Count) :-
+	blocked(User, Score0, Count0, Time), !,
+	get_time(Now),
+	Cummulative = Score0*(0.5**((Now-Time)/600)) + Score,
+	Count is Count0 + 1,
+	asserta(blocked(User, Cummulative, Count, Now)),
+	retractall(blocked(User, Score0, Count0, Time)).
+block(User, Score, Score, 1) :-
+	get_time(Now),
+	asserta(blocked(User, Score, 1, Now)).
 
 
 		 /*******************************

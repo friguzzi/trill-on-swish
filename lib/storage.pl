@@ -36,7 +36,12 @@
 	  [ storage_file/1,			% ?File
 	    storage_file/3,			% +File, -Data, -Meta
 	    storage_meta_data/2,		% +File, -Meta
-	    storage_meta_property/2	        % +Meta, ?Property
+	    storage_meta_property/2,	        % +Meta, ?Property
+
+	    storage_fsck/0,
+	    storage_repack/0,
+	    storage_repack/1,			% +Options
+	    storage_unpack/0
 	  ]).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/http_parameters)).
@@ -73,7 +78,8 @@ their own version.
 
 :- http_handler(swish('p/'), web_storage, [ id(web_storage), prefix ]).
 
-:- initialization open_gittystore.		% TBD: make this lazy?
+:- listen(http(pre_server_start),
+	  open_gittystore).
 
 :- dynamic  storage_dir/1.
 :- volatile storage_dir/1.
@@ -81,6 +87,11 @@ their own version.
 open_gittystore :-
 	storage_dir(_), !.
 open_gittystore :-
+	with_mutex(web_storage, open_gittystore_guarded).
+
+open_gittystore_guarded :-
+	storage_dir(_), !.
+open_gittystore_guarded :-
 	setting(directory, Spec),
 	absolute_file_name(Spec, Dir,
 			   [ file_type(directory),
@@ -89,7 +100,7 @@ open_gittystore :-
 			   ]), !,
 	gitty_open(Dir, []),
 	asserta(storage_dir(Dir)).
-open_gittystore :-
+open_gittystore_guarded :-
 	setting(directory, Spec),
 	absolute_file_name(Spec, Dir,
 			   [ solutions(all)
@@ -119,6 +130,7 @@ create_store(Dir) :-
 web_storage(Request) :-
 	authenticate(Request, Auth),
 	option(method(Method), Request),
+	open_gittystore,
 	storage(Method, Request, [identity(Auth)]).
 
 :- multifile
@@ -496,14 +508,21 @@ random_char(Char) :-
 %	@arg Meta is a dict holding the meta data about the file.
 
 storage_file(File) :-
+	open_gittystore,
 	storage_dir(Dir),
 	gitty_file(Dir, File, _Head).
 
 storage_file(File, Data, Meta) :-
+	open_gittystore,
 	storage_dir(Dir),
+	(   var(File)
+	->  gitty_file(Dir, File, _Head)
+	;   true
+	),
 	gitty_data(Dir, File, Data, Meta).
 
 storage_meta_data(File, Meta) :-
+	open_gittystore,
 	storage_dir(Dir),
 	(   var(File)
 	->  gitty_file(Dir, File, _Head)
@@ -532,12 +551,52 @@ meta_property(modify(Modify), _, Meta) :-
 	;   Modify = [any,login,owner]
 	).
 
-current_meta_property(peer(_Atom),     dict).
-current_meta_property(public(_Bool),   dict).
-current_meta_property(time(_Seconds),  dict).
-current_meta_property(author(_String), dict).
-current_meta_property(avatar(_String), dict).
-current_meta_property(modify(_List),   derived).
+current_meta_property(peer(_Atom),	 dict).
+current_meta_property(public(_Bool),	 dict).
+current_meta_property(time(_Seconds),	 dict).
+current_meta_property(author(_String),	 dict).
+current_meta_property(identity(_String), dict).
+current_meta_property(avatar(_String),	 dict).
+current_meta_property(modify(_List),	 derived).
+
+
+		 /*******************************
+		 *	    MAINTENANCE		*
+		 *******************************/
+
+%!	storage_fsck
+%
+%	Enumerate and check the consistency of the entire store.
+
+storage_fsck :-
+	open_gittystore,
+	storage_dir(Dir),
+	gitty_fsck(Dir).
+
+%!	storage_repack is det.
+%!	storage_repack(+Options) is det.
+%
+%	Repack  the  storage  directory.  Currently  only  supports  the
+%	`files` driver. For database drivers  this   is  supposed  to be
+%	handled by the database.
+
+storage_repack :-
+	storage_repack([]).
+storage_repack(Options) :-
+	open_gittystore,
+	storage_dir(Dir),
+	(   gitty_driver(Dir, files)
+	->  gitty_driver_files:repack_objects(Dir, Options)
+	;   print_message(informational, gitty(norepack(driver)))
+	).
+
+storage_unpack :-
+	open_gittystore,
+	storage_dir(Dir),
+	(   gitty_driver(Dir, files)
+	->  gitty_driver_files:unpack_packs(Dir)
+	;   print_message(informational, gitty(nounpack(driver)))
+	).
 
 
 		 /*******************************
@@ -561,6 +620,7 @@ current_meta_property(modify(_List),   derived).
 %	@tbd We should only demand public on public servers.
 
 swish_search:typeahead(file, Query, FileInfo, _Options) :-
+	open_gittystore,
 	storage_dir(Dir),
 	gitty_file(Dir, File, Head),
 	gitty_commit(Dir, Head, Meta),
@@ -591,6 +651,7 @@ swish_search:typeahead(store_content, Query, FileInfo, Options) :-
 	limit(25, search_store_content(Query, FileInfo, Options)).
 
 search_store_content(Query, FileInfo, Options) :-
+	open_gittystore,
 	storage_dir(Dir),
 	gitty_file(Dir, File, Head),
 	gitty_data(Dir, Head, Data, Meta),
