@@ -33,13 +33,13 @@
 */
 
 :- module(swish_include,
-          [
+          [ include/2                          % +File, +Options
           ]).
 :- use_module(storage).
 :- use_module(config).
 :- use_module(library(sandbox), []).
 :- use_module(library(debug)).
-:- use_module(library(settings)).
+:- use_module(library(option)).
 :- use_module(library(filesex)).
 :- use_module(library(error)).
 :- use_module(library(readutil)).
@@ -58,35 +58,68 @@ shared gitty store. It realises this using the following steps:
 We allow for hierarchical and circular includes.
 */
 
+%!  include(+File, +Options)
+%
+%   Include file at a specific version.  Supported options:
+%
+%     - version(Version)
+%     Include version Version of File, where Version is a gitty
+%     commit of the file.  This is the same as `:- include(Version).`,
+%     but more explicit.
+%
+%   If the same file is included at two places it is included at most
+%   once.  Additionally
+%
+%     - If neither is versioned the most recent version is included.
+%     - If two versions resolve to the same content hash, this is
+%       included.
+%     - If a specific version is included, subsequent unspecified
+%       includes are ignored.  A subsequent incompatibly versioned
+%       include results in an error.
+%
+%   The envisioned model is that we can specify which version is,
+%   possibly indirectly, included by using directives like this:
+%
+%     ==
+%     :- include(File, [version(Hash)]).
+%     ==
+
+include(File, Version) :-
+    throw(error(context_error(nodirective, include(File, Version)), _)).
 
 swish:term_expansion(:- include(FileIn), Expansion) :-
-    include_file_id(FileIn, File),
+    swish:term_expansion(:- include(FileIn, []), Expansion).
+swish:term_expansion(:- include(FileIn, Options), Expansion) :-
+    setup_call_cleanup(
+        '$push_input_context'(swish_include),
+        expand_include(FileIn, Options, Expansion),
+        '$pop_input_context').
+
+expand_include(FileIn, Options, Expansion) :-
+    include_file_id(FileIn, File, Options),
+    arg(2, File, IncludeID),
     (   prolog_load_context(module, Module),
-        clause(Module:'swish included'(File), true)
+        clause(Module:'swish included'(IncludeID), true)
     ->  Expansion = []
     ;   Expansion = [ (:- discontiguous('swish included'/1)),
-                      'swish included'(File),
+                      'swish included'(IncludeID),
                       (:- include(stream(URI, Stream, [close(true)])))
                     ],
-        '$push_input_context'(swish_include),
         include_data(File, URI, Data),
-        open_string(Data, Stream),
-        '$pop_input_context'
+        open_string(Data, Stream)
     ).
 
-%!  include_data(+FileSpec, -URI, -Data)
+%!  include_data(+FileID, -URI, -Data)
 %
 %   Fetch the data to be included and obtain the URI for it.
 
-include_data(Name, URI, Data) :-        % Deal with gitty files
-    atom(Name),
+include_data(file(Name, _Data, gitty(Meta)), URI, Data) :-
     !,
-    add_extension(Name, FileExt),
-    catch(storage_file(FileExt, Data, _Meta),
+    catch(storage_file(Meta.commit, Data, _Meta),
           error(existence_error(_,_),_),
           fail),
-    atom_concat('swish://', FileExt, URI).
-include_data(Spec, URI, Data) :-
+    atom_concat('swish://', Name, URI).
+include_data(file(Spec, Spec, filesystem), URI, Data) :-
     absolute_file_name(Spec, Path, [ file_type(prolog), access(read) ]),
     read_file_to_string(Path, Data, []),
     Spec =.. [Alias,_],
@@ -94,15 +127,28 @@ include_data(Spec, URI, Data) :-
     format(atom(URI), 'swish://~w/~w', [Alias, NameExt]).
 
 
-%!  include_file_id(+FileIn, -File) is det.
+%!  include_file_id(+FileIn, -FileID, +Options) is det.
 %
 %   Normalise an include file identifier and verify its safeness.
 
-include_file_id(FileIn, File) :-
+include_file_id(FileIn, file(File, IncludeID, gitty(Meta)), Options) :-
     atomic(FileIn),
     !,
-    atom_string(File, FileIn).
-include_file_id(FileIn, File) :-
+    atom_string(File0, FileIn),
+    add_extension(File0, File),
+    (   option(version(Version), Options)
+    ->  storage_meta_data(Version, Meta)
+    ;   storage_meta_data(File, Meta)
+    ),
+    atom_concat('swish://', Meta.name, URI),
+    IncludeID0 = gitty(Meta.commit, Meta.data, URI),
+    (   prolog_load_context(module, Module),
+        clause(Module:'swish included'(IncludeIDPrev), true),
+        compatible_versions(IncludeIDPrev, IncludeID0, Version)
+    ->  IncludeID = IncludeIDPrev
+    ;   IncludeID = IncludeID0
+    ).
+include_file_id(FileIn, file(File, File, filesystem), _) :-
     compound(FileIn),
     FileIn =.. [Alias,NameIn],
     atom_string(Name, NameIn),
@@ -112,6 +158,16 @@ include_file_id(FileIn, File) :-
     ;   permission_error(include, file, Name)
     ),
     File =.. [Alias,Name].
+
+compatible_versions(Version, Version, _) :- !.
+compatible_versions(gitty(_, DataHash, _), gitty(_, DataHash, _), _) :- !.
+compatible_versions(Gitty1, Gitty2, Version) :- !,
+    Gitty1 = gitty(_, _, URI),
+    Gitty2 = gitty(_, _, URI),
+    (   var(Version)
+    ->  true
+    ;   throw(error(version_error(Gitty1, Gitty2), _))
+    ).
 
 safe_name(Name) :-
     \+ (   sub_atom(Name, 0, _, _, '../')
@@ -172,27 +228,38 @@ sandbox:safe_directive(M:include(stream(Id, Stream, [close(true)]))) :-
 :- multifile
     prolog_colour:term_colours/2.
 
+prolog_colour:term_colours((:- include(FileIn, Options)),
+                           neck(directive) -
+                           [ goal(built_in,include(FileIn)) -
+                             [ FileClass,
+                               classify
+                             ]
+                           ]) :-
+    classify_include(FileIn, FileClass, Options).
 prolog_colour:term_colours((:- include(FileIn)),
                            neck(directive) -
                            [ goal(built_in,include(FileIn)) -
                              [ FileClass
                              ]
                            ]) :-
+    classify_include(FileIn, FileClass, []).
+
+classify_include(FileIn, FileClass, Options) :-
     debug(include, 'Classifying ~p', [FileIn]),
-    (   catch(include_file_id(FileIn, File), _, fail)
-    ->  classify_include(File, FileClass)
+    (   catch(include_file_id(FileIn, FileID, Options), _, fail)
+    ->  classify_include(FileID, FileClass)
     ;   FileClass = nofile
     ),
     debug(include, 'Class ~p', [FileClass]).
 
-classify_include(File, FileClass) :-
-    atom(File),
+classify_include(file(Name, _DataHash, gitty(Meta)), FileClass) :-
     !,
-    add_extension(File, FileExt),
-    catch(storage_meta_data(FileExt, _Meta), _, fail),
-    atom_concat('swish://', FileExt, Id),
+    (   is_hash(Name)
+    ->  format(atom(Id), 'swish://~w@~w', [Meta.name, Name])
+    ;   atom_concat('swish://', Name, Id)
+    ),
     FileClass = file(Id).
-classify_include(Spec, FileClass) :-
+classify_include(file(Spec, Spec, filesystem), FileClass) :-
     absolute_file_name(Spec, Path, [ file_type(prolog), access(read) ]),
     Spec =.. [Alias,_],
     file_base_name(Path, NameExt),

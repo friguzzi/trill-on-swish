@@ -33,7 +33,7 @@
 */
 
 :- module(swish_trace,
-	  [ '$swish wrapper'/2		% +Goal, -Residuals
+	  [ '$swish wrapper'/2		% :Goal, ?ContextVars
 	  ]).
 :- use_module(library(debug)).
 :- use_module(library(settings)).
@@ -51,6 +51,7 @@
 :- use_module(library(http/html_write)).
 
 :- use_module(storage).
+:- use_module(config).
 
 :- if(current_setting(swish:debug_info)).
 :- set_setting(swish:debug_info, true).
@@ -198,16 +199,32 @@ strip_stack(error(Error, context(prolog_stack(S), Msg)),
 	nonvar(S).
 strip_stack(Error, Error).
 
-%%	'$swish wrapper'(:Goal, -Residuals)
+%%	'$swish wrapper'(:Goal, ?ContextVars)
 %
 %	Wrap a SWISH goal in '$swish  wrapper'. This has two advantages:
 %	we can detect that the tracer is   operating  on a SWISH goal by
 %	inspecting the stack and we can  save/restore the debug state to
 %	deal with debugging next solutions.
+%
+%	ContextVars is a list of variables   that  have a reserved name.
+%	The hooks pre_context/3 and post_context/3 can   be used to give
+%	these variables a value  extracted   from  the environment. This
+%	allows passing more information than just the query answers.
+%
+%	The binding `_residuals = '$residuals'(Residuals)`   is added to
+%	the   residual   goals   by     pengines:event_to_json/4    from
+%	pengines_io.pl.
 
 :- meta_predicate swish_call(0).
 
-'$swish wrapper'(Goal, '$residuals'(Residuals)) :-
+'$swish wrapper'(Goal, Extra) :-
+	(   nb_current('$variable_names', Bindings)
+	->  true
+	;   Bindings = []
+	),
+	debug(projection, 'Pre-context-pre ~p, extra=~p', [Bindings, Extra]),
+	maplist(call_pre_context(Goal, Bindings), Extra),
+	debug(projection, 'Pre-context-post ~p, extra=~p', [Bindings, Extra]),
 	catch(swish_call(Goal), E, throw(E)),
 	deterministic(Det),
 	(   tracing,
@@ -220,8 +237,7 @@ strip_stack(Error, Error).
 	    )
 	;   notrace
 	),
-	Goal = M:_,
-	residuals(M, Residuals).
+	maplist(call_post_context(Goal, Bindings), Extra).
 
 swish_call(Goal) :-
 	Goal,
@@ -232,6 +248,38 @@ no_lco.
 :- '$hide'(swish_call/1).
 :- '$hide'(no_lco/0).
 
+%!	pre_context(Name, Goal, Var) is semidet.
+%!	post_context(Name, Goal, Var) is semidet.
+%
+%	Multifile hooks to  extract  additional   information  from  the
+%	Pengine, either just before Goal is   started or after an answer
+%	was  produced.  Extracting  the  information   is  triggered  by
+%	introducing a variable with a reserved name.
+
+:- multifile
+	pre_context/3,
+	post_context/3.
+
+call_pre_context(Goal, Bindings, Var) :-
+	binding(Bindings, Var, Name),
+	pre_context(Name, Goal, Var), !.
+call_pre_context(_, _, _).
+
+
+call_post_context(Goal, Bindings, Var) :-
+	binding(Bindings, Var, Name),
+	post_context(Name, Goal, Var), !.
+call_post_context(_, _, _).
+
+post_context(Name, M:_Goal, '$residuals'(Residuals)) :-
+	swish_config(residuals_var, Name),
+	residuals(M, Residuals).
+
+binding([Name=Var|_], V, Name) :-
+	Var == V, !.
+binding([_|Bindings], V, Name) :-
+	binding(Bindings, V, Name).
+
 
 %%	residuals(+PengineModule, -Goals:list(callable)) is det.
 %
@@ -240,10 +288,7 @@ no_lco.
 %	goals typically live in global variables   that  are not visible
 %	when formulating the answer  from   the  projection variables as
 %	done in library(pengines_io).
-%
-%	This relies on the SWI-Prolog 7.3.14 residual goal extension.
 
-:- if(current_predicate(prolog:residual_goals//0)).
 residuals(TypeIn, Goals) :-
 	phrase(prolog:residual_goals, Goals0),
 	maplist(unqualify_residual(TypeIn), Goals0, Goals).
@@ -252,9 +297,6 @@ unqualify_residual(M, M:G, G) :- !.
 unqualify_residual(T, M:G, G) :-
 	predicate_property(T:G, imported_from(M)), !.
 unqualify_residual(_, G, G).
-:- else.
-residuals(_, []).
-:- endif.
 
 
 		 /*******************************
@@ -676,7 +718,8 @@ install_exception_hook :-
 		 *******************************/
 
 :- multifile
-	sandbox:safe_primitive/1.
+	sandbox:safe_primitive/1,
+	sandbox:safe_meta_predicate/1.
 
 sandbox:safe_primitive(system:trace).
 sandbox:safe_primitive(system:notrace).
@@ -685,6 +728,9 @@ sandbox:safe_primitive(edinburgh:debug).
 sandbox:safe_primitive(system:deterministic(_)).
 sandbox:safe_primitive(swish_trace:residuals(_,_)).
 sandbox:safe_primitive(swish:tty_size(_Rows, _Cols)).
+
+sandbox:safe_meta_predicate(swish_trace:'$swish wrapper'/2).
+
 
 		 /*******************************
 		 *	      MESSAGES		*

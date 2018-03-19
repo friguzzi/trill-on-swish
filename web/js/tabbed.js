@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2017, VU University Amsterdam
+    Copyright (C): 2014-2018, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -44,7 +44,7 @@
  */
 
 define([ "jquery", "form", "config", "preferences", "modal",
-	 "laconic", "search", "chatbell" ],
+	 "laconic", "search", "chatbell", "sourcelist" ],
        function($, form, config, preferences, modal) {
 var tabbed = {
   tabTypes: {},
@@ -58,6 +58,18 @@ var tabbed = {
     }
   }
 };
+
+tabbed.tabTypes.permalink = {
+  dataType: "lnk",
+  typeName: "program",
+  label: "Program",
+  create: function(dom, options) {
+    $(dom).addClass("prolog-editor")
+	  .prologEditor($.extend({save:true}, options))
+	  .prologEditor('makeCurrent');
+  }
+};
+
 
 (function($) {
   var pluginName = 'tabbed';
@@ -84,7 +96,7 @@ var tabbed = {
 	data.tabTypes = options.tabTypes || tabbed.tabTypes;
 	elem.data(pluginName, data);	/* store with element */
 
-	elem.addClass("tabbed");
+	elem.addClass("tabbed unloadable");
 	elem.tabbed('makeTabbed');
 	elem.on("trace-location", function(ev, prompt) {
 	  elem.tabbed('showTracePort', prompt);
@@ -98,6 +110,35 @@ var tabbed = {
 	      a.removeClass("data-dirty");
 	    else
 	      a.addClass("data-dirty");
+	  }
+	});
+	elem.on("unload", function(ev) {
+	  if ( ev.target == elem[0] &&
+	       elem.closest(".swish").swish('preserve_state') ) {
+	    var state = elem[pluginName]('getState');
+	    localStorage.setItem("tabs", JSON.stringify(state));
+	  }
+	});
+	elem.on("restore", function(ev) {
+	  var state;
+
+	  if ( ev.target == elem[0] ) {
+	    // TBD: How to act with already open documents?
+	    try {
+	      var str = localStorage.getItem("tabs");
+	      var state = JSON.parse(str);
+	    } catch(err) {
+	    }
+
+	    if ( typeof(state) == "object" ) {
+	      elem[pluginName]('setState', state);
+	    }
+	  }
+	});
+	elem.on("preference", function(ev, pref) {
+	  if ( pref.name == "preserve-state" &&
+	       pref.value == false ) {
+	    localStorage.removeItem("tabs");
 	  }
 	});
       });
@@ -146,7 +187,7 @@ var tabbed = {
 			    title: "Open a new tab"
 			  },
 			  glyphicon("plus"));
-      $(ul).append($.el.li({ role:"presentation" }, create));
+      $(ul).append($.el.li({ class: "tab-new", role:"presentation" }, create));
       $(create).on("click", function(ev) {
 	var tabbed = $(ev.target).parents(".tabbed").first();
 
@@ -159,6 +200,7 @@ var tabbed = {
       $(ul).on("shown.bs.tab", "a", function(ev) {
 	var newContentID  = $(ev.target).data("id");
 	$("#"+newContentID+" .swish-event-receiver").trigger("activate-tab");
+	$("#"+newContentID+" .storage").storage("activate");
       });
 
       if ( this.tabbed('navContent').children().length == 0 ) {
@@ -175,22 +217,151 @@ var tabbed = {
      * `tabSelect`.
      * @return {jQuery} object representing the created tab
      */
-    newTab: function(dom) {
+    newTab: function(dom, active) {
       var data = this.data(pluginName);
 
       if ( dom == undefined ) {
 	if ( data.newTab ) {
 	  dom = data.newTab();
 	} else {
+	  var sl;
 	  dom = this.tabbed('tabSelect');
 	  $(dom).append(this.tabbed('profileForm'),
 			$.el.hr(),
-			this.tabbed('searchForm'));
+			//this.tabbed('searchForm'),
+		        sl = $.el.div({class:"sourcelist"}));
+	  $(sl).sourcelist();
 	}
       }
 
-      return this.tabbed('addTab', dom, {active:true,close:true});
+      if ( active == undefined )
+	active = true;
+
+      return this.tabbed('addTab', dom, {active:active,close:true});
     },
+
+    getState: function() {
+      var state = this[pluginName]('get_ordered_storage').storage('getState');
+
+      state.pathname = window.location.pathname;
+      state.time     = new Date().getTime();
+
+      return state;
+    },
+
+    setState: function(state) {
+      var elem = this;
+
+      for(var i=0; i<state.tabs.length; i++) {
+	var data = state.tabs[i];
+	this[pluginName]('restoreTab', data);
+      }
+    },
+
+    restoreTab: function(data) {
+      var elem = this;
+      var tab;
+
+      data.query = null;		/* null keeps query */
+      data.noHistory = true;		/* do not update window path */
+
+      var existing = this.find(".storage").storage('match', data);
+      if ( existing ) {
+	tab = existing.closest(".tab-pane");
+	elem.tabbed('move_right', tab);
+      } else
+      { tab = undefined;
+      }
+
+      function restoreData(into, from) {
+	if ( from.data ) {
+	  into.find(".storage").storage('setValue', {
+	    data: from.data,
+	    role: 'source'
+	  });
+	}
+	if ( from.chatroom ) {
+	  into.find(".storage").storage('chat', from.chatroom);
+	}
+      }
+
+      if ( existing ) {
+	restoreData(tab, data);
+      } else if ( existing ) {
+	/* nothing to do? */
+      } else {				/* TBD: Centralise */
+	var select = this.find("div.tabbed-select");
+	var newtab;
+	var restoring = '<div class="restore-tab">Restoring ' +
+	                   (data.file||data.url) + " ..." +
+			'</div>';
+
+	if ( select.length > 0 )  {
+	  newtab = select.first().closest(".tab-pane");
+	  newtab.html(restoring);
+	} else {
+	  newtab = elem.tabbed('newTab', $(restoring), Boolean(data.active));
+	}
+
+	if ( data.st_type == "gitty" ) {
+	  var url = config.http.locations.web_storage + data.file;
+	  $.ajax({ url: url,
+		   type: "GET",
+		   data: {format: "json"},
+		   success: function(reply) {
+		     reply.url = url;
+		     reply.st_type = "gitty";
+		     reply.noHistory = true;
+		     if ( !elem.tabbed('setSource', newtab, reply) ) {
+		       console.log("Failed to restore", data.file);
+		       elem.tabbed('removeTab', tab.attr("id"));
+		     }
+		     restoreData(newtab, data);
+		     if ( newtab.hasClass("active") )
+		       newtab.find(".storage").storage("activate");
+		   },
+		   error: function(jqXHR) {
+		     modal.ajaxError(jqXHR);
+		   }
+	  });
+	} else if ( data.url ) {
+	  $.ajax({ url: data.url,
+		   type: "GET",
+		   data: {format: "json"},
+		   success: function(source) {
+		     var msg;
+
+		     if ( typeof(source) == "string" ) {
+		       msg = { data: source };
+		       msg.st_type = "external";
+		     } else if ( typeof(source) == "object" &&
+				 typeof(source.data) == "string" ) {
+		       msg = source;
+		       msg.st_type = "filesys";
+		     } else {
+		       alert("Invalid data");
+		       return;
+		     }
+		     msg.noHistory = true;
+		     msg.url = data.url;
+		     if ( !elem.tabbed('setSource', newtab, msg) ) {
+		       console.log("Failed to restore", data.url);
+		       elem.tabbed('removeTab', newtab.attr("id"));
+		     }
+		     restoreData(newtab, data);
+		     if ( newtab.hasClass("active") )
+		       newtab.find(".storage").storage("activate");
+		   },
+		   error: function(jqXHR) {
+		     modal.ajaxError(jqXHR);
+		   }
+	  });
+	} else {
+	  console.log("Cannot restore ", data);
+	}
+      }
+    },
+
 
     /**
      * Add a new tab from the provided source.  If there is a _select_
@@ -397,6 +568,24 @@ var tabbed = {
     },
 
     /**
+     * Move the argument tab or tab id to the right of all
+     * tabs.
+     */
+    move_right: function(tab) {
+      var id;
+      var ul = this.find(">ul");
+
+      if ( typeof(tab) == "string" )
+	id = tab;
+      else
+	id = tab.attr('id');
+
+      ul.find("a[data-id="+id+"]")
+        .closest("li")
+        .insertBefore(ul.children().last());
+    },
+
+    /**
      * Create a label (`li`) for a new tab.
      * @param {String} id is the identifier of the new tab
      * @param {String} label is the textual label of the new tab
@@ -437,7 +626,7 @@ var tabbed = {
 
     /**
      * Calling obj.tabbed('anchor') finds the <a> element
-     * represeting the tab label from the node obj that appears
+     * representing the tab label from the node obj that appears
      * somewhere on the tab
      */
     anchor: function() {
@@ -455,6 +644,24 @@ var tabbed = {
       return a;
     },
 
+    /**
+     * Find the storage objects in the tabbed environment in the
+     * order of the tabs.  Note that the content divs maye be ordered
+     * differently.
+     */
+    get_ordered_storage: function() {
+      var elem = this;
+      var result = [];
+
+      this.find(">ul>li").each(function() {
+	var id = $(this).find(">a").data('id');
+	elem.find(">div.tab-content>div[id="+id+"] .storage").each(function() {
+	  result.push(this);
+	});
+      });
+
+      return $(result);
+    },
 
     /**
      * This method is typically _not_ called on the tab, but on some
@@ -589,6 +796,9 @@ var tabbed = {
       return dom;
     },
 
+    /**
+     * Find sources
+     */
     searchForm: function() {
       var sform = $.el.form({class: "search-sources"},
 	$.el.label({class:"control-label"}, 'Open source file containing'),
@@ -611,6 +821,11 @@ var tabbed = {
       $(sform).find("input.search").search();
 
       return sform;
+    },
+
+    sourceList: function() {
+
+
     },
 
     profileForm: function() {

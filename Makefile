@@ -7,7 +7,7 @@ SWIPL=swipl
 
 # Packs to download and configure.  Run `git submodule` to see the
 # available packs.
-PACKS=profile rserve_client smtp
+PACKS=profile rserve_client smtp pcache
 
 all:
 	@echo "Targets"
@@ -67,9 +67,8 @@ upload::
 	rsync $(BOWER_ARCHIVE) ops:/home/swipl/web/download/swish/$(BOWER_ARCHIVE)
 
 
-		 /*******************************
-		 *	       PACKS		*
-		 *******************************/
+################
+# PACKS
 
 PACKFILES=$(addprefix pack/, $(addsuffix /pack.pl, $(PACKS)))
 ATTACH_PACKDIR=-g 'attach_packs(pack,[duplicate(replace),search(first)])'

@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2017, VU University Amsterdam
+    Copyright (C): 2014-2018, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -81,7 +81,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	var data = $.extend({}, defaults, options);
 
 	elem.data(pluginName, data);	/* store with element */
-	elem.addClass("storage");
+	elem.addClass("storage unloadable");
 	elem.storage('update_tab_title');
 
 	/**
@@ -137,9 +137,8 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	  if ( !val )
 	    elem.storage('update_tab_title');
 	});
-
-	$(window).bind("beforeunload", function(ev) {
-	  return elem.storage('unload', "beforeunload", ev);
+	elem.on("unload", function(ev, rc) {
+	  rc.rc = elem.storage('unload', "beforeunload", ev);
 	});
 
 	elem.storage('chat', (data.meta||{}).chat||'update');
@@ -159,9 +158,8 @@ define([ "jquery", "config", "modal", "form", "gitty",
 
       if ( (src.meta && src.meta.name) || src.url )
       { var name = (src.meta && src.meta.name) ? src.meta.name : src.url;
-	var ext  = name.split('.').pop();
 
-	if ( ext != type.dataType )
+	if ( tabbed.type(name)["typeName"] != type.typeName )
 	  return false;
       }
 
@@ -205,14 +203,36 @@ define([ "jquery", "config", "modal", "form", "gitty",
       data.cleanGeneration = data.changeGen();
       data.cleanData       = data.getValue();
       data.cleanCheckpoint = src.cleanCheckpoint || "load";
+      data.markClean(true);
 
       this.storage('update_tab_title');
 
       if ( !src.url       ) src.url = config.http.locations.swish;
-      if ( !src.noHistory ) history.push(src);
+      if ( !src.noHistory ) history.push({ url: src.url,
+					   reason: 'load'
+					 });
 
       this.storage('chat', src.chat||(src.meta||{}).chat||'update');
       $(".storage").storage('chat_status', true);
+
+      return this;
+    },
+
+    is_clean: function() {
+      var data = this.data(pluginName);
+      return data.isClean(data.cleanGeneration);
+    },
+
+    /**
+     * Set the value, but do not update the clean generation, meta-
+     * data, etc.  This is used for restoring a modified state.
+     * See tabbed.setState().
+     */
+    setValue: function(value) {
+      var data = this.data(pluginName);
+
+      data.setValue(value);
+      this.trigger("data-is-clean", data.isClean(data.cleanGeneration));
 
       return this;
     },
@@ -228,11 +248,14 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	if ( action == 'chats++' ) {
 	  elem.tabbed('chats++', docid);
 	} else {
-	  var data  = elem.data(pluginName);
-	  var type  = tabbed.tabTypes[data.typeName];
+	  var data = elem.data(pluginName);
+	  var file = data.file||data.url;
+	  var type;
 
-	  var title = (filebase(data.file) ||
-		       filebase(basename(data.url)) ||
+	  if ( !file || !(type = tabbed.type(file)) )
+	    type = tabbed.tabTypes[data.typeName];
+
+	  var title = (filebase(utils.basename(file)) ||
 		       type.label);
 
 	  if ( docid && data.chats )
@@ -282,13 +305,16 @@ define([ "jquery", "config", "modal", "form", "gitty",
     },
 
     /**
-     * Reload from server
+     * Reload from server.
+     * @param {String} file Name of the file to reload.  Default is to
+     * reload the current `data.file`.
      */
-    reload: function() {
+    reload: function(file) {
       var elem = this;
       var data = elem.data(pluginName);
+          file = file||data.file;
       var url  = config.http.locations.web_storage +
-		 encodeURI(data.file);
+		 encodeURI(file);
 
       $.ajax({ url: url,
 	       type: "GET",
@@ -300,7 +326,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 		 elem.storage('setSource', reply);
 		 $("#chat").trigger('send',
 				    { type:'reloaded',
-				      file:data.file,
+				      file:file,
 				      commit:reply.meta.commit
 				    });
 	       },
@@ -348,15 +374,17 @@ define([ "jquery", "config", "modal", "form", "gitty",
       }
 
       if ( data.file &&
-	   !(meta && meta.default) &&
-	   (!meta || meta.name == data.file) ) {
+	   ( what == "only-meta-data" ||
+	     ( !(meta && meta.default) &&
+	       (!meta || meta.name == data.file)
+	     )
+	   ) ) {
 	url += encodeURI(data.file);
 	method = "PUT";
       }
 
       if ( what == "only-meta-data" ) {
-	meta = gitty.reduceMeta(meta, data.meta)
-	if ( $.isEmptyObject(meta) ) {
+	if ( $.isEmptyObject(gitty.reduceMeta(meta, data.meta)) ) {
 	  alert("No change");
 	  return;
 	}
@@ -413,7 +441,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 		   elem.storage('update_tab_title');
 		   elem.storage('chat', (data.meta||{}).chat||'update');
 		   $(".storage").storage('chat_status', true);
-		   history.push(reply);
+		   history.push({url: reply.url, reason: "save"});
 		 }
 	       },
 	       error: function(jqXHR, textStatus, errorThrown) {
@@ -552,6 +580,87 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	     });
 
       return this;
+    },
+
+    /**
+     * Storage was activated (e.g., a tab switch)
+     */
+    activate: function() {
+      var data = this.data(pluginName);
+
+      if ( data && data.url ) {
+	history.push({url: data.url, reason: 'activate'});
+      }
+
+      return this
+    },
+
+    /**
+     * @return {Object} state of a set of storage objects, typically
+     * called from a tabbed environment to save the state of all tabs.
+     */
+    getState: function(always) {
+      var state = {
+        tabs: []
+      };
+
+      this.each(function() {
+	var elem = $(this);
+	var data = elem.data(pluginName);
+	var meta = elem.meta || {};
+	var h;
+
+					/* avoid incomplete elements */
+	if ( (data.file || data.url) && data.isClean && data.cleanGeneration ) {
+	  if ( !meta.name && data.file )
+	    meta.name = data.file;
+
+	  var tab = {
+	    file:    meta.name,
+	    st_type: data.st_type,
+	    url:     data.url
+	  };
+	  if ( elem[pluginName]('getActive') )
+	    tab.active = true;
+	  if ( (h=elem[pluginName]('chatroom_size')) )
+	    tab.chatroom = h;
+
+	  state.tabs.push(tab);
+
+	  if ( always ||
+	       !data.isClean(data.cleanGeneration) ) {
+	    tab.meta = meta;
+	    tab.data = data.getValue();
+	  }
+	}
+      });
+
+      return state;
+    },
+
+    /**
+     * Restore a storage object from local (when modified) or remote
+     * version.
+     *
+     * @param {String} name is the name of the document to retrieve.
+     */
+    restoreLocal: function(name) {
+      var str = localStorage.getItem("$file$"+name);
+      var data;
+
+      try {
+	data = JSON.parse(str);
+	if ( typeof(data) != "object" )
+	  data = undefined;
+      } catch(err) {
+	data = undefined;
+      }
+
+      if ( data ) {
+	this[pluginName]('setSource', data);
+      } else {
+	this[pluginName]('reload', name);
+      }
     },
 
 		 /*******************************
@@ -716,7 +825,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	var data = $(this).data(pluginName);
 	var obj = {};
 
-	obj.type = data.type;
+	obj.type = data.st_type;
 	if ( data.url ) obj.url = data.url;
 	if ( data.meta ) {
 	  function copyMeta(name) {
@@ -732,7 +841,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	  copyMeta("module");
 	}
 
-	if ( $(this).closest(".tab-pane.active").length == 1 )
+	if ( $(this)[pluginName]('getActive') )
 	  obj.active = true;
 
 	if ( !options.type ||
@@ -802,7 +911,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
       if ( data.st_type == "gitty" ) {
 	title = $().gitty('title', meta);
       } else if ( data.st_type == "filesys" ) {
-	title = "File system -- " + basename(meta.path);
+	title = "File system -- " + utils.basename(meta.path);
       } else if ( data.st_type == "external" ) {
 	title = "External -- " + data.url;
       } else {
@@ -946,6 +1055,13 @@ define([ "jquery", "config", "modal", "form", "gitty",
     },
 
     /**
+     * @return {Boolean} `true` if storage is in an active tab
+     */
+    getActive: function() {
+      return $(this).closest(".tab-pane.active").length == 1;
+    },
+
+    /**
      * Get a document identification string for chats, status, etc.
      * @param {String} [type] defines the type of storage supported
      * @param {Object} [data] is the data object from which to derive
@@ -984,8 +1100,15 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	  else
 	    utils.flash(chat);
 	} else if ( action != 'update' ) {
-	  var percentage = (action == 'large' ? 80 : 20);
 	  chat = $($.el.div({class:"chatroom"}));
+	  var percentage;
+
+	  if ( typeof(action) == "number" )
+	    percentage = action;
+	  else if ( action == 'large' )
+	    percentage = 80;
+	  else
+	    percentage = 20;
 
 	  chat.chatroom({docid:docid});
 	  this.tile('split', chat, "below", percentage, 150)
@@ -1011,6 +1134,22 @@ define([ "jquery", "config", "modal", "form", "gitty",
      */
     close_chat: function() {
       this.closest(".chat-container").find(".chatroom").chatroom('close');
+    },
+
+    /**
+     * @return percentage of the chatroom, `true` when undefined or
+     * `false` if there is no chatroom.
+     */
+    chatroom_size: function() {
+      var tab = this.closest(".tab-pane");
+      var cr = tab.find(".chatroom");
+      if ( cr.length > 0 ) {
+	var h = tab.height();
+	if ( h == 0 )
+	  return 20;			/* default */
+	return Math.round(cr.height()*100/h);
+      }
+      return false;
     },
 
     /**
@@ -1077,7 +1216,8 @@ define([ "jquery", "config", "modal", "form", "gitty",
 			  });
       }
 
-      if ( data.cleanData != data.getValue() ) {
+      if ( data.cleanData && data.getValue &&
+	   data.cleanData != data.getValue() ) {
 	if ( why == "beforeunload" ) {
 	  var message = "The source editor has unsaved changes.\n"+
 	                "These will be lost if you leave the page";
@@ -1200,10 +1340,6 @@ define([ "jquery", "config", "modal", "form", "gitty",
 
   function filebase(file) {
     return file ? file.split('.').slice(0,-1).join(".") : null;
-  }
-
-  function basename(path) {
-    return path ? path.split('/').pop() : null;
   }
 
   function udiff(diff) {

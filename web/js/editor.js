@@ -574,8 +574,12 @@ define([ "cm/lib/codemirror",
 	  }
 	}
 
-	if ( data.role == "source" )
-	  $(".swish-event-receiver").trigger("program-loaded", this);
+	if ( data.role == "source" ) {
+	  $(".swish-event-receiver").trigger("program-loaded",
+					     { editor: this,
+					       query: source.query
+					     });
+	}
       }
       return this;
     },
@@ -612,6 +616,7 @@ define([ "cm/lib/codemirror",
 	var elem = $(this);
 	var data = elem.data(pluginName);
 	data.cleanGeneration = data.cm.changeGeneration();
+	data.clean_signalled = true;
       });
     },
 

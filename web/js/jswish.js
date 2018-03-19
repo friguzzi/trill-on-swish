@@ -74,6 +74,8 @@ define([ "jquery",
 preferences.setDefault("semantic-highlighting", true);
 preferences.setDefault("emacs-keybinding", false);
 preferences.setDefault("new-tab", true);
+preferences.setDefault("preserve-state", true);
+preferences.setInform("preserve-state", ".unloadable");
 
 (function($) {
   var pluginName = 'swish';
@@ -156,6 +158,11 @@ preferences.setDefault("new-tab", true);
 	  preference: "new-tab",
 	  type: "checkbox",
 	  value: "true"
+	},
+	"Preserve state in browser": {
+	  preference: "preserve-state",
+	  type: "checkbox",
+	  value: "true"
 	}
       },
       "Examples": function(navbar, dropdown) {
@@ -184,6 +191,7 @@ preferences.setDefault("new-tab", true);
       setupModal();
       setupPanes();
       setupResize();
+      setupUnload();
       $("#search").search();
 
       options = options||{};
@@ -234,6 +242,7 @@ preferences.setDefault("new-tab", true);
 	      file: config.swish.hangout,
 	      chat: 'large'
 	    });
+	    break;
 	  case 'chat-about-file':
 	    menuBroadcast("chat-about-file");
 	  }
@@ -242,7 +251,23 @@ preferences.setDefault("new-tab", true);
 	setInterval(function(){
 	  $(".each-minute").trigger("minute");
 	}, 60000);
+
+	if ( elem[pluginName]('preserve_state') )
+	  $(".unloadable").trigger("restore");
       });
+    },
+
+    /**
+     * @return {Boolean} `true` when we should save and restore
+     * the state to the browser local store.
+     */
+    preserve_state: function() {
+      if ( swish.option.preserve_state == false )
+	return false;
+      if ( preferences.getVal("preserve-state") == false )
+	return false;
+
+      return true;
     },
 
     /**
@@ -702,6 +727,20 @@ preferences.setDefault("new-tab", true);
   function setupResize() {
     $(window).resize(function() {
       $(".reactive-size").trigger('reactive-resize');
+    });
+  }
+
+  function setupUnload() {
+    $(window).bind("beforeunload", function(ev) {
+      var rc;
+
+      $(".unloadable").each(function() {
+	var r = {};
+	$(this).trigger("unload", r);
+	rc = rc||r.rc;
+      });
+
+      return rc;
     });
   }
 

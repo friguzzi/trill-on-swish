@@ -122,8 +122,13 @@ var MAX_RECONNECT_DELAY = 300000;
 	lead = "&";
       }
 
-      data.connection = new WebSocket(ws + "//" + url,
-				      ['v1.chat.swish.swi-prolog.org']);
+      try {
+	data.connection = new WebSocket(ws + "//" + url,
+					['v1.chat.swish.swi-prolog.org']);
+      } catch(err) {
+	elem.chat('userCount', undefined);
+	return;
+      }
 
       data.connection.onerror = function(error) {
 	elem.chat('userCount', undefined);
@@ -172,10 +177,12 @@ var MAX_RECONNECT_DELAY = 300000;
     disconnect: function() {
       var data = this.data(pluginName);
 
-      this.chat('send', {type: "unload"});
-      data.connection.onclose = function(){};
-      data.connection.close();
-      data.connection = undefined;
+      if ( data.connection ) {
+	this.chat('send', {type: "unload"});
+	data.connection.onclose = function(){};
+	data.connection.close();
+	data.connection = undefined;
+      }
 
       return this;
     },
@@ -255,6 +262,8 @@ var MAX_RECONNECT_DELAY = 300000;
 
       if ( e.check_login )
 	$("#login").login('update', "check");
+      else
+	$(".sourcelist").trigger("login");
       $(".storage").storage('chat_status');
       this.chat('empty_queue');
     },
@@ -293,6 +302,7 @@ var MAX_RECONNECT_DELAY = 300000;
      */
 
     profile: function(e) {
+      var data = this.data(pluginName);
       var li = $("#"+e.wsid);
 
       li.children("a").html("").append(avatar(e));
@@ -308,6 +318,10 @@ var MAX_RECONNECT_DELAY = 300000;
 	  e.html = "Named <i>"+utils.htmlEncode(e.name)+"</i>";
 	  this.chat('notifyUser', e);
 	}
+      }
+
+      if ( data.wsid == e.wsid ) {	/* current user profile changed */
+	$(".sourcelist").trigger("login");
       }
     },
 

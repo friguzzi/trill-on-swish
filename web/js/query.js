@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2017, VU University Amsterdam
+    Copyright (C): 2014-2018, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -45,9 +45,10 @@
  */
 
 define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
+	 "utils",
 	 "laconic", "editor"
        ],
-       function($, config, preferences, CodeMirror, modal) {
+       function($, config, preferences, CodeMirror, modal, utils) {
 
 (function($) {
   var pluginName = 'queryEditor';
@@ -74,7 +75,8 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
 	var qediv  = $.el.div({class:"query"});
 	var tabled = tableCheckbox(data);
 
-	elem.addClass("prolog-query-editor swish-event-receiver reactive-size");
+	elem.addClass("prolog-query-editor swish-event-receiver reactive-size " +
+		      "unloadable");
 
 	elem.append(qediv,
 		    $.el.div({class:"prolog-prompt"}, "?-"),
@@ -115,11 +117,47 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
 	elem.on("current-program", function(ev, editor) {
 	  elem[pluginName]('setProgramEditor', $(editor));
 	});
-	elem.on("program-loaded", function(ev, editor) {
-	  if ( $(data.editor).data('prologEditor') ==
-	       $(editor).data('prologEditor') ) {
-	    var exl = data.examples();
-	    elem.queryEditor('setQuery', exl && exl[0] ? exl[0] : "");
+	elem.on("program-loaded", function(ev, options) {
+	  var query = options.query;
+
+	  if ( query != null ) {		/* null: keep */
+	    if ( query == undefined ) {
+	      if ( $(data.editor).data('prologEditor') ==
+		   $(options.editor).data('prologEditor') ) {
+		var exl = data.examples();
+		query = exl && exl[0] ? exl[0] : "";
+	      }
+	    }
+	    elem.queryEditor('setQuery', query);
+	  }
+	});
+	elem.on("unload", function(ev, rc) {
+	  if ( elem.closest(".swish").swish('preserve_state') ) {
+	    var state = elem[pluginName]('getState');
+	    if ( state )
+	      localStorage.setItem("query", JSON.stringify(state));
+	  }
+	});
+	elem.on("restore", function(ev, rc) {
+	  if ( elem[pluginName]('getQuery') == "" ) {
+	    var state;
+	    // called with explicit query
+	    // TBD: not save in this case?
+	    try {
+	      var str = localStorage.getItem("query");
+	      state = JSON.parse(str);
+	    } catch(err) {
+	    }
+
+	    if ( typeof(state) == "object" ) {
+	      elem[pluginName]('setState', state);
+	    }
+	  }
+	});
+	elem.on("preference", function(ev, pref) {
+	  if ( pref.name == "preserve-state" &&
+	       pref.value == false ) {
+	    localStorage.removeItem("query");
 	  }
 	});
       });
@@ -264,15 +302,47 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
 
       if ( query ) {
 	var li;
+	var a;
 
 	if ( (li=findInHistory()) )
 	  li.remove();
 	if ( ul.children().length >= data.maxHistoryLength )
 	  ul.children().first().remove();
-	ul.append($.el.li($.el.a(query)));
+	ul.append($.el.li(a=$.el.a(query)));
+	$(a).data('time', (new Date().getTime())/1000);
       }
 
       return this;
+    },
+
+    /**
+     * @return {Array} An arrayt of strings representing the
+     * current history.
+     */
+    getHistory: function() {
+      var ul   = this.find("ul.history");
+      var h = [];
+
+      ul.children().each(function() {
+	var a =	$(this).find("a");
+	h.push({
+	  query: a.text(),
+	  time:  a.data('time')
+	});
+      });
+
+      return h;
+    },
+
+    restoreHistory: function(h) {
+      var ul   = this.find("ul.history");
+
+      ul.html("");
+      for(var i=0; i<h.length; i++) {
+	var a;
+	ul.append($.el.li(a= $.el.a(h[i].query)));
+	$(a).data('time', h[i].time);
+      }
     },
 
     /**
@@ -306,6 +376,18 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
      */
     getQuery: function() {
       return this.find(".query").prologEditor('getSource', "query");
+    },
+
+    getState: function() {
+      return {
+        query:   this[pluginName]('getQuery'),
+        history: this[pluginName]('getHistory')
+      };
+    },
+
+    setState: function(state) {
+      this[pluginName]('restoreHistory', state.history||[]);
+      this[pluginName]('setQuery', state.query||"");
     },
 
     /**
@@ -412,7 +494,14 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
   }
 
   function historyButton(options) {
-    return dropup("history", "History", options);
+    var menu = dropup("history", "History", options);
+
+    $(menu).on("mouseenter", "li", function(ev) {
+      var a = $(ev.target).closest("li").find("a");
+      a.attr("title", utils.ago(a.data('time')));
+    });
+
+    return menu;
   }
 
   function aggregateButton(options) {

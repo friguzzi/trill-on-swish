@@ -251,6 +251,8 @@ nofollow(DocID, ProfileID, Flags) :-
 %     Gitty file was deleted
 %   - forked(OldCommit, Commit)
 %     Gitty file was forked
+%   - created(Commit)
+%     A new gitty file was created
 %   - chat(Message)
 %     A chat message was sent.  Message is the JSON content as a dict.
 %     Message contains a `docid` key.
@@ -298,15 +300,18 @@ notify_event(follow(DocID, ProfileID, Options)) :-
     follow(DocID, ProfileID, Options).
 % events on gitty files
 notify_event(updated(File, Commit)) :-
-    atom_concat('gitty:', File, DocID),
-    notify(DocID, updated(Commit)).
+    (   storage_meta_data(Commit.get(previous), OldCommit),
+        atom_concat('gitty:', OldCommit.name, DocID)
+    ->  notify(DocID, forked(OldCommit, Commit))
+    ;   atom_concat('gitty:', File, DocID),
+        notify(DocID, updated(Commit))
+    ).
 notify_event(deleted(File, Commit)) :-
     atom_concat('gitty:', File, DocID),
     notify(DocID, deleted(Commit)).
-notify_event(created(_File, Commit)) :-
-    storage_meta_data(Commit.get(previous), Meta),
-    atom_concat('gitty:', Meta.name, DocID),
-    notify(DocID, forked(Meta, Commit)).
+notify_event(created(File, Commit)) :-
+    atom_concat('gitty:', File, DocID),
+    notify(DocID, created(Commit)).
 % chat message
 notify_event(chat(Message)) :-
     notify(Message.docid, chat(Message)).
@@ -383,6 +388,10 @@ chat_notice(deleted(Commit), []) -->
     html([b('Deleted'), ': ', \commit_message_summary(Commit)]).
 chat_notice(forked(_OldCommit, Commit), []) -->
     html([b('Forked'), ' into ', \file_name(Commit), ': ',
+          \commit_message_summary(Commit)
+         ]).
+chat_notice(created(Commit), []) -->
+    html([b('Created'), ' ', \file_name(Commit), ': ',
           \commit_message_summary(Commit)
          ]).
 
