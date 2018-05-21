@@ -31,9 +31,6 @@
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
 */
 
 :- module(swish_authenticate,
@@ -167,9 +164,3 @@ current_user_property(email(_Email),              broadcast).
 
 pengines:authentication_hook(Request, _Application, User) :-
     authenticate(Request, User).
-
-%pengines:authentication_hook(_Request, _Application, anonymous) :- !.
-
-%pengines:not_sandboxed(_User, _Application).
-
-

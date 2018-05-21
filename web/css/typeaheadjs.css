@@ -40,7 +40,7 @@ span.twitter-typeahead {
  */
 
 .tt-suggestion {
-  max-width: 30em;
+  max-width: 25em;
   overflow: hidden;
 }
 

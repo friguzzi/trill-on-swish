@@ -30,9 +30,6 @@
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
 */
 
 :- module(swish_ide,
@@ -87,7 +84,7 @@ current_user(User) :- !,
 current_user(default).
 
 
-:- use_module(trill_on_swish).
+:- use_module(swish).
 
 %%	swish
 %

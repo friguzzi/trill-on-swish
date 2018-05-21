@@ -3,8 +3,8 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2017, VU University Amsterdam
-			      CWI Amsterdam
+    Copyright (C): 2018, VU University Amsterdam
+			 CWI Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -33,30 +33,17 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-:- use_module(library(main)).
-:- use_module(library(option)).
-:- use_module(server).
+:- module(swish_config_remote_pengines, []).
+:- use_module(library(pengines_sandbox)).
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-Usage:
+/** <module> Allow pengine_rpc
 
-    swipl run.pl [--port=Port]
+This module configures swish to allow for pengine_rpc/3 to contact other
+SWISH/Pengines servers.
 
-Simple start script for running SWISH  in an interactive Prolog session.
-This version is intended for development  and testing purposes. Checkout
-daemon.pl if to deploy SWISH as a server
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
-% Using `localhost:Port`, we only bind to localhost interface!
-% Use plain `3050` (or any port number you like) to make the server
-% accessible from all network interfaces.
-
-:- initialization(run_swish, main).
-
-run_swish :-
-    set_prolog_flag(toplevel_goal, prolog), % run interactively
-    current_prolog_flag(argv, Argv),
-    argv_options(Argv, _, Options),
-    option(port(Port), Options, 3050),
-    server(localhost:Port).
-
+WARNING: If your SWISH server is running  behind a firewall this implies
+a SWISH user can peek around  in   the  network  behind the firewall. In
+addition to benign contacting other Pengine   servers,  this can also be
+used to try and  open  arbitrary  ports   and  undisclose  some  of your
+internal network topology.
+*/

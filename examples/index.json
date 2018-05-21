@@ -1,5 +1,3 @@
-// list of examples, represented as a JSON list
-
 [ { "file":"trill/examples_trill.swinb",	"title":"TRILL example programs" },
   { "file":"examples.swinb",	     "title":"Example programs" },
   { "file":"prolog_tutorials.swinb", "title":"Prolog tutorials" },

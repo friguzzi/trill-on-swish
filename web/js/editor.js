@@ -662,7 +662,7 @@ define([ "cm/lib/codemirror",
 	iframe.contentWindow.print();
       }
 
-      $.ajax({ url: config.http.locations.swish+"js/codemirror/theme/prolog.css", //+"css/print.css"
+      $.ajax({ url: config.http.locations.swish+"js/codemirror/theme/prolog.css",
 	       dataType: "text",
 	       success: function(data) {
 		 printWithIframe($.el.div($.el.style(data),
@@ -757,7 +757,7 @@ define([ "cm/lib/codemirror",
      */
     refreshHighlight: function() {
       var data = this.data(pluginName);
-      //data.cm.serverAssistedHighlight(true);
+      data.cm.serverAssistedHighlight(true);
       return this;
     },
 

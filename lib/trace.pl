@@ -590,8 +590,8 @@ set_file_breakpoints(_Pengine, PFile, Text, Dict) :-
 set_pengine_breakpoint(Owner, File, Text, Line) :-
 	debug(trace(break), 'Try break at ~q:~d', [File, Line]),
 	line_start(Line, Text, Char),
-	(   set_breakpoint(Owner, File, Line, Char, Break)
-	->  !, debug(trace(break), 'Created breakpoint ~p', [Break])
+	(   set_breakpoint(Owner, File, Line, Char, _0Break)
+	->  !, debug(trace(break), 'Created breakpoint ~p', [_0Break])
 	;   print_message(warning, breakpoint(failed(File, Line, 0)))
 	).
 
@@ -684,6 +684,9 @@ prolog_clause:open_source(File, Stream) :-
 	user:prolog_exception_hook/4,
 	installed/1.
 
+:- volatile
+	installed/1.
+
 exception_hook(Ex, Ex, _Frame, Catcher) :-
 	Catcher \== none,
 	Catcher \== 'C',
@@ -710,7 +713,7 @@ install_exception_hook :-
 			exception_hook(Ex, Out, Frame, Catcher)), Ref),
 	assert(installed(Ref)).
 
-:- install_exception_hook.
+:- initialization install_exception_hook.
 
 
 		 /*******************************

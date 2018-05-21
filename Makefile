@@ -38,9 +38,6 @@ css::
 js::
 	@$(MAKE) -C web/js
 
-src::
-	@$(MAKE) -C web/js src
-
 clean::
 	@$(MAKE) -C web/css clean
 	@$(MAKE) -C web/js clean

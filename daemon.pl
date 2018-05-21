@@ -1,6 +1,6 @@
 #!/usr/bin/env swipl
 
-:- module(trill_on_swish_daemon, []).
+:- module(swish_daemon, []).
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Run
@@ -41,9 +41,6 @@ Run
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
 */
 
 :- use_module(library(http/http_unix_daemon)).
@@ -82,4 +79,4 @@ user:file_search_path(swish, SwishDir) :-
 	source_file(swish_daemon, ThisFile),
 	file_directory_name(ThisFile, SwishDir).
 
-:- [swish(trill_on_swish)].
+:- [swish(swish)].

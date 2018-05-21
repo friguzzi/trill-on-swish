@@ -3,8 +3,8 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2017, VU University Amsterdam
-			      CWI Amsterdam
+    Copyright (C): 2018, VU University Amsterdam
+			 CWI Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -33,30 +33,14 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-:- use_module(library(main)).
-:- use_module(library(option)).
-:- use_module(server).
+:- module(swish_config_landing, []).
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-Usage:
+/** <module> SWISH landing page
 
-    swipl run.pl [--port=Port]
+Configure the initial page shown to a new user.
+*/
 
-Simple start script for running SWISH  in an interactive Prolog session.
-This version is intended for development  and testing purposes. Checkout
-daemon.pl if to deploy SWISH as a server
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+:- multifile swish_config:config/2.
 
-% Using `localhost:Port`, we only bind to localhost interface!
-% Use plain `3050` (or any port number you like) to make the server
-% accessible from all network interfaces.
-
-:- initialization(run_swish, main).
-
-run_swish :-
-    set_prolog_flag(toplevel_goal, prolog), % run interactively
-    current_prolog_flag(argv, Argv),
-    argv_options(Argv, _, Options),
-    option(port(Port), Options, 3050),
-    server(localhost:Port).
-
+% Default search when the user opens a new tab
+swish_config:config(default_query,	'tag:"landing"').
