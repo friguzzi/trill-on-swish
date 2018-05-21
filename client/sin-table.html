@@ -18,12 +18,12 @@
 <p>
 The table below is filled by running a query against the main SWISH
 server at <a
-href="https://swish.swi-prolog.org">https://swish.swi-prolog.org</a>,
+href="http://trill-sw.eu">http://trill-sw.eu</a>,
 using the saved script <a
-href="https://swish.swi-prolog.org/p/sin_table.pl">sin_table.pl</a>.  Note that this
+href="http://trill-sw.eu/p/sin_table.pl">sin_table.pl</a>.  Note that this
 example illustrates that you can write interactive web applications
-against one or more Pengine enabled Prolog servers without having
-direct access to Prolog.
+against one or more Pengine enabled Prolog/TRILL servers without having
+direct access to Prolog/TRILL.
 
 <table id="sin">
 <tr><th>X<th>Y</tr>
@@ -42,7 +42,7 @@ and ask for more results if there are more available.
 */
 
 $(function() {
-  new Pengine({ server: "https://swish.swi-prolog.org/pengine",
+  new Pengine({ server: "http://trill-sw.eu/pengine",
 		ask: "sin_table(X,Y)",
 		chunk: 1000,
 		application: "swish",
