@@ -47,6 +47,7 @@
 :- use_module(library(http/http_host)).
 :- use_module(library(http/http_wrapper)).
 :- use_module(library(http/http_header)).
+:- use_module(library(http/html_write)).
 :- use_module(library(http/json)).
 :- use_module(library(base64)).
 :- use_module(library(utf8)).
@@ -78,7 +79,8 @@ Using this module requires the user to define two _hooks_:
 
 :- multifile
 	server_attribute/3,		% +ServerID, +Attribute, -Value
-	login/3.			% +Request, +ServerID, +TokenInfo
+	login/3,			% +Request, +ServerID, +TokenInfo
+	login_failed/2.			% +Request, +Message
 
 :- multifile http:location/3.
 :- dynamic   http:location/3.
@@ -187,6 +189,7 @@ oauth2_redirect_uri(ServerID, URI) :-
 	server_attr(ServerID, client_id,	      ClientID),
 	server_attr(ServerID, scope,		      Scope),
 
+	claims_attrs(ServerID, ClaimAttrs),
 	anti_forgery_state(AntiForgery),
 	get_time(Now),
 	asserta(forgery_state(AntiForgery, ServerID, RedirectURI, Now)),
@@ -197,8 +200,15 @@ oauth2_redirect_uri(ServerID, URI) :-
 		     redirect_uri(RedirectURI),
 		     scope(Scope),
 		     state(AntiForgery)
+		   | ClaimAttrs
 		   ], URI).
 
+
+claims_attrs(ServerID, [claims=JSONString]) :-
+	server_attr(ServerID, claims, Dict), !,
+	with_output_to(string(JSONString),
+		       json_write_dict(current_output, Dict)).
+claims_attrs(_, []).
 
 %!	oauth2_reply(+Request, +Options)
 %
@@ -210,14 +220,23 @@ oauth2_redirect_uri(ServerID, URI) :-
 oauth2_reply(Request, Options) :-
 	option(server(ServerID), Options),
 	http_parameters(Request,
-			[ code(AuthCode, [string]),
-			  state(State, [])
+			[ code(AuthCode, [string, optional(true)]),
+			  state(State, [optional(true)]),
+			  error_description(Error, [optional(true)])
 			]),
-	debug(oauth, 'Code: ~p', [AuthCode]),
-	validate_forgery_state(State, _ServerID, _Redirect),
-	debug(oauth, 'State: OK', []),
-	oauth2_token_details(ServerID, AuthCode, TokenInfo),
-	call_login(Request, ServerID, TokenInfo).
+	(   nonvar(AuthCode),
+	    nonvar(State)
+	->  debug(oauth, 'Code: ~p', [AuthCode]),
+	    validate_forgery_state(State, _ServerID, _Redirect),
+	    debug(oauth, 'State: OK', []),
+	    oauth2_token_details(ServerID, AuthCode, TokenInfo),
+	    call_login(Request, ServerID, TokenInfo)
+	;   nonvar(Error)
+	->  call_login_failed(Request, Error)
+	;   var(AuthCode)
+	->  existence_error(http_parameter, code)
+	;   existence_error(http_parameter, state)
+	).
 
 %!	login(+Request, +ServerID, +TokenInfo) is semidet.
 %
@@ -238,7 +257,8 @@ oauth2_reply(Request, Options) :-
 %	@arg UserInfo is a dict containing information about the user.
 
 call_login(Request, ServerID, TokenInfo) :-
-	login(Request, ServerID, TokenInfo), !.
+	login(Request, ServerID, TokenInfo),
+	!.
 call_login(_Request, ServerID, TokenInfo) :-
 	oauth2_user_info(ServerID, TokenInfo, UserInfo),
 	format('Content-type: text/plain~n~n'),
@@ -248,6 +268,16 @@ call_login(_Request, ServerID, TokenInfo) :-
 	format('~nUser info: ~n'),
 	print_term(UserInfo, [output(current_output)]).
 
+call_login_failed(_Request, Error) :-
+	login_failed(_Request, Error),
+	!.
+call_login_failed(_Request, Error) :-
+	reply_html_page(
+	    title('Login failed'),
+	    h1('Login failed'),
+	    p(['ERROR: ', Error])).
+
+
 %!	oauth2_validate_access_token(+ServerID, +AccessToken, -Info:dict)
 %
 %	Validates the AccessToken with  Unity   (_implicit_  or _hybrid_
@@ -256,8 +286,9 @@ call_login(_Request, ServerID, TokenInfo) :-
 oauth2_validate_access_token(ServerID, AuthCode, Info) :-
 	server_attr(ServerID, url,		  ServerURI),
 	server_attr(ServerID, tokeninfo_endpoint, Path),
+	claims_attrs(ServerID, ClaimAttrs),
 
-	uri_extend(ServerURI, Path, [], URI),
+	uri_extend(ServerURI, Path, ClaimAttrs, URI),
 	http_options(ServerID, Options),
 
 	setup_call_cleanup(
@@ -287,9 +318,11 @@ oauth2_user_info(ServerID, TokenInfo, UserInfo) :-
 user_info(ServerID, AccessToken, Info) :-
 	server_attr(ServerID, url,	     ServerURI),
 	server_attr(ServerID, userinfo_endpoint, Path),
+	claims_attrs(ServerID, ClaimAttrs),
 
-	uri_extend(ServerURI, Path, [], URI),
+	uri_extend(ServerURI, Path, ClaimAttrs, URI),
 	http_options(ServerID, Options),
+	debug(oauth, 'Request user info using ~q', [URI]),
 
 	setup_call_cleanup(
 	    http_open(URI, In,
@@ -312,6 +345,7 @@ oauth2_token_details(ServerID, AuthCode, Dict) :-
 	server_attr(ServerID, redirect_uri,   RedirectURI),
 	server_attr(ServerID, client_id,      ClientID),
 	server_attr(ServerID, client_secret,  ClientSecret),
+	server_attr(ServerID, scope,	      Scope),
 
 	uri_extend(ServerURI, Path, [], URI),
 	http_options(ServerID, Options),
@@ -320,7 +354,7 @@ oauth2_token_details(ServerID, AuthCode, Dict) :-
 	    http_open(URI, In,
 		      [ authorization(basic(ClientID, ClientSecret)),
 			post(form([ grant_type(authorization_code),
-				    scope(profile),
+				    scope(Scope),
 				    code(AuthCode),
 				    redirect_uri(RedirectURI),
 				    client_id(ClientID),
@@ -373,8 +407,11 @@ convert_field(Field, Field).
 server_attr(ServerID, Attr, Value) :-
 	(   server_attribute(ServerID, Attr, Value0)
 	->  Value = Value0
-	;   default_attribute(Attr, ServerID, Value0)
+	;   debug(oauth, 'No endpoint for ~q; trying defaults', [Attr]),
+	    default_attribute(Attr, ServerID, Value0)
 	->  Value = Value0
+	;   optional_attr(Attr)
+	->  fail
 	;   existence_error(oauth2_server_attribute, Attr)
 	).
 
@@ -397,6 +434,13 @@ default_attribute(url, _, _) :- !,
 default_attribute(Attribute, ServerID, URI) :-
 	oauth2_discover(ServerID, Dict),
 	URI = Dict.get(Attribute).
+
+%!	optional_attr(+Attr) is semidet.
+%
+%	True when Attr is optional, i.e., it is ok to fail.
+
+optional_attr(claims).
+
 
 %!	http_options(+ServerID, -Options:list) is det.
 %
@@ -451,10 +495,20 @@ discover_data(ServerID, Expires, Dict) :-
 	http_options(ServerID, Options),
 
 	http_open(DiscoverURL, In,
-                  [ header(expires, Expires)
+                  [ header(expires, Expires),
+		    status_code(Status)
 		  | Options
 		  ]),
-	json_read_dict(In, Dict),
+	(   Status == 200
+	->  json_read_dict(In, Dict)
+	;   debug(oauth, 'Got status ~p from discovery endpoint; ignoring',
+		  [Status]),
+	    Dict = _{},
+	    setup_call_cleanup(
+		open_null_stream(Out),
+		copy_stream_data(In, Out),
+		close(Out))
+	),
 	close(In).
 
 discovered_data(URL, Data) :-
@@ -467,6 +521,7 @@ discovered_data(URL, Data) :-
 	).
 
 cache_data(URL, Expires, Data) :-
+	atomic(Expires),
 	parse_time(Expires, _Format, Stamp), !,
 	asserta(discovered_data(URL, Stamp, Data)).
 cache_data(_, _, _).

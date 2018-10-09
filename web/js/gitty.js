@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2016, VU University Amsterdam
+    Copyright (C): 2014-2018, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -185,7 +185,7 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
     /**
      * Fill the commit log tab
      */
-    showHistory: function() {
+    showHistory: function(options) {
       return this.each(function() {
 	var elem = $(this);
 	var data = elem.data(pluginName);
@@ -196,8 +196,13 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 	if ( data.history )
 	  return;
 
+	options = options||{};
+	if ( !options.depth )
+	  options.depth = 100;
+
 	tab.html("");
-	tab.append($.el.table(
+	tab.append($.el.div({class:"gitty-history-table"},
+			    $.el.table(
 	  { class:"table table-striped table-condensed gitty-history",
 	    'data-click-to-select':true,
 	    'data-single-select':true
@@ -206,7 +211,7 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 		  $.el.th("Date"),
 		  $.el.th("User"),
 		  $.el.th("Changed")),
-	  $.el.tbody()));
+	  $.el.tbody())));
 
 	playButton = form.widgets.glyphIconButton(
            "play",
@@ -237,7 +242,7 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 		 contentType: "application/json",
 		 type: "GET",
 		 data: { format: "history",
-		         depth: 6,		/* might skip last */
+		         depth: options.depth,	/* might skip last */
 		         to: data.commit
 		       },
 		 success: function(reply) {
@@ -254,10 +259,11 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
     /**
      * Fill the history table
      */
-    fillHistoryTable: function(history) {
+    fillHistoryTable: function(historyobj) {
       var gitty = this;
       var data  = this.data(pluginName);
       var table = this.find(".table.gitty-history tbody");
+      var history = historyobj.history ? historyobj.history : historyobj;
 
       for(var i=0; i<history.length; i++) {
 	var h = history[i];
@@ -290,6 +296,13 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 	return elem;
       }
 
+      if ( historyobj.skipped ) {
+	table.append($.el.tr(
+	  $.el.td({class:"skipped-commits",
+	           colspan:4},
+		  "(Skipped "+historyobj.skipped+" commits)")));
+      }
+
       for(var i=0; i<history.length; i++) {
 	var h = history[i];
 	var tr;
@@ -303,8 +316,11 @@ define([ "jquery", "config", "form", "modal", "laconic" ],
 	  attrs.class = "success";
 
 	tr = $.el.tr(attrs,
-		     $.el.td({class:"commit-message"},
-			     h.commit_message||"No comment"),
+		     h.commit_message ?
+		       $.el.td({class:"commit-message"},
+			       h.commit_message) :
+		       $.el.td({class:"commit-message no-comment"},
+			       "No comment"),
 		     $.el.td({class:"date"},
 			     new Date(h.time*1000).toLocaleString()),
 		     $.el.td({class:"author"},

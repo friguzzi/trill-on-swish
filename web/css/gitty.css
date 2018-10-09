@@ -19,3 +19,12 @@ pre.udiff {
   max-height: 30em;
   overflow-y: auto;
 }
+
+td.commit-message.no-comment { color: #ccc; }
+td.skipped-commits { font-style: italic; text-align: center; color: #888}
+
+div.gitty-history-table {
+  width: 100%;
+  max-height: 30em;
+  overflow-y: auto;
+}

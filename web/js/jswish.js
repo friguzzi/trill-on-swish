@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2017, VU University Amsterdam
+    Copyright (C): 2014-2018, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -66,6 +66,7 @@ define([ "jquery",
 	 "laconic",
 	 "login",
 	 "chatroom",
+	 "version",
 	 "d3",
 	 "c3",
 	 "svg-pan-zoom"
@@ -217,14 +218,14 @@ preferences.setInform("preserve-state", ".unloadable");
 	    runner:   data.runner,
 	    editor:   editor[0]
 	  });
+	elem.data(pluginName, data);	/* store with element */
+	data.restoring = true;
 
 	$(".notebook").notebook();
 
 	if ( options.show_beware &&
 	     !(swish.option && swish.option.show_beware == false) )
 	  menuBroadcast("help", {file:"beware.html", notagain:"beware"});
-
-	elem.data(pluginName, data);	/* store with element */
 
 	if ( window.location.href.indexOf("&togetherjs=") > 0 )
 	  elem.swish('collaborate');
@@ -253,7 +254,12 @@ preferences.setInform("preserve-state", ".unloadable");
 	}, 60000);
 
 	if ( elem[pluginName]('preserve_state') )
-	  $(".unloadable").trigger("restore");
+	{ $(".unloadable").trigger("restore");
+	}
+
+	delete data.restoring;
+	elem[pluginName]('runDelayedRestore');
+	$().version('checkForUpdates');
       });
     },
 
@@ -267,8 +273,47 @@ preferences.setInform("preserve-state", ".unloadable");
       if ( preferences.getVal("preserve-state") == false )
 	return false;
 
+      function getQueryVariable(variable) {
+	var query = window.location.search.substring(1);
+	var vars = query.split('&');
+	for (var i = 0; i < vars.length; i++) {
+	  var pair = vars[i].split('=');
+	  if (decodeURIComponent(pair[0]) == variable) {
+	    return decodeURIComponent(pair[1]);
+	  }
+	}
+      }
+
+      if ( getQueryVariable("restore") == "false" )
+	return false;
+
       return true;
     },
+
+    afterRestore: function(f) {
+      var data = this.data("swish");
+
+      if ( data.after_restore )
+	data.after_restore.push(f);
+      else
+	data.after_restore = [f];
+
+      return this;
+    },
+
+    runDelayedRestore: function() {
+      var swish = this;
+      var data = this.data("swish");
+
+      if ( data.after_restore ) {
+	var f;
+	while( (f = data.after_restore.pop()) )
+	  f.call(swish);
+      }
+
+      return this;
+    },
+
 
     /**
      * Trigger a global event in SWISH.  Currently defined events are:
@@ -603,13 +648,29 @@ preferences.setInform("preserve-state", ".unloadable");
      * Make DOM element fullscreen
      * @param {jQuery} node is the element to turn into fullscreen.
      * Currently this only works for a notebook.
-     * @patam {jQuery} main is the node getting the `fullscreen
+     * @param {jQuery} main is the node getting the `fullscreen
      * hamburger` class.
+     * @param {Boolean} [hide_navbar] if `true`, also hide
+     * the navigation bar.
      */
-    fullscreen: function(node, main) {
+    fullscreen: function(node, main, hide_navbar) {
+      var swish = this;
       var content = this.find(".container.tile-top");
+      var swishdata = this.data("swish");
+
+      if ( swishdata.restoring ) {
+	this[pluginName]('afterRestore', function() {
+	  swish.swish('fullscreen', node, main, hide_navbar);
+	});
+	return this;
+      }
 
       if ( !content.hasClass("fullscreen") ) {
+	if ( hide_navbar == true ||
+	     ( config.swish.fullscreen &&
+	       config.swish.fullscreen.hide_navbar == true ) )
+	  this[pluginName]('showNavbar', false);
+
 	var data = this.data("fullscreen");
 	if ( !data ) {
 	  data = {};
@@ -641,6 +702,8 @@ preferences.setInform("preserve-state", ".unloadable");
 	var node = $(content.children()[1]);
 	var main = data.fullscreen_main;
 
+	this[pluginName]('showNavbar', true);
+
 	content.removeClass("fullscreen");
 	$(data.fullscreen_main).removeClass("fullscreen hamburger");
 	$(data.fullscreen_origin).append(node);
@@ -671,6 +734,19 @@ preferences.setInform("preserve-state", ".unloadable");
     },
 
     /**
+     * Control visibility of the navbar
+     * @param {Boolean} show controls whether or not the navbar
+     * is visible.
+     */
+    showNavbar: function(show) {
+      if ( show ) {
+	$("nav.navbar").attr("style", "display:block !important")
+      } else {
+	$("nav.navbar").attr("style", "display:none !important")
+      }
+    },
+
+    /**
      * Open TogetherJS after lazy loading.
      */
     collaborate: function() {
@@ -682,6 +758,18 @@ preferences.setInform("preserve-state", ".unloadable");
 		TogetherJS(elem);
 	      });
       return this;
+    },
+
+    /**
+     * Show showUpdates
+     */
+    showUpdates: function(options) {
+      modal.show({
+        title: options.title || "Recent SWISH updates",
+	body: function() {
+	  this.version(options);
+	}
+      });
     }
   }; // methods
 

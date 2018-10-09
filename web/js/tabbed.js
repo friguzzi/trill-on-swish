@@ -123,14 +123,14 @@ tabbed.tabTypes.permalink = {
 	  var state;
 
 	  if ( ev.target == elem[0] ) {
-	    // TBD: How to act with already open documents?
 	    try {
 	      var str = localStorage.getItem("tabs");
-	      var state = JSON.parse(str);
+	      if ( str )
+		state = JSON.parse(str);
 	    } catch(err) {
 	    }
 
-	    if ( typeof(state) == "object" ) {
+	    if ( state && typeof(state) == "object" ) {
 	      elem[pluginName]('setState', state);
 	    }
 	  }
@@ -251,14 +251,15 @@ tabbed.tabTypes.permalink = {
 
     setState: function(state) {
       var elem = this;
+      var fromURL = this.find(".storage").length > 0;
 
       for(var i=0; i<state.tabs.length; i++) {
 	var data = state.tabs[i];
-	this[pluginName]('restoreTab', data);
+	this[pluginName]('restoreTab', data, fromURL);
       }
     },
 
-    restoreTab: function(data) {
+    restoreTab: function(data, fromURL) {
       var elem = this;
       var tab;
 
@@ -267,6 +268,7 @@ tabbed.tabTypes.permalink = {
 
       var existing = this.find(".storage").storage('match', data);
       if ( existing ) {
+	existing.data('storage').url = data.url;
 	tab = existing.closest(".tab-pane");
 	elem.tabbed('move_right', tab);
       } else
@@ -300,7 +302,8 @@ tabbed.tabTypes.permalink = {
 	  newtab = select.first().closest(".tab-pane");
 	  newtab.html(restoring);
 	} else {
-	  newtab = elem.tabbed('newTab', $(restoring), Boolean(data.active));
+	  var active = (!fromURL && Boolean(data.active));
+	  newtab = elem.tabbed('newTab', $(restoring), active);
 	}
 
 	if ( data.st_type == "gitty" ) {
@@ -317,7 +320,7 @@ tabbed.tabTypes.permalink = {
 		       elem.tabbed('removeTab', tab.attr("id"));
 		     }
 		     restoreData(newtab, data);
-		     if ( newtab.hasClass("active") )
+		     if ( !fromURL && newtab.hasClass("active") )
 		       newtab.find(".storage").storage("activate");
 		   },
 		   error: function(jqXHR) {
@@ -349,7 +352,7 @@ tabbed.tabTypes.permalink = {
 		       elem.tabbed('removeTab', newtab.attr("id"));
 		     }
 		     restoreData(newtab, data);
-		     if ( newtab.hasClass("active") )
+		     if ( !fromURL && newtab.hasClass("active") )
 		       newtab.find(".storage").storage("activate");
 		   },
 		   error: function(jqXHR) {
@@ -417,11 +420,15 @@ tabbed.tabTypes.permalink = {
       { var name = (src.meta && src.meta.name) ? src.meta.name : src.url;
 	var tabType = tabbed.type(name);
 	var content = $.el.div();
+	var options = {};
+
+	if ( src.noHistory )
+	  options.noHistory = true;
 
 	tab.html("");
 	tab.tabbed('title', tabType.label, tabType.dataType);
 	tab.append(content);
-	tabType.create(content);
+	tabType.create(content, options);
 	$(content).storage('setSource', src);
 	return true;
       }
@@ -505,7 +512,7 @@ tabbed.tabTypes.permalink = {
     addTab: function(content, options) {
       var ul  = this.tabbed('navTabs');
       var id  = genId();
-      var tab =	wrapInTab(content, id, options.close);
+      var tab =	wrapInTab(content, id, options.active);
 
       this.tabbed('navContent').append(tab);
 

@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2016-2017, VU University Amsterdam
+    Copyright (C): 2016-2018, VU University Amsterdam
 			      CWI Amsterdam
     All rights reserved.
 
@@ -94,6 +94,7 @@ browsers which in turn may have multiple SWISH windows opened.
 :- multifile swish_config:config/2.
 
 swish_config:config(hangout, 'Hangout.swinb').
+swish_config:config(avatars, svg).		% or 'noble'
 
 
 		 /*******************************
@@ -389,9 +390,18 @@ do_gc_visitors :-
 
 reclaim_visitor(WSID) :-
 	debug(chat(gc), 'Reclaiming idle ~p', [WSID]),
-	retractall(visitor_session(WSID, _Session, _Token)),
+	reclaim_visitor_session(WSID),
 	retractall(visitor_status(WSID, _Status)),
 	unsubscribe(WSID, _).
+
+reclaim_visitor_session(WSID) :-
+	forall(retract(visitor_session(WSID, Session, _Token)),
+		       http_session_retractall(websocket(_, _), Session)).
+
+:- if(\+current_predicate(http_session_retractall/2)).
+http_session_retractall(Data, Session) :-
+	retractall(http_session:session_data(Session, Data)).
+:- endif.
 
 
 %%	create_session_user(+Session, -User, -UserData, +Options)
@@ -749,6 +759,11 @@ avatar_property(_Avatar, Source, avatar_source, Source).
 %	HTTP handler for Noble  Avatar   images.  Using  create_avatar/2
 %	re-creates avatars from the file name,  so we can safely discard
 %	the avatar file store.
+%
+%	Not really. A new user gets a new   avatar  and this is based on
+%	whether or not the file exists. Probably we should maintain a db
+%	of handed out avatars and their last-use   time stamp. How to do
+%	that? Current swish stats: 400K avatars, 3.2Gb data.
 
 reply_avatar(Request) :-
 	option(path_info(Local), Request),
@@ -765,9 +780,16 @@ reply_avatar(Request) :-
 noble_avatar_url(HREF, Options) :-
 	option(avatar(HREF), Options), !.
 noble_avatar_url(HREF, _Options) :-
+	swish_config:config(avatars, noble),
+	!,
 	noble_avatar(_Gender, Path, true),
 	file_base_name(Path, File),
 	http_absolute_location(swish(avatar/File), HREF, []).
+noble_avatar_url(HREF, _Options) :-
+	A is random(0x1FFFFF+1),
+	http_absolute_location(icons('avatar.svg'), HREF0, []),
+	format(atom(HREF), '~w#~d', [HREF0, A]).
+
 
 
 		 /*******************************

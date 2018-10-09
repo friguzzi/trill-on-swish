@@ -312,9 +312,11 @@ define([ "cm/lib/codemirror",
 	      data.traceMark = null;
 	    }
 	  });
-	  elem.on('addExample', function(ev, query) {
-	    elem.prologEditor('addExample', query);
-	  });
+	  if ( options.save ) {		/* not for notebook cells */
+	    elem.on('addExample', function(ev, query) {
+	      elem.prologEditor('addExample', query);
+	    });
+	  }
 	  data.cm.on("gutterClick", function(cm, n) {
 	    var info = cm.lineInfo(n);
 
@@ -574,7 +576,7 @@ define([ "cm/lib/codemirror",
 	  }
 	}
 
-	if ( data.role == "source" ) {
+	if ( data.role == "source" && !source.noHistory ) {
 	  $(".swish-event-receiver").trigger("program-loaded",
 					     { editor: this,
 					       query: source.query
@@ -588,8 +590,10 @@ define([ "cm/lib/codemirror",
      * Advertise this editor as the current editor.  This is the
      * one used by the default query editor.
      */
-    makeCurrent: function() {
-      $(".swish-event-receiver").trigger("current-program", this);
+    makeCurrent: function(options) {
+      if ( !options || !options.noHistory ) {
+	$(".swish-event-receiver").trigger("current-program", this);
+      }
       return this;
     },
 
@@ -1162,11 +1166,13 @@ define([ "cm/lib/codemirror",
 	query = query.split("\n").join("\n   ");
 	cm.setSelection({line:end[0].line-1, ch:0});
 	cm.replaceSelection("?- "+query+"\n");
-      } else
-      { cm.setSelection({line:cm.lastLine(), ch:0});
-	cm.replaceSelection("/** <examples>\n" +
-			    "?- "+query+"\n" +
-			    "*/\n");
+      } else				/* add to the end of the file */
+      { var lineno = cm.lastLine();
+	var line   = cm.getLine(lineno);
+
+	cm.replaceRange("\n\n/** <examples>\n" +
+		        "?- "+query+"\n" +
+			"*/\n", {line:lineno, ch:line.length});
       }
 
       return this;
@@ -1496,7 +1502,7 @@ define([ "cm/lib/codemirror",
     create: function(dom, options) {
       $(dom).addClass("prolog-editor")
             .prologEditor($.extend({save:true}, options))
-	    .prologEditor('makeCurrent');
+	    .prologEditor('makeCurrent', options);
     }
   };
 

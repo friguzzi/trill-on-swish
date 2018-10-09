@@ -251,12 +251,21 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	  var data = elem.data(pluginName);
 	  var file = data.file||data.url;
 	  var type;
+	  var title;
 
 	  if ( !file || !(type = tabbed.type(file)) )
 	    type = tabbed.tabTypes[data.typeName];
 
-	  var title = (filebase(utils.basename(file)) ||
-		       type.label);
+	  if ( file ) {
+	    title = filebase(utils.basename(file));
+	    if ( data.meta &&
+		 data.meta.symbolic != "HEAD" &&
+	         data.meta.commit ) {
+	      title += "@" + data.meta.commit.substring(0,7);
+	    }
+	  } else {
+	    title = type.label;
+	  }
 
 	  if ( docid && data.chats )
 	    data.chats.docid = docid;
@@ -488,8 +497,12 @@ define([ "jquery", "config", "modal", "form", "gitty",
       { modify = ["any", "login", "owner"];
       }
 
-      canmodify = ( profile.identity == meta.identity ||
-		    (profile.identity && !(meta.identity||meta.user)) );
+      if ( profile.identity ) {
+	canmodify = (profile.identity == meta.identity ||
+		     !(meta.identity||meta.user));
+      } else {
+	canmodify = false;
+      }
 
       options = options||{};
 
@@ -592,7 +605,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	history.push({url: data.url, reason: 'activate'});
       }
 
-      return this
+      return this;
     },
 
     /**
@@ -1142,7 +1155,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
      */
     chatroom_size: function() {
       var tab = this.closest(".tab-pane");
-      var cr = tab.find(".chatroom");
+      var cr = tab.find(".chatroom").closest(".pane-wrapper");
       if ( cr.length > 0 ) {
 	var h = tab.height();
 	if ( h == 0 )

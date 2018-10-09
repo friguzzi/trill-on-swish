@@ -145,11 +145,12 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
 	    // TBD: not save in this case?
 	    try {
 	      var str = localStorage.getItem("query");
-	      state = JSON.parse(str);
+	      if ( str )
+		state = JSON.parse(str);
 	    } catch(err) {
 	    }
 
-	    if ( typeof(state) == "object" ) {
+	    if ( state && typeof(state) == "object" ) {
 	      elem[pluginName]('setState', state);
 	    }
 	  }
@@ -180,7 +181,7 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
 	  var global = editor.parents(".swish").swish('examples', true)||[];
 
 	  if ( $.isArray(global) )
-	  exl.concat(global);
+	    exl.concat(global);
 
 	  return exl;
 	};
@@ -468,18 +469,22 @@ define([ "jquery", "config", "preferences", "cm/lib/codemirror", "modal",
     var el = dropup("examples", "Examples", options);
     var ul = $(el).find("ul");
 
-    function updateExamples(options) {
-      var list = options.examples();
+    function updateExamples(ev) {
+      var qe   = $(ev.target).closest(".prolog-query-editor");
+      var data = qe.data(pluginName);
 
-      if ( $.isArray(list) )
-	Q(el).queryEditor('setExamples', list, true);
+      if ( data && typeof(data.examples) == "function" ) {
+	var list = data.examples();
+
+	if ( $.isArray(list) )
+	  Q(el).queryEditor('setExamples', list, true);
+      }
     }
 
     if ( typeof(options.examples) == "function" ) {
-      var copy = $.extend({}, options);
       $(el).mousedown(function(ev) {
 			if ( ev.which == 1 ) {
-			  updateExamples(copy);
+			  updateExamples(ev);
 			}
 		      });
     } else if ( options.examples ) {
