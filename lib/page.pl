@@ -421,14 +421,6 @@ updates(_Options) -->
 swish_title(Options) -->
 	swish_config:title(Options), !.
 swish_title(_Options) -->
-%	    [ title('TRILL on SWISH -- Probabilistic Reasoner for Description Logics in Prolog'),
-%	      link([ rel('shortcut icon'),
-%		     href('/icons/rb_favicon.ico')
-%		   ]),
-%	      link([ rel('apple-touch-icon'),
-%		     href('/icons/trill-touch-icon.png')
-%		   ])
-%	    ],
 	html([ title('TRILL on SWISH -- Probabilistic Reasoner for Description Logics in Prolog'),
 	       link([ rel('shortcut icon'),
 		      href('/icons/rb_favicon.ico')

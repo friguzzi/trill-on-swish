@@ -34,7 +34,7 @@
 
     Changes by:    Riccardo Zese
     E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2016, University of Ferrara
+    Copyright:	   2014-2018, University of Ferrara
 */
 
 /**
@@ -1128,7 +1128,7 @@ define([ "cm/lib/codemirror",
 	      var ex = exl[j].replace(/^ *\?-\s*/, "")
 			     .replace(/\s*$/, "")
 			     .replace(/\\'/g, "'")
-				 .replace(/\\"/g, "'");//esempi in xml
+				 .replace(/\\"/g, "'"); //esempi in xml
 	      exlist.push(ex);
 	    }
 	  }
