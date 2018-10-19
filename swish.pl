@@ -265,6 +265,7 @@ pengines:prepare_module(Module, swish, _Options) :-
                  /*******************************
                  *         ADD COLOURING        *
                  *******************************/
+/*
 :- multifile prolog_colour:term_colours/2.
 
 prolog_colour:term_colours((:- trill),
@@ -287,3 +288,5 @@ prolog_colour:style(olwrdf_predicate,                  [colour(firebrick),bold(t
 
 swish_highlight:style(trill_directive,  trill_directive, [text, base(atom)]).
 swish_highlight:style(olwrdf_predicate, olwrdf_predicate, [text, base(symbol)]).
+
+*/

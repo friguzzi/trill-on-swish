@@ -31,10 +31,6 @@
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2018, University of Ferrara
 */
 
 /**
@@ -1126,9 +1122,7 @@ define([ "cm/lib/codemirror",
 	  if ( exl ) {
 	    for(var j=0; j<exl.length; j++) {
 	      var ex = exl[j].replace(/^ *\?-\s*/, "")
-			     .replace(/\s*$/, "")
-			     .replace(/\\'/g, "'")
-				 .replace(/\\"/g, "'"); //esempi in xml
+			     .replace(/\s*$/, "");
 	      exlist.push(ex);
 	    }
 	  }

@@ -344,6 +344,7 @@ m_same_name_arity(H1, H2) :-
 %
 %	Create a template for the TRILL queries.
 
+
 trill_template([     json{displayText:  "prob_instanceOf(+Class, +Individual, -Prob).",
  			  type:         "directive",
 			  template:     "prob_instanceOf(${Class},${Individual},Prob).",
