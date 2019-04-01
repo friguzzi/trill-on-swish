@@ -59,6 +59,7 @@ define([ "jquery", "config", "utils", "laconic" ],
 
 	if ( config.http.locations.versions ) {
 	  elem.append($.el.div({class:"version"},
+		  	       $.el.div({class:"v-trill"}),
 			       $.el.div({class:"v-swish"}),
 			       $.el.div({class:"v-changelog"},
 					$.el.table()),
@@ -88,17 +89,28 @@ define([ "jquery", "config", "utils", "laconic" ],
 		}
 
 		var swishversion;
+		var trillversion;
 
 		if ( elem.hasClass("v-compact") )
+		{
 		  swishversion = $.el.a({title: "View recent changes"},
 					data.swish.version);
+		  trillversion = $.el.a({title: "View recent changes"},
+					data.trill.gitversion.version);
+		}
 		else
+	 	{
 		  swishversion = $.el.span(data.swish.version);
+		  trillversion = $.el.span(data.trill.gitversion.version);
+		}
+		elem.find(".v-trill").
+		    append($.el.span($.el.a({href:"https://github.com/rzese/trill"}, "trill")," version "+
+				      data.trill.version+"-",trillversion," "));
 
 		elem.find(".v-swish")
-		    .append($.el.span($.el.a({class:"v-product",
-					      href:"https://swish.swi-prolog.org"},
-					     "SWISH"),
+		.append($.el.span($.el.a({class:"v-product",
+					      href:"http://trill-sw.eu"},
+					     "TRILL on SWISH"),
 				      " version ",
 				      swishversion));
 		elem.find(".v-prolog")
@@ -116,22 +128,32 @@ define([ "jquery", "config", "utils", "laconic" ],
 		      return false;
 		    }
 		  });
+		  $(trillversion).on("click", function(ev) {
+		    if ( elem.hasClass("v-compact") ) {
+		      elem[pluginName]('versionDetails',{pack:'trill'});
+		      ev.preventDefault();
+		      return false;
+		    }
+		  });
 		}
 	      });
       }
     },
 
-    versionDetails: function() {
+    versionDetails: function(options) {
       var body = this.closest(".modal-body");
 
       if ( body ) {
-	this.closest(".modal-content").find("h2").html("SWISH ChangeLog");
+	if ( options && options.pack )
+	  this.closest(".modal-content").find("h2").html(options.pack+" ChangeLog");
+	else
+	  this.closest(".modal-content").find("h2").html("SWISH ChangeLog");
 
 	this.detach();
 	body.empty();
 	body.append(this);
 	this.removeClass("v-compact");
-	this[pluginName]('changelog');
+	this[pluginName]('changelog',options);
       }
     },
 
@@ -149,6 +171,8 @@ define([ "jquery", "config", "utils", "laconic" ],
       } else {
 	params.last = options.last || 20;
       }
+      if ( options.pack )
+        params.pack = options.pack;
 
       this.find(".v-changelog > table").html("");
       $.get(config.http.locations.changelog,

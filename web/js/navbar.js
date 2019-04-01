@@ -79,21 +79,37 @@ define([ "jquery", "preferences", "form", "laconic" ],
 
 	for(var p in actions) {
 	  if ( actions.hasOwnProperty(p) ) {
-	    elem.navbar('appendDropdown', p);
-	    elem.navbar('populateDropdown', p, actions[p]);
+	    if (actions[p].type == "active") {
+	        elem.navbar('appendActive',p, actions[p]);
+	        // elem.navbar();
+	    } else {
+	        elem.navbar('appendDropdown', p);
+	        elem.navbar('populateDropdown', p, actions[p]);
+	    }
 	  }
 	}
 
 	elem.on("click", "a", function(ev) { runMenu(this, ev); } );
-	$("a#dismisslink").click(function(){ 
-      var el; el=document.getElementById("navbarhelp");
-      el.style.position = "absolute";
-      el.style.left="-9999px"; 
-	  document.getElementById("content").style.height= "calc(100% - 55px)"; 
-	  $(window).trigger('resize');
-	  return false;});
+	$("a#dismisslink").click(function(){ var el; el=document.getElementById("navbarhelp"); el.style.position = "absolute"; el.style.left="-9999px"; 
+	document.getElementById("content").style.height= "calc(100% - 55px)"; 
+	$(window).trigger('resize');
+	return false;});
       });
     },
+
+    appendActive: function(label, option) {
+            var ul = this.children(".nav.navbar-nav");
+            var a = $.el.a(label);
+            $(a).data('action', option.action);
+            var li = $.el.li(
+              {class:"active"}, 
+              a
+              );
+            
+            ul.append(li);
+            return this;
+    },
+
 
     /**
      * @param {String} label Name of new dropdown to add

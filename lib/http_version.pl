@@ -58,11 +58,17 @@ file is not loaded by default for security reasons.
 versions(_Request) :-
     prolog_version_atom(SWIVersion),
     module_version_data(swish, SWISHVersion),
+    module_version_data(trill,TrillGitVersion),
+    pack_property(trill,version(TrillVersion)),
     reply_json_dict(json{ prolog:
                           json{ brand:  "SWI-Prolog",
                                 version: SWIVersion
                               },
-                          swish:SWISHVersion
+                          swish:SWISHVersion,
+			  trill:
+			  json{ version:TrillVersion,
+			     gitversion:TrillGitVersion
+			    }
                         }).
 
 module_version_data(Module, Dict) :-
@@ -153,9 +159,10 @@ changelog(Request) :-
     http_parameters(Request,
                     [ commit(Since, [optional(true)]),
                       last(Count, [default(10)]),
-                      show(Show, [oneof([tagged, all]), default(tagged)])
+                      show(Show, [oneof([tagged, all]), default(tagged)]),
+		      pack(Pack, [default(swish)])
                     ]),
-    git_module_property(swish, directory(Dir)),
+    git_module_property(Pack, directory(Dir)),
     (   nonvar(Since)
     ->  atom_concat(Since, '..', Revisions),
         Options = [ revisions(Revisions) ]

@@ -75,8 +75,12 @@ overview notebooks.
 % make example(File) find the example data
 user:file_search_path(example, swish(examples)).
 user:file_search_path(example, swish(examples/trill)).
+
+user:file_search_path(e, swish(examples)).
+user:file_search_path(e, swish(examples/trill)).
 % make SWISH serve /example/File as example(File).
 swish_config:source_alias(example, [access(read), search('*.{pl,swinb}')]).
+swish_config:source_alias(e, [access(read), search('*.{pl,swinb}')]).
 
 :- http_handler(swish(list_examples),
 		list_examples, [id(swish_examples)]).

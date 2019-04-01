@@ -33,37 +33,11 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-:- use_module(library(main)).
-:- use_module(library(option)).
 :- use_module(server).
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-Usage:
+% Using `localhost:3050`, we only bind to localhost interface!
+% Use plain `3050` (or any port number you like) to make the server
+% accessible from all network interfaces.
 
-    swipl run.pl [--public] [--port=Port]
-
-Simple start script for running SWISH  in an interactive Prolog session.
-This version is intended for development  and testing purposes. Checkout
-daemon.pl if to deploy SWISH as a server.  Options:
-
-  * --port=Port
-    Bind to a the specified port instead of the default 3050.
-  * --public
-    Listen on all networks.  By default SWISH only listens on
-    `localhost`.  Only use this in a *trusted network environent*,
-    e.g., behind a firewall.
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
-:- initialization(run_swish, main).
-
-run_swish :-
-    set_prolog_flag(toplevel_goal, prolog), % run interactively
-    current_prolog_flag(argv, Argv),
-    argv_options(Argv, _, Options),
-    option(port(Port), Options, 3020),
-    (   option(public(true), Options)
-    ->  Address = Port
-    ;   Address = localhost:Port
-    ),
-    server(Address).
-
+%:- initialization server(localhost:3020).
+:- initialization server(3020).

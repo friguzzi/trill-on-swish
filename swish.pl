@@ -76,8 +76,11 @@ setup_versions :-
 	prolog_load_context(directory, Dir),
 	register_git_module(swish,
 			    [ directory(Dir),
-			      home_url('https://github.com/SWI-Prolog/swish')
+			      home_url('https://github.com/friguzzi/trill-on-swish')
 			    ]),
+	pack_property(trill,directory(TrillDir)),
+	register_git_module(trill,[directory(TrillDir),
+	home_url('https://github.com/rzese/trill')]),
 	check_prolog_version(070717).
 
 :- initialization setup_versions.
@@ -245,9 +248,10 @@ swish_config:config(default_query,	'').
 
 pengines:prepare_module(Module, swish, _Options) :-
 	pengines_io:pengine_bind_io_to_html(Module).
-
+%:- set_setting(swish:time_limit, 3600).
 % Additional sandboxing rules.
 :- use_module(lib/flags).
+%:- use_module(lib/logging).
 
 % Libraries that are nice to have in SWISH, but cannot be loaded
 % because they use directives that are considered unsafe.  We load

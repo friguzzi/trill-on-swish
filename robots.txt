@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: http://trill-sw.eu/sitemap.xml
