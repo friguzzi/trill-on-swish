@@ -1,7 +1,79 @@
-[ { "file":"trill/examples_trill.swinb",	"title":"TRILL example programs" },
-  { "file":"examples.swinb",	     "title":"Example programs" },
-  { "file":"prolog_tutorials.swinb", "title":"Prolog tutorials" },
-  { "file":"swish_tutorials.swinb",  "title":"SWISH tutorials" },
-  "--",
-  { "file":"stats.swinb",	     "title":"Usage statistics" }
-]
+{ "comment":
+
+  "This file populates the example menu of SWISH.  The 'menu' list
+   defines the groups inside the menu and their order.  Each group is
+   separated with a divider.  The 'files' section describes the example
+   files and their properties.  Only files that are assigned a group
+   appear in the menu.
+  ",
+
+  "menu":
+  [ { "group": "examples",  "rank":  10000 },
+    { "group": "tutorials", "rank":  20000 },
+    { "group": "admin",     "rank": 100000 }
+  ],
+
+  "files":
+  [ { "file":"trill/examples_trill.swinb",
+      "title":"TRILL example programs",
+      "group":"examples"
+    },
+    { "file":"examples.swinb",
+      "title":"Example programs",
+      "group":"examples"
+    },
+    { "file":"prolog_tutorials.swinb",
+      "title":"Prolog tutorials",
+      "group":"tutorials"
+    },
+    { "file":"swish_tutorials.swinb",
+      "title":"SWISH tutorials",
+      "group":"tutorials"
+    },
+    { "file":"stats.swinb",
+      "title":"Usage statistics",
+      "group":"admin"
+    },
+
+    "Files that do not appear in the menu",
+    "# Tutorials",
+
+    { "file":"rendering.swinb",
+      "title":"Rendering answers __graphically__ (graphs, charts, mathjax, etc.)",
+      "group":"tutorial"
+    },
+    { "file":"data_source.swinb",
+      "title":"Accessing __external data__ (CSV, SPARQL, etc.)",
+      "group":"tutorial"
+    },
+    { "file":"Rserve.swinb",
+      "title":"Embedding __R__ (graphs, statistics and machine learning)",
+      "group":"tutorial",
+      "requires":"plugin(r_serve)"
+    },
+    { "file":"htmlcell.swinb",
+      "title":"Adding __HTML cells__ to notebooks",
+      "group":"tutorial"
+    },
+    { "file":"slider.swinb",
+      "title":"Adding __widgets__ to notebook HTML cells",
+      "group":"tutorial"
+    },
+    { "file":"chat80.swinb",
+      "title":"CHAT80: demo __hiding__ all SWISH UI elements",
+      "group":"tutorial"
+    },
+    { "file":"jquery.swinb",
+      "title":"Control and access the SWISH interface from Prolog",
+      "group":"tutorial"
+    },
+
+    "## R tutorials",
+
+    { "file":"Rdataframe.swinb",
+      "title":"Exchanging R data frames",
+      "group":"R",
+      "requires":"plugin(r_serve)"
+    }
+  ]
+}

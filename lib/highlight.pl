@@ -816,6 +816,7 @@ style(string,		 string,			   []).
 style(codes,		 codes,				   []).
 style(chars,		 chars,				   []).
 style(atom,		 atom,				   []).
+style(format_string,	 format_string,			   []).
 style(meta(_Spec),	 meta,				   []).
 style(op_type(_Type),	 op_type,			   [text]).
 style(functor,		 functor,			   [text]).
@@ -861,6 +862,8 @@ style(html(_Element),	 html,				   []).
 style(entity(_Element),	 entity,			   []).
 style(html_attribute(_), html_attribute,		   []).
 style(sgml_attr_function,sgml_attr_function,		   []).
+style(html_call,	 html_call,			   [text]).  % \Rule
+style(html_raw,		 html_raw,			   [text]).  % \List
 style(http_location_for_id(_), http_location_for_id,       []).
 style(http_no_location_for_id(_), http_no_location_for_id, []).
 					% XPCE support
@@ -1157,11 +1160,19 @@ predicate_info(Module:Name/Arity, Key, Value) :-
 	    Value = true
 	).
 predicate_info(PI, summary, Summary) :-
-	(   PI = _Module:Name/Arity,
-	    man_predicate_summary(Name/Arity, Summary)
+	PI = Module:Name/Arity,
+
+	(   man_predicate_summary(Name/Arity, Summary)
+	->  true
+	;   Arity >= 2,
+	    DCGArity is Arity - 2,
+	    man_predicate_summary(Name//DCGArity, Summary)
 	->  true
 	;   prolog:predicate_summary(PI, Summary)
 	->  true
+	;   Arity >= 2,
+	    DCGArity is Arity - 2,
+	    prolog:predicate_summary(Module:Name/DCGArity, Summary)
 	).
 
 :- if(current_predicate(man_object_property/2)).

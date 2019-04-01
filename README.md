@@ -42,7 +42,7 @@ details.
 
 ### Get submodules
 
-`cd` to your swish root directory and
+`cd` to your swish root directory and run
 
     git submodule update --init
 
@@ -54,20 +54,20 @@ configure those that need to be configured.
 
 ### Get JavaScript requirements
 
-#### Using bower
+#### Using Yarn
 
-Install [bower](https://bower.io) for your  platform.   On  Ubuntu,  this
+Install [Yarn](https://yarnpkg.com) for your platform.   On Ubuntu, this
 implies getting `node` and `npm` by installing two packages and next use
-`npm` to install `bower` (some older Linux versions need `nodejs-legacy`
+`npm` to install `yarn` (some older  Linux versions need `nodejs-legacy`
 instead of `nodejs`):
 
-    sudo apt-get install npm nodejs
-    sudo npm install -g bower
+    sudo apt install npm nodejs
+    sudo npm i yarn -g
 
-Once you have `bower`, run the following from the toplevel of `swish` to
+Once you have `yarn`, run the following from the toplevel of `swish` to
 get the dependencies:
 
-    bower install
+    yarn
     make src
 
 #### Download as zip
@@ -202,6 +202,14 @@ This script can be used to start  SWISH   as  a  daemon from the command
 line, start SWISH from service managers   such as `upstart` or `systemd`
 and    simplifies    running    as     an      HTTPS     server.     See
 https://github.com/triska/letswicrypt.
+
+
+## Running SWISH as additional local IDE
+
+You can run SWISH alongside your   normal  Prolog development tools. The
+cleanest way to do so is by using  `myswish.pl` and install this in your
+local Prolog library. See `myswish.pl` for details   on how to swet this
+up.
 
 
 ## Design

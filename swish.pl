@@ -39,6 +39,7 @@
 :- module(swish_app,
 	  [
 	  ]).
+:- use_module(library(pldoc), []).
 :- use_module(library(pengines)).
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(option)).
@@ -58,7 +59,11 @@
 :- use_module(lib/markdown).
 :- use_module(lib/chat, []).
 :- use_module(lib/template_hint, []).
+:- if(exists_source(library(http/http_dyn_workers))).
+:- use_module(library(http/http_dyn_workers)).
+:- else.
 :- use_module(lib/plugin/http_dyn_workers, []).
+:- endif.
 :- use_module(lib/web).
 :- use_module(lib/version).
 
@@ -165,6 +170,8 @@ load_config.
 %	      mode.
 %	  - chat
 %	  Activate the chat interface
+%	  - chat_spam_protection
+%	  Perform protection against spamming on chat messages.
 %	  - default_query
 %	  Initial query for the source search in an empty tab
 %
@@ -194,6 +201,7 @@ swish_config:config(notebook,		_{ eval_script: true,
 swish_config:config(fullscreen,		_{ hide_navbar: true
 					 }).
 swish_config:config(chat,		true).
+swish_config:config(chat_spam_protection, true).
 swish_config:config(default_query,	'').
 
 %%	swish_config:source_alias(Alias, Options) is nondet.
@@ -225,6 +233,8 @@ swish_config:config(default_query,	'').
 :- use_module(swish:lib/attvar).
 :- use_module(swish:lib/jquery).
 :- use_module(swish:lib/dashboard).
+:- use_module(swish:lib/md_eval).
+:- use_module(swish:lib/html_output).
 :- use_module(swish:lib/swish_debug).
 :- use_module(swish:library(pengines_io)).
 :- use_module(swish:library(solution_sequences)).
@@ -245,6 +255,9 @@ pengines:prepare_module(Module, swish, _Options) :-
 
 :- use_module(library(clpfd), []).
 :- use_module(library(clpb), []).
+:- if(exists_source(library(dcg/high_order))).
+:- use_module(library(dcg/high_order), []).
+:- endif.
 :- use_module(lib/swish_chr, []).
 
 % load rendering modules
@@ -258,6 +271,7 @@ pengines:prepare_module(Module, swish, _Options) :-
 :- use_module(swish(lib/render/c3),	  []).
 :- use_module(swish(lib/render/url),	  []).
 :- use_module(swish(lib/render/bdd),	  []).
+:- use_module(swish(lib/render/mathjax),  []).
 
 :- use_module(library(trill)).
 :- use_module(library(clpb)).

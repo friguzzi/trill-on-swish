@@ -15,6 +15,7 @@ html, body {
 
 nav.navbar { margin-bottom: 0px; }
 
+
 #content { width: 100%; height: calc(100% - 98px);
 	   padding: 0px;
 	   background-color: white;

@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2017, VU University Amsterdam
+    Copyright (C): 2019, VU University Amsterdam
 			 CWI Amsterdam
     All rights reserved.
 
@@ -33,24 +33,38 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-:- module(swish_config_logging, []).
-:- use_module(library(settings)).
-:- use_module(library(broadcast)).
-:- use_module(library(http/http_log)).
-:- use_module(swish(lib/logging)).
+:- module(my_swish_ide,
+          [ swish/0,
+            swish/1
+          ]).
 
-/** <module> Configure logging facilities
+/** <module> Provide swish/0 from any Prolog session
 
-The  settings  below  enable  extensive  logging  of  HTTP  and  pengine
-interaction. The log files are rotated every  week and logs are kept for
-6 months. The log files can  be   used  together  with lib/replay.pl and
-lib/replay_cm.pl  to  replay   Pengine    interaction   and   CodeMirror
-highlighting interaction.
+This module provides swish/0 and swish/1   as  auto-loaded commands from
+any Prolog shell. This allows you to run   the  command below in a shell
+and both enjoy swish and keep your local development environment.
+
+    ?- swish.
+
+## Installation
+
+    mkdir -p ~/lib/prolog
+    cp myswish.pl ~/lib/prolog
+    edit ~/lib/prolog/myswish.pl	# fix path below
+    swipl
+    ?- make_library_index('~/lib/prolog').
+    ?- halt.
+
+And test the result by starting Prolog   in a __writable directory__ and
+run `?- swish.`. If all is right,  Prolog should report it started swish
+and your browser should be directed to the newly created swish instance.
+
+## Remarks
+
+Running swish creates a directory `data`  in the current directory where
+SWISH stores settings and your  programs.  You   can  copy  this  to new
+locations or delete it when done.
 */
 
-:- set_setting_default(http:log_post_data, 1 000 000).
-:- set_setting_default(http:logfile, data('log/httpd.log')).
-:- http_schedule_logrotate(weekly(sun, 05:05),
-                           [ keep_logs(26)
-                           ]).
-:- listen(http_log_open(LogFile), create_log_dir(LogFile)).
+% EDIT THIS PATH
+:- use_module('/usr/local/share/swish/ide').

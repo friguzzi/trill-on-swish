@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2017, VU University Amsterdam
+    Copyright (C): 2019, VU University Amsterdam
 			 CWI Amsterdam
     All rights reserved.
 
@@ -33,24 +33,28 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-:- module(swish_config_logging, []).
-:- use_module(library(settings)).
-:- use_module(library(broadcast)).
-:- use_module(library(http/http_log)).
-:- use_module(swish(lib/logging)).
+:- module(swish_config_gitty_files, []).
+:- use_module(library(swish/storage)).
 
-/** <module> Configure logging facilities
+/** <module> Permanently load files from the SWISH gitty store
 
-The  settings  below  enable  extensive  logging  of  HTTP  and  pengine
-interaction. The log files are rotated every  week and logs are kept for
-6 months. The log files can  be   used  together  with lib/replay.pl and
-lib/replay_cm.pl  to  replay   Pengine    interaction   and   CodeMirror
-highlighting interaction.
+This config file allows you to  edit   a  file through the web interface
+that is permanently loaded and can   thus permanently affect the server.
+It is typically used to allow   managing configuration and hooks through
+the web interface in controlled SWISH installations, i.e., installations
+with a small number of registered users and no sandbox limitations.
+
+To us this:
+
+  1. Create the files you want to use this way in the gitty store.
+     Note that unlike normal gitty files, these may be module files.
+  2. Uncomment the lines below and edit as appropriate.
+  3. (Re)load this config file or restart swish.
+
+After the attached SWISH gitty file is edited through the web interface,
+it will be reloaded.
 */
 
-:- set_setting_default(http:log_post_data, 1 000 000).
-:- set_setting_default(http:logfile, data('log/httpd.log')).
-:- http_schedule_logrotate(weekly(sun, 05:05),
-                           [ keep_logs(26)
-                           ]).
-:- listen(http_log_open(LogFile), create_log_dir(LogFile)).
+%:- use_gitty_file(myfile1).
+%:- use_gitty_file(swish:myfile2).
+

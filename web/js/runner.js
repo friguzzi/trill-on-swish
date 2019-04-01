@@ -684,12 +684,16 @@ define([ "jquery", "config", "preferences",
       var request = prompt.data;
       var receiver;
 
+      console.log(request);
+
       if ( typeof(request.selector) == "string" ) {
 	receiver = $(request.selector);
       } else if ( typeof(request.selector) == "object" ) {
 	switch(request.selector.root) {
-	  case "this":	root = this; break;
-	  case "swish":	root = this.closest(".swish"); break;
+	  case "this":	   root = this; break;
+	  case "cell":	   root = this.closest(".nb-cell");  break;
+	  case "notebook": root = this.closest(".notebook"); break;
+	  case "swish":	   root = this.closest(".swish");    break;
 	}
 	if ( request.selector.sub == "" ) {
 	  receiver = root;
@@ -1358,7 +1362,7 @@ define([ "jquery", "config", "preferences",
       }
 
       return false;
-    } else if ( econtext.location.file ) {
+    } else if ( econtext && econtext.location.file ) {
       ctx.closest("body.swish")
 	 .swish('playFile', econtext.location);
     } else {

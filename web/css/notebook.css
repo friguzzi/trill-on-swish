@@ -74,6 +74,11 @@ div.notebook-menu {
 .nb-cell.markdown:not(.runnable)
 { background-color: transparent;
   border: 0px;
+  min-height: 2ex;
+}
+
+.nb-empty-markdown
+{ opacity: 0.5;
 }
 
 .nb-cell.html:not(.runnable)
@@ -205,20 +210,19 @@ div.notebook-menu {
 { margin-left: 44px;		/* CodeMirror gutter width */
 }
 
-.nb-cell.program, .nb-cell.query
-{ margin-bottom: 1em;
-}
-
 .nb-cell.not-for-query
 { opacity: 0.5;
 }
 
 .nb-placeholder
-{ opacity: 0.5;
-  width: 90%;
-  margin: auto;
-  margin-top: 1ex;
+{ margin-top: 2em;
 }
+
+.nb-help
+{ margin-top: 2em;
+  text-align: center;
+}
+
 
 /* Notebook markdown */
 
@@ -239,6 +243,11 @@ div.notebook-menu {
 
 .nb-cell.markdown .predicates .pred-tag
 { float: right;
+}
+
+.nb-cell.markdown table.arglist td
+{ vertical-align: top;
+  padding-right: 1em;
 }
 
 a.btn-image
@@ -265,3 +274,49 @@ span.menu-space
   display: inline-block;
 }
 
+/* ```{eval} cells */
+
+pre.eval.error
+{ color: red;
+}
+
+pre.eval.warning
+{ color: orange;
+}
+
+/* menu between cells */
+
+div.nb-menu
+{ position: relative;
+  width: 100%;
+}
+
+div.nb-menu-sense
+{ margin-left: 20%;
+  margin-right: 20%;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  cursor: cell;
+}
+
+div.nb-menu-line
+{ height: 1px;
+}
+
+div.nb-menu div.nb-type-select
+{ position: absolute;
+  top: -6px;
+  width: 100%;
+  text-align: center;
+  padding: 0px;
+  z-index: 100;
+}
+
+div.nb-menu .btn
+{ padding: 3px 5px;
+}
+
+div.nb-menu label
+{ background-color: #fff;
+  padding: 0px 3px;
+}

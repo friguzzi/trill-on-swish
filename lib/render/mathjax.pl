@@ -1,10 +1,9 @@
 /*  Part of SWISH
 
     Author:        Jan Wielemaker
-    E-mail:        J.Wielemaker@cs.vu.nl
+    E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2017, VU University Amsterdam
-			 CWI Amsterdam
+    Copyright (c)  2018, VU University Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -33,24 +32,47 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-:- module(swish_config_logging, []).
-:- use_module(library(settings)).
-:- use_module(library(broadcast)).
-:- use_module(library(http/http_log)).
-:- use_module(swish(lib/logging)).
+:- module(swish_render_mathjax,
+	  [ term_rendering//3			% +Term, +Vars, +Options
+	  ]).
+:- use_module(library(http/html_write)).
+:- use_module(library(http/js_write)).
+:- use_module('../render').
 
-/** <module> Configure logging facilities
+:- register_renderer(mathjax, "Render mathematical formulas").
 
-The  settings  below  enable  extensive  logging  of  HTTP  and  pengine
-interaction. The log files are rotated every  week and logs are kept for
-6 months. The log files can  be   used  together  with lib/replay.pl and
-lib/replay_cm.pl  to  replay   Pengine    interaction   and   CodeMirror
-highlighting interaction.
+:- setting(swish:mathjax_url, string,
+           "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js\c
+            ?config=TeX-MML-AM_CHTML",
+           "Location from which to download Mathjax").
+
+/** <module> SWISH Mathjax renderer
+
+Render mathematical formulas
 */
 
-:- set_setting_default(http:log_post_data, 1 000 000).
-:- set_setting_default(http:logfile, data('log/httpd.log')).
-:- http_schedule_logrotate(weekly(sun, 05:05),
-                           [ keep_logs(26)
-                           ]).
-:- listen(http_log_open(LogFile), create_log_dir(LogFile)).
+%!  term_rendering(+Term, +Vars, +Options)//
+%
+%   Render Term using Mathjax.
+
+term_rendering(math(String), _Vars, _Options) -->
+    { string(String),
+      setting(swish:mathjax_url, MathJaxURL)
+    },
+    html(span([ class(mathjax),
+		'data-render'('As math')
+	      ],
+	      [ '\\(', String, '\\)',
+		\js_script({|javascript(MathJaxURL)||
+(function() {
+  if ( $.ajaxScript ) {
+    var span = $.ajaxScript.parent()[0];
+    require([MathJaxURL],
+	    function() {
+		MathJax.Hub.Queue(["Typeset",MathJax.Hub,span]);
+
+    });
+  }
+})();
+			   |})
+	      ])).
