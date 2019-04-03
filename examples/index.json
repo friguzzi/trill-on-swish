@@ -8,15 +8,16 @@
   ",
 
   "menu":
-  [ { "group": "examples",  "rank":  10000 },
+  [ { "group": "trill",     "rank":   9000 },
+    { "group": "examples",  "rank":  10000 },
     { "group": "tutorials", "rank":  20000 },
     { "group": "admin",     "rank": 100000 }
   ],
 
   "files":
-  [ { "file":"trill/examples_trill.swinb",
+  [ { "file":"examples_trill.swinb",
       "title":"TRILL example programs",
-      "group":"examples"
+      "group":"trill"
     },
     { "file":"examples.swinb",
       "title":"Example programs",
