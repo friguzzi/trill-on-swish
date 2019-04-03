@@ -25,7 +25,7 @@
 # This is the file called from the /usr/bin/trill-on-swish symlink
 
 pkg_dir="/home/mlunife/trill-on-swish"
-pid_file="/home/mlunife/trill-on-swish/trill-on-swish.pid"
+pid_file="/home/mlunife/trill-on-swish/swish.pid"
 output_file="/home/mlunife/trill-on-swish/output.txt"
 user="mlunife"
 group="mlunife"
