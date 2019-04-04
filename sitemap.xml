@@ -12,6 +12,10 @@
   <changefreq>weekly</changefreq>
 </url>
 <url>
+  <loc>http://cplint.lamping.unife.it/index.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
   <loc>http://trill-sw.eu/help/about.html</loc>
   <changefreq>weekly</changefreq>
 </url>
@@ -19,6 +23,94 @@
   <loc>http://trill-sw.eu/help/help-trill.html</loc>
   <changefreq>weekly</changefreq>
 </url>
-
+<url>
+  <loc>http://cplint.lamping.unife.it/help/help.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/runner.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/beware.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/background.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/caveats.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/query.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill-sw.eu/help/chat.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/newchat.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill-sw.eu/help/debug.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://trill-sw.eu/help/notebook.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/sourcelist.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/editor.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/privacy.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/hangout.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/help/login.html</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/examples/trill/biopaxLevel3.pl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/examples/trill/commander.pl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/examples/trill/johnEmployee.pl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/examples/trill/vicodi.pl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/examples/trill/BRCA.pl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/examples/trill/DBPedia.pl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+<url>
+  <loc>http://cplint.lamping.unife.it/examples/trill/peoplePets.pl</loc>
+  <changefreq>weekly</changefreq>
+</url>
+         
 
 </urlset>
