@@ -39,7 +39,9 @@
 	    replay/1,			% +Pengine
 	    replay/2,			% +Pengine, +ServerURL
 	    concurrent_replay/1,	% +Count
-	    skip_pengine/1		% +Pengine
+	    skip_pengine/1,		% +Pengine
+
+	    pengine_source/2		% ?Pengine, ?Source
 	  ]).
 :- use_module(library(debug)).
 :- use_module(library(pengines)).
@@ -103,8 +105,14 @@ replay :-
 	pengine_in_log(Pengine, _StartTime, Src),
 	\+ skip_pengine_store(Pengine),
 	Src \== (-),
-	catch(replay(Pengine), E,
-	      print_message(warning, E)).
+	catch(replay(Pengine), E, true),
+	(   var(E)
+	->  true
+	;   E = error(socket_error(econnrefused, _), _)
+	->  print_message(warning, E),
+	    !					% server seems dead
+	;   print_message(warning, E)
+	).
 
 replay_after(Time) :-
 	pengine_in_log(Pengine, StartTime, Src),
@@ -179,9 +187,12 @@ show_source(Options) :-
 
 run([], _, _, _) :- !.
 run(Messages, StartTime, Id, Options) :-
-	pengine_event(Event, [listen(Id)]),
-	reply(Event, Id, StartTime, Messages, Messages1),
-	run(Messages1, StartTime, Id, Options).
+	pengine_event(Event, [listen(Id), timeout(10)]),
+	(   Event == timeout
+	->  print_message(error, replay(Id, timeout(Messages)))
+	;   reply(Event, Id, StartTime, Messages, Messages1),
+	    run(Messages1, StartTime, Id, Options)
+	).
 
 reply(output(_Id, Prompt), Pengine, StartTime, [Time-pull_response|T], T) :- !,
 	debug(playback(event), 'Output ~p (pull_response)', [Prompt]),
@@ -314,6 +325,16 @@ assert_event(_).
 
 skip_pengine(Pengine) :-
 	assertz(skip_pengine_store(Pengine)).
+
+		 /*******************************
+		 *	       QUERY		*
+		 *******************************/
+
+pengine_source(Pengine, Src) :-
+	pengine(_Time, create(Pengine, _App, Options)),
+	memberchk(src_text(_Hash-Src), Options).
+
+
 
 		 /*******************************
 		 *	      MESSAGES		*

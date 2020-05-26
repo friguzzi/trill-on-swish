@@ -194,10 +194,10 @@ read_reply(Code, ContentType, In, Dict) :-
 %   string.
 
 read_reply2(200, media(application/json, _Attributes), In, Dict) :- !,
-    json_read_dict(In, Dict).
+    json_read_dict(In, Dict, [default_tag(#)]).
 read_reply2(Code, media(application/json, _Attributes), In,
             error{code:Code, details:Details}) :- !,
-    json_read_dict(In, Details).
+    json_read_dict(In, Details, [default_tag(#)]).
 read_reply2(Code, Type, In,
             error{code:Code, message:Reply}) :-
     debug(oauth(token), 'Got code ~w, type ~q', [Code, Type]),
@@ -238,6 +238,8 @@ map_user_info(Dict0, Dict) :-
 map_user_field(display_name-Name, name-Name) :- !.
 map_user_field(profile_image-URL, picture-URL) :- !.
 map_user_field(link-URL,          profile_url-URL) :- !.
+map_user_field(user_id-Id,        external_identity-SId) :- !,
+    format(string(SId), '~w', [Id]).
 map_user_field(Field, Field).
 
 session_remove_user_data :-

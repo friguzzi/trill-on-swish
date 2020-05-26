@@ -117,7 +117,7 @@ load_config :-
 			   ]), !,
 	atom_concat(Path, '/*.pl', Pattern),
 	expand_file_name(Pattern, Files),
-	maplist(ensure_loaded, Files).
+	maplist(user:ensure_loaded, Files).
 load_config.
 
 :- initialization(load_config, now).
@@ -308,3 +308,4 @@ swish_highlight:style(trill_directive,  trill_directive, [text, base(atom)]).
 swish_highlight:style(olwrdf_predicate, olwrdf_predicate, [text, base(symbol)]).
 
 
+:- use_module(swish(lib/render/gvterm),   []).

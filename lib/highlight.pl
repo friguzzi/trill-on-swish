@@ -3,7 +3,7 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (c)  2014-2018, VU University Amsterdam
+    Copyright (c)  2014-2020, VU University Amsterdam
 			      CWI, Amsterdam
     All rights reserved.
 
@@ -53,8 +53,6 @@
 :- use_module(library(lazy_lists)).
 :- if(exists_source(library(pldoc/man_index))).
 :- use_module(library(pldoc/man_index)).
-:- elif(exists_source(library(helpidx))).
-:- use_module(library(helpidx), [predicate/5]).
 :- endif.
 
 http:location(codemirror, swish(cm), []).
@@ -654,12 +652,16 @@ server_tokens(Role) :-
 
 server_tokens(TB, GroupedTokens) :-
 	current_editor(UUID, TB, _Role, _Lock, _),
+	Ignore = error(syntax_error(swi_backslash_newline),_),
 	setup_call_cleanup(
-	    open_memory_file(TB, read, Stream),
-	    ( set_stream_file(TB, Stream),
-	      prolog_colourise_stream(Stream, UUID, colour_item(TB))
-	    ),
-	    close(Stream)),
+	    asserta(user:thread_message_hook(Ignore, _, _), Ref),
+	    setup_call_cleanup(
+		open_memory_file(TB, read, Stream),
+		( set_stream_file(TB, Stream),
+		  prolog_colourise_stream(Stream, UUID, colour_item(TB))
+		),
+		close(Stream)),
+	    erase(Ref)),
 	collect_tokens(TB, GroupedTokens).
 
 collect_tokens(TB, GroupedTokens) :-
@@ -816,9 +818,11 @@ style(string,		 string,			   []).
 style(codes,		 codes,				   []).
 style(chars,		 chars,				   []).
 style(atom,		 atom,				   []).
+style(rational(_Value),	 rational,			   [text]).
 style(format_string,	 format_string,			   []).
 style(meta(_Spec),	 meta,				   []).
 style(op_type(_Type),	 op_type,			   [text]).
+style(decl_option(_Name),decl_option,			   [text]).
 style(functor,		 functor,			   [text]).
 style(control,		 control,			   [text]).
 style(delimiter,	 delimiter,			   [text]).
@@ -834,6 +838,7 @@ style(predicate_indicator, atom,			   [text]).
 style(arity,		 int,				   []).
 style(int,		 int,				   []).
 style(float,		 float,				   []).
+style(keyword(_),	 keyword,			   [text]).
 style(qq(open),		 qq_open,			   []).
 style(qq(sep),		 qq_sep,			   []).
 style(qq(close),	 qq_close,			   []).
@@ -874,6 +879,10 @@ style(class(library(File),_Name), xpce_class_lib,	   [text, file(File)]).
 style(class(user(File),_Name),	  xpce_class_user,	   [text, file(File)]).
 style(class(user,_Name),	  xpce_class_user,	   [text]).
 style(class(undefined,_Name),	  xpce_class_undef,	   [text]).
+
+style(table_mode(_Mode), table_mode,			   [text]).
+style(table_option(_Mode), table_option,		   [text]).
+
 
 neck_text(clause,       (:-)).
 neck_text(grammar_rule, (-->)).
@@ -1178,9 +1187,6 @@ predicate_info(PI, summary, Summary) :-
 :- if(current_predicate(man_object_property/2)).
 man_predicate_summary(PI, Summary) :-
     man_object_property(PI, summary(Summary)).
-:- elif(current_predicate(predicate/5)).
-man_predicate_summary(Name/Arity, Summary) :-
-    predicate(Name, Arity, Summary, _, _).
 :- else.
 man_predicate_summary(_, _) :-
     fail.

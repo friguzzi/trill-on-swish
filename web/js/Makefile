@@ -12,7 +12,7 @@ RJS=r.js
 all:	src min require.js
 
 src::
-	$(MAKE) -C ../bower_components/sparkline jqs
+	$(MAKE) -C ../node_modules/sparkline jqs
 
 doc::	$(CONF) $(JQ) $(JS)
 	-jsdoc -p -c $(CONF) $(JQ) $(JS)
@@ -22,8 +22,9 @@ min:	swish-min.js swish-min.js.gz
 swish-min.js:	build.js $(JS) $(CM)
 	rm -f swish-min.js.new swish-min.js.new.map
 	$(RJS) -o build.js
-	sed -i 's@//# sourceMappingURL=swish-min.js.new.map@//# sourceMappingURL=swish-min.js.map@' swish-min.js.new
+	sed -i.bak 's/\/\/# sourceMappingURL=swish-min.js.new.map/\/\/# sourceMappingURL=swish-min.js.map/' swish-min.js.new
 	mv swish-min.js.new swish-min.js
+	rm -f swish-min.js.new.bak
 	if [ -f swish-min.js.new.map ]; then \
 	  mv swish-min.js.new.map swish-min.js.map; \
 	fi
@@ -34,7 +35,7 @@ swish-min.js.gz: swish-min.js
 build.js: $(MAIN) build.js.in
 	swipl mkjsbuild.pl $(MAIN) build.js.in
 
-require.js: ../bower_components/requirejs/require.js
+require.js: ../node_modules/requirejs/require.js
 	cp -p $< $@
 
 clean:

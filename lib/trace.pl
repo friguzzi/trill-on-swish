@@ -3,7 +3,8 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (c)  2015-2017, VU University Amsterdam
+    Copyright (c)  2015-2019, VU University Amsterdam
+			      CWI, Amsterdam
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -36,6 +37,7 @@
 	  [ '$swish wrapper'/2		% :Goal, ?ContextVars
 	  ]).
 :- use_module(library(debug)).
+:- use_module(library(prolog_stack)).
 :- use_module(library(settings)).
 :- use_module(library(pengines)).
 :- use_module(library(apply)).
@@ -49,6 +51,9 @@
 :- use_module(library(prolog_breakpoints)).
 :- use_module(library(http/term_html)).
 :- use_module(library(http/html_write)).
+:- if(exists_source(library(wfs))).
+:- use_module(library(wfs)).
+:- endif.
 
 :- use_module(storage).
 :- use_module(config).
@@ -88,8 +93,15 @@ user:message_hook(trace_mode(_), _, _) :-
 
 trace_pengines.
 
-user:prolog_trace_interception(Port, Frame, _CHP, Action) :-
+user:prolog_trace_interception(Port, Frame, CHP, Action) :-
 	trace_pengines,
+	catch(trace_interception(Port, Frame, CHP, Action), E, true),
+	(   var(E)
+	->  true
+	;   abort			% tracer ignores non-abort exceptions.
+	).
+
+trace_interception(Port, Frame, _CHP, Action) :-
 	pengine_self(Pengine),
 	prolog_frame_attribute(Frame, predicate_indicator, PI),
 	debug(trace, 'HOOK: ~p ~p', [Port, PI]),
@@ -115,8 +127,7 @@ user:prolog_trace_interception(Port, Frame, _CHP, Action) :-
 	pengine_input(Prompt, Reply),
 	trace_action(Reply, Port, Frame, Action), !,
 	debug(trace, 'Action: ~p --> ~p', [Reply, Action]).
-user:prolog_trace_interception(Port, Frame0, _CHP, nodebug) :-
-	trace_pengines,
+trace_interception(Port, Frame0, _CHP, nodebug) :-
 	pengine_self(_),
 	prolog_frame_attribute(Frame0, goal, Goal),
 	prolog_frame_attribute(Frame0, level, Depth),
@@ -217,6 +228,17 @@ strip_stack(Error, Error).
 
 :- meta_predicate swish_call(0).
 
+:- if(\+current_predicate(call_delays/2)).
+:- meta_predicate
+	call_delays(0, :),
+	delays_residual_program(:, :).
+
+call_delays(Goal, _:true) :-
+	call(Goal).
+
+delays_residual_program(_, _:[]).
+:- endif.
+
 '$swish wrapper'(Goal, Extra) :-
 	(   nb_current('$variable_names', Bindings)
 	->  true
@@ -225,7 +247,8 @@ strip_stack(Error, Error).
 	debug(projection, 'Pre-context-pre ~p, extra=~p', [Bindings, Extra]),
 	maplist(call_pre_context(Goal, Bindings), Extra),
 	debug(projection, 'Pre-context-post ~p, extra=~p', [Bindings, Extra]),
-	catch(swish_call(Goal), E, throw(E)),
+	call_delays(catch_with_backtrace(swish_call(Goal),
+					 E, throw_backtrace(E)), Delays),
 	deterministic(Det),
 	(   tracing,
 	    Det == false
@@ -237,7 +260,25 @@ strip_stack(Error, Error).
 	    )
 	;   notrace
 	),
-	maplist(call_post_context(Goal, Bindings), Extra).
+	maplist(call_post_context(Goal, Bindings, Delays), Extra).
+
+throw_backtrace(error(Formal, context(prolog_stack(Stack0), Msg))) :-
+	append(Stack1, [Guard|_], Stack0),
+	is_guard(Guard),
+	!,
+	last(Stack1, Frame),
+	arg(1, Frame, Level),
+	maplist(re_level(Level), Stack1, Stack),
+	throw(error(Formal, context(prolog_stack(Stack), Msg))).
+throw_backtrace(E) :-
+	throw(E).
+
+re_level(Sub,
+	 frame(Level0, Clause, Goal),
+	 frame(Level, Clause, Goal)) :-
+	Level is 1 + Level0 - Sub.
+
+is_guard(frame(_Level, _Clause, swish_trace:swish_call(_))).
 
 swish_call(Goal) :-
 	Goal,
@@ -258,7 +299,8 @@ no_lco.
 
 :- multifile
 	pre_context/3,
-	post_context/3.
+	post_context/3,
+	post_context/4.
 
 call_pre_context(Goal, Bindings, Var) :-
 	binding(Bindings, Var, Name),
@@ -266,14 +308,20 @@ call_pre_context(Goal, Bindings, Var) :-
 call_pre_context(_, _, _).
 
 
-call_post_context(Goal, Bindings, Var) :-
+call_post_context(Goal, Bindings, Delays, Var) :-
 	binding(Bindings, Var, Name),
-	post_context(Name, Goal, Var), !.
-call_post_context(_, _, _).
+	post_context(Name, Goal, Delays, Var), !.
+call_post_context(_, _, _, _).
 
-post_context(Name, M:_Goal, '$residuals'(Residuals)) :-
-	swish_config(residuals_var, Name),
+post_context(Name, Goal, _Delays, Extra) :-
+	post_context(Name, Goal, Extra), !.
+post_context(Name, M:_Goal, _, '$residuals'(Residuals)) :-
+	swish_config(residuals_var, Name), !,
 	residuals(M, Residuals).
+post_context(Name, M:_Goal, Delays, '$wfs_residual_program'(Delays, Program)) :-
+	swish_config(wfs_residual_program_var, Name), !,
+	delays_residual_program(Delays, M:Program).
+
 
 binding([Name=Var|_], V, Name) :-
 	Var == V, !.
@@ -550,6 +598,7 @@ screen_property(height(_)).
 screen_property(width(_)).
 screen_property(rows(_)).
 screen_property(cols(_)).
+screen_property(tabled(_)).
 
 %!	swish:tty_size(-Rows, -Cols) is det.
 %

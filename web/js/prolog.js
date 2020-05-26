@@ -112,7 +112,7 @@ define([ "jquery", "config", "form", "preferences",
 	formel.submit();
 	$(formel).remove();
       } else {
-	var vars = $().prologEditor('variables', query);
+	var vars = $().prologEditor('variables', query, {projection: true});
 	var disposition = options.disposition;
 	if ( disposition.indexOf(".") < 0 )
 	  disposition += ".csv";

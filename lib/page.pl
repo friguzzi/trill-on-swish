@@ -336,7 +336,7 @@ resource_prefix('help/').
 resource_prefix('form/').
 resource_prefix('icons/').
 resource_prefix('js/').
-resource_prefix('bower_components/').
+resource_prefix('node_modules/').
 
 %%	swish_page(+Options)//
 %
@@ -811,7 +811,7 @@ alt(css, 'swish-min.css', swish_web('css/swish-min.css')) :-
 alt(css, 'swish.css',     swish_web('css/swish.css')).
 alt(rjs, 'js/require.js', swish_web('js/require.js')) :-
 	\+ debugging(nominified).
-alt(rjs, 'bower_components/requirejs/require.js', -).
+alt(rjs, 'node_modules/requirejs/require.js', -).
 
 
 		 /*******************************
