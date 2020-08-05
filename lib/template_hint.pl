@@ -394,6 +394,31 @@ trill_template([     json{displayText:  "prob_instanceOf(+Class, +Individual, -P
 			  type:         "directive",
 			  template:     "inconsistent_theory(Expl).",
 			  varTemplates: json{'TRILL-Query': Template}},
+			
+			 json{displayText:  "instanceOf(+Class, +Individual, -Expl, +Options).",
+			  type:         "directive",
+			  template:     "instanceOf(${Class},${Individual},Expl,[${Options}]).",
+			  varTemplates: json{'TRILL-Query': Template}},
+			 
+			 json{displayText:  "property_value(+Property, +Individual1, +Individual2, -Expl, +Options).",
+			  type:         "directive",
+			  template:     "property_value(${Property},${Individual1},${Individual2},Expl,[${Options}]).",
+			  varTemplates: json{'TRILL-Query': Template}},
+			 
+			 json{displayText:  "sub_class(+Class1, +Class2, -Expl, +Options).",
+			  type:         "directive",
+			  template:     "sub_class(${Class1},${Class2},Expl,[${Options}]).",
+			  varTemplates: json{'TRILL-Query': Template}},
+
+			 json{displayText:  "unsat(+ClassExpression, -Expl, +Options).",
+			  type:         "directive",
+			  template:     "unsat(${ClassExpression},Expl,[${Options}]).",
+			  varTemplates: json{'TRILL-Query': Template}},
+			 
+			 json{displayText:  "inconsistent_theory(-Expl, +Options).",
+			  type:         "directive",
+			  template:     "inconsistent_theory(Expl,[${Options}]).",
+			  varTemplates: json{'TRILL-Query': Template}},
 		     
 		     json{displayText:  "instanceOf(+Class, +Individual).",
  			  type:         "directive",
