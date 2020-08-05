@@ -216,6 +216,13 @@ local Prolog library. See `myswish.pl` for details   on  how to set this
 up.
 
 
+### Running SWISH with TRILL enabled
+
+By default, SWISH does not start with TRILL enabled.  If  you  want   to  use  TRILL , enable the config file `c_trill.pl`:
+
+    mkdir -p config-enabled
+    (cd config-enabled && ln -s ../config-available/c_trill.pl)
+
 ## Design
 
 Most of the application is realised  using client-side JavaScript, which
