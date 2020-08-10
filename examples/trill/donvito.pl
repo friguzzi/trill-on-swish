@@ -9,3 +9,5 @@ subClassOf(someValuesFrom(hasAnimal, pet), natureLover).
 subClassOf(natureLover,goodPerson).
 subPropertyOf(hasPet,hasAnimal).
  
+annotationAssertion('disponte:probability',subClassOf(natureLover,goodPerson),literal('0.2')).
+ 
