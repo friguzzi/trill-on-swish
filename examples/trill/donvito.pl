@@ -1,6 +1,16 @@
 :-use_module(library(trill)).
 
+:- if(current_predicate(use_rendering/1)).
+:- use_rendering(graphviz).
+:- endif.
+
 :- trill. % or :- trillp. or :- tornado.
+
+/** <examples>
+
+?- prob_instanceOf(goodPerson,donVito,Prob).
+
+*/
 
 classAssertion(cat, tom).
 propertyAssertion(hasPet, donVito, tom).
