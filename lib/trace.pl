@@ -260,6 +260,8 @@ delays_residual_program(_, _:[]).
 	    )
 	;   notrace
 	),
+	call_post_context(_{goal:Goal, bindings:Bindings,
+			    delays:Delays, context:Extra}),
 	maplist(call_post_context(Goal, Bindings, Delays), Extra).
 
 throw_backtrace(error(Formal, context(prolog_stack(Stack0), Msg))) :-
@@ -299,6 +301,7 @@ no_lco.
 
 :- multifile
 	pre_context/3,
+	post_context/1,
 	post_context/3,
 	post_context/4.
 
@@ -307,6 +310,17 @@ call_pre_context(Goal, Bindings, Var) :-
 	pre_context(Name, Goal, Var), !.
 call_pre_context(_, _, _).
 
+%!	call_post_context(+Dict)
+
+call_post_context(Dict) :-
+	post_context(Dict), !.
+call_post_context(_).
+
+%!	call_post_context(+Goal, +Bindings, +Delays, +Var)
+%
+%	Hook to allow filling Var from  the   context.  I.e., there is a
+%	binding `Name=Var` in Bindings that gives us the name of what is
+%	expected in Var.
 
 call_post_context(Goal, Bindings, Delays, Var) :-
 	binding(Bindings, Var, Name),
@@ -318,10 +332,16 @@ post_context(Name, Goal, _Delays, Extra) :-
 post_context(Name, M:_Goal, _, '$residuals'(Residuals)) :-
 	swish_config(residuals_var, Name), !,
 	residuals(M, Residuals).
-post_context(Name, M:_Goal, Delays, '$wfs_residual_program'(Delays, Program)) :-
+post_context(Name, M:_Goal, Delays,
+	     '$wfs_residual_program'(TheDelays, Program)) :-
+	Delays \== true,
 	swish_config(wfs_residual_program_var, Name), !,
-	delays_residual_program(Delays, M:Program).
-
+	(   current_prolog_flag(toplevel_list_wfs_residual_program, true)
+	->  delays_residual_program(Delays, M:Program),
+	    TheDelays = Delays
+	;   TheDelays = undefined,
+	    Program = []
+	).
 
 binding([Name=Var|_], V, Name) :-
 	Var == V, !.
@@ -590,15 +610,15 @@ pengines:prepare_goal(Goal0, Goal, Options) :-
 
 set_screen_property(Options) :-
 	pengine_self(Pengine),
-	screen_property(Property),
+	screen_property_decl(Property),
 	option(Property, Options),
 	assertz(Pengine:screen_property(Property)).
 
-screen_property(height(_)).
-screen_property(width(_)).
-screen_property(rows(_)).
-screen_property(cols(_)).
-screen_property(tabled(_)).
+screen_property_decl(height(_)).
+screen_property_decl(width(_)).
+screen_property_decl(rows(_)).
+screen_property_decl(cols(_)).
+screen_property_decl(tabled(_)).
 
 %!	swish:tty_size(-Rows, -Cols) is det.
 %
