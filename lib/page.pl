@@ -776,9 +776,9 @@ include_swish_js -->
 			<script>
 			  window.dataLayer = window.dataLayer || [];
 			  function gtag(){dataLayer.push(arguments);}
-			  gtag('js', new Date());
+			  gtag(''js'', new Date());
 			
-			  gtag('config', 'G-E8LLF8XRNH');
+			  gtag(''config'', ''G-E8LLF8XRNH'');
 			</script>']),
         { swish_resource(js, JS),
 	  swish_resource(rjs, RJS),
