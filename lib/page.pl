@@ -771,14 +771,14 @@ include_swish_js -->
 
         ga(''create'', ''UA-16202613-11'', ''auto'');
         ga(''send'', ''pageview'');'])),
-		html(\['<!-- Global site tag (gtag.js) - Google Analytics -->
+		html(\['<!-- Google tag (gtag.js) -->
 			<script async src="https://www.googletagmanager.com/gtag/js?id=G-E8LLF8XRNH"></script>
 			<script>
 			  window.dataLayer = window.dataLayer || [];
 			  function gtag(){dataLayer.push(arguments);}
-			  gtag(''js'', new Date());
+			  gtag('js', new Date());
 			
-			  gtag(''config'', ''G-E8LLF8XRNH'');
+			  gtag('config', 'G-E8LLF8XRNH');
 			</script>']),
         { swish_resource(js, JS),
 	  swish_resource(rjs, RJS),
