@@ -353,11 +353,15 @@ swish_page(Options) -->
 swish_navbar(Options) -->
 	swish_resources,
 	html(div([id('navbarhelp'),style('height:23px;margin: 10px 5px;text-align:center;overflow-y: scroll;')],
-	[span([style('color:darkblue')],['TRILL']),
+	[div([class('container'),style('display: flex; height: 100px;')],[
+		div([style('width: 5%;')],[
+		  a([href('https://ml.unife.it'),target('_blank')],
+			[img([src('/icons/logo-unife.png'),height(40)])])]),
+			div([style('flex-grow 1;')],[span([],[span([style('color:darkblue')],['TRILL']),
 	span([style('color:maroon')],[' on ']),
 	span([style('color:darkblue')],['SWI']),
 	span([style('color:maroon')],['SH']),
-	' is a web application for a Javascript-enabled browser',
+	' is a web application',
 	' which embeds the tableau reasoners TRILL, TRILL',
 	span([style('vertical-align:super;font-size:smaller')],['P']),
 	' and TORNADO.',
@@ -367,7 +371,11 @@ swish_navbar(Options) -->
 	a([href('/help/help-trill.html'),target('_blank')],['Help']),
 	&(nbsp), &(nbsp),
 	a([id('dismisslink'),href('')],['Dismiss'])
-	])
+	])]),
+	div([style('width: 5%;')],[
+	a([href('https://ml.unife.it'),target('_blank')],
+	  [img([src('/icons/logo-mlunife.png'),height(40)])])])
+	])])
 	),
 	html(nav([ class([navbar, 'navbar-default']),
 		   role(navigation)
