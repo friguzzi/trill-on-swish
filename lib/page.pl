@@ -352,7 +352,7 @@ swish_page(Options) -->
 
 swish_navbar(Options) -->
 	swish_resources,
-	html(div([id('navbarhelp'),style('height:50px;margin: 10px 5px;text-align:center;overflow-y: scroll;')],
+	html(div([id('navbarhelp'),style('height:40px;margin: 10px 5px;text-align:center;')],
 	[div([class('container'),style('display: flex; height: 100px;')],[
 		div([style('width: 5%;')],[
 		  a([href('https://ml.unife.it'),target('_blank')],
