@@ -3,8 +3,9 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2018, VU University Amsterdam
-			 CWI Amsterdam
+    Copyright (C): 2018-2023, VU University Amsterdam
+			      CWI Amsterdam
+			      SWI-Prolog Solutions b.v.
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -42,8 +43,8 @@
  * @requires jquery
  */
 
-define([ "jquery", "config", "utils", "laconic" ],
-       function($, config, utils) {
+define([ "jquery", "config", "utils", "backend", "laconic" ],
+       function($, config, utils, backend) {
 
 (function($) {
   var pluginName = 'version';
@@ -81,12 +82,13 @@ define([ "jquery", "config", "utils", "laconic" ],
       if ( config.http.locations.versions ) {
 	elem = this;
 
-	$.get(config.http.locations.versions,
-	      function(data) {
-		if ( !data.swish || !data.prolog ) {
-		  console.log(data);
-		  return;
-		}
+	backend.ajax(
+	  { url: config.http.locations.versions,
+	    success: function(data) {
+	      if ( !data.swish || !data.prolog ) {
+		console.log(data);
+		return;
+	      }
 
 		var swishversion;
 		var trillversion;
@@ -135,8 +137,12 @@ define([ "jquery", "config", "utils", "laconic" ],
 		      return false;
 		    }
 		  });
-		}
-	      });
+	      }
+	    },
+	    error: function(jqXHR) {
+	      modal.ajaxError(jqXHR);
+	    }
+	  });
       }
     },
 
@@ -175,14 +181,18 @@ define([ "jquery", "config", "utils", "laconic" ],
         params.pack = options.pack;
 
       this.find(".v-changelog > table").html("");
-      $.get(config.http.locations.changelog,
-	    params,
-	    function(data) {
-
-	      for(var i=0; i<data.changelog.length; i++) {
-		that[pluginName]('addChange', data.changelog[i], i);
-	      }
-	    });
+      backend.ajax(
+	{ url: config.http.locations.changelog,
+	  data: params,
+	  success: function(data) {
+	    for(var i=0; i<data.changelog.length; i++) {
+	      that[pluginName]('addChange', data.changelog[i], i);
+	    }
+	  },
+	  error: function(jqXHR) {
+	    modal.ajaxError(jqXHR);
+	  }
+	});
     },
 
     addChange: function(ch, i) {
@@ -218,32 +228,42 @@ define([ "jquery", "config", "utils", "laconic" ],
       if ( str && (last = JSON.parse(str)) && last.commit ) {
 	var title = "SWISH updates since " + utils.ago(last.date||0);
 
-	$.get(config.http.locations.changes,
-	      {commit:last.commit},
-	      function(data) {
-		if ( data.changes ) {
-		  $("#swish-updates")
-		    .css("display", "inline-block")
-		    .attr("title", "SWISH has received " +
-				   data.changes + " updates\n" +
-			           "Click for details")
-		    .on("click", function(ev) {
-		      $(ev.target).closest(".swish")
-			          .swish('showUpdates',
-					 { title:  title,
-					   commit: last.commit,
-					   show:   "tagged"
-					 });
-		      saveCheckpoint(data);
-		      $("#swish-updates").hide();
-		    });
-		}
-	      });
+	backend.ajax(
+	  { url: config.http.locations.changes,
+	    data: {commit:last.commit},
+	    success: function(data) {
+	      if ( data.changes ) {
+		$("#swish-updates")
+		  .css("display", "inline-block")
+		  .attr("title", "SWISH has received " +
+			data.changes + " updates\n" +
+			"Click for details")
+		  .on("click", function(ev) {
+		    $(ev.target).closest(".swish")
+		      .swish('showUpdates',
+			     { title:  title,
+			       commit: last.commit,
+			       show:   "tagged"
+			     });
+		    saveCheckpoint(data);
+		    $("#swish-updates").hide();
+		  });
+	      }
+	    },
+	    error: function(jqXHR) {
+	      modal.ajaxError(jqXHR);
+	    }
+	  });
       } else {
-	$.get(config.http.locations.changes,
-	      function(data) {
-		saveCheckpoint(data);
-	      });
+	backend.ajax(
+	  { url: config.http.locations.changes,
+	    success: function(data) {
+	      saveCheckpoint(data);
+	    },
+	    error: function(jqXHR) {
+	      modal.ajaxError(jqXHR);
+	    }
+	  });
       }
     }
   }; // methods

@@ -3,8 +3,9 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2018, VU University Amsterdam
+    Copyright (C): 2014-2023, VU University Amsterdam
 			      CWI Amsterdam
+			      SWI-Prolog Solutions b.v.
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -43,9 +44,9 @@
  * @requires jquery
  */
 
-define([ "jquery", "form", "config", "preferences", "modal",
+define([ "jquery", "form", "config", "preferences", "modal", "backend",
 	 "laconic", "search", "chatbell", "sourcelist" ],
-       function($, form, config, preferences, modal) {
+       function($, form, config, preferences, modal, backend) {
 var tabbed = {
   tabTypes: {},
   type: function(from) {
@@ -229,7 +230,7 @@ tabbed.tabTypes.permalink = {
 	  $(dom).append(this.tabbed('profileForm'),
 			$.el.hr(),
 			//this.tabbed('searchForm'),
-		        sl = $.el.div({class:"sourcelist"}));
+			sl = $.el.div({class:"sourcelist"}));
 	  $(sl).sourcelist();
 	}
       }
@@ -295,7 +296,7 @@ tabbed.tabTypes.permalink = {
 	var select = this.find("div.tabbed-select");
 	var newtab;
 	var restoring = '<div class="restore-tab">Restoring ' +
-	                   (data.file||data.url) + " ..." +
+			   (data.file||data.url) + " ..." +
 			'</div>';
 
 	if ( select.length > 0 )  {
@@ -308,56 +309,58 @@ tabbed.tabTypes.permalink = {
 
 	if ( data.st_type == "gitty" ) {
 	  var url = config.http.locations.web_storage + data.file;
-	  $.ajax({ url: url,
-		   type: "GET",
-		   data: {format: "json"},
-		   success: function(reply) {
-		     reply.url = url;
-		     reply.st_type = "gitty";
-		     reply.noHistory = true;
-		     if ( !elem.tabbed('setSource', newtab, reply) ) {
-		       console.log("Failed to restore", data.file);
-		       elem.tabbed('removeTab', tab.attr("id"));
-		     }
-		     restoreData(newtab, data);
-		     if ( !fromURL && newtab.hasClass("active") )
-		       newtab.find(".storage").storage("activate");
-		   },
-		   error: function(jqXHR) {
-		     modal.ajaxError(jqXHR);
-		   }
+	  backend.ajax(
+	    { url: url,
+	      type: "GET",
+	      data: {format: "json"},
+	      success: function(reply) {
+		reply.url = url;
+		reply.st_type = "gitty";
+		reply.noHistory = true;
+		if ( !elem.tabbed('setSource', newtab, reply) ) {
+		  console.log("Failed to restore", data.file);
+		  elem.tabbed('removeTab', tab.attr("id"));
+		}
+		restoreData(newtab, data);
+		if ( !fromURL && newtab.hasClass("active") )
+		  newtab.find(".storage").storage("activate");
+	      },
+	      error: function(jqXHR) {
+		modal.ajaxError(jqXHR);
+	      }
 	  });
 	} else if ( data.url ) {
-	  $.ajax({ url: data.url,
-		   type: "GET",
-		   data: {format: "json"},
-		   success: function(source) {
-		     var msg;
+	  backend.ajax(
+	    { url: data.url,
+	      type: "GET",
+	      data: {format: "json"},
+	      success: function(source) {
+		var msg;
 
-		     if ( typeof(source) == "string" ) {
-		       msg = { data: source };
-		       msg.st_type = "external";
-		     } else if ( typeof(source) == "object" &&
-				 typeof(source.data) == "string" ) {
-		       msg = source;
-		       msg.st_type = "filesys";
-		     } else {
-		       alert("Invalid data");
-		       return;
-		     }
-		     msg.noHistory = true;
-		     msg.url = data.url;
-		     if ( !elem.tabbed('setSource', newtab, msg) ) {
-		       console.log("Failed to restore", data.url);
-		       elem.tabbed('removeTab', newtab.attr("id"));
-		     }
-		     restoreData(newtab, data);
-		     if ( !fromURL && newtab.hasClass("active") )
-		       newtab.find(".storage").storage("activate");
-		   },
-		   error: function(jqXHR) {
-		     modal.ajaxError(jqXHR);
-		   }
+		if ( typeof(source) == "string" ) {
+		  msg = { data: source };
+		  msg.st_type = "external";
+		} else if ( typeof(source) == "object" &&
+			    typeof(source.data) == "string" ) {
+		  msg = source;
+		  msg.st_type = "filesys";
+		} else {
+		  alert("Invalid data");
+		  return;
+		}
+		msg.noHistory = true;
+		msg.url = data.url;
+		if ( !elem.tabbed('setSource', newtab, msg) ) {
+		  console.log("Failed to restore", data.url);
+		  elem.tabbed('removeTab', newtab.attr("id"));
+		}
+		restoreData(newtab, data);
+		if ( !fromURL && newtab.hasClass("active") )
+		  newtab.find(".storage").storage("activate");
+	      },
+	      error: function(jqXHR) {
+		modal.ajaxError(jqXHR);
+	      }
 	  });
 	} else {
 	  console.log("Cannot restore ", data);
@@ -480,7 +483,7 @@ tabbed.tabTypes.permalink = {
 
 	  if ( !editors ) {
 	    this.closest(".swish")
-	        .swish('playFile',
+		.swish('playFile',
 		       { file: store,
 			 newTab: true,
 			 noHistory: true,
@@ -536,13 +539,16 @@ tabbed.tabTypes.permalink = {
      * tabbed environment becomes empty, add a virgin tab.
      *
      * @param {String} id is the id of the tab to destroy
+     * @param {Boolean} force  It `true`, do not check the content for
+     * being modified.
      */
-    removeTab: function(id) {
+    removeTab: function(id, force) {
       var li  = this.tabbed('navTabs').find("a[data-id='"+id+"']").parent();
       var tab = $("#"+id);
       var new_active;
 
-      if ( tab.find(".storage").storage('unload', "closetab") == false )
+      if ( force !== true &&
+	   tab.find(".storage").storage('unload', "closetab") == false )
 	return;
 
       if ( tab.is(":visible") )
@@ -614,7 +620,7 @@ tabbed.tabTypes.permalink = {
       var a1 = $.el.a({class:"compact", href:"#"+id, "data-id":id},
 		      $.el.span({class:"tab-icon type-icon "+type}),
 		      $.el.span({class:"tab-dirty",
-		                 title:"Tab is modified. "+
+				 title:"Tab is modified. "+
 				       "See File/Save and Edit/View changes"}),
 	       chat = $.el.a({class:'tab-chat'}),
 		      $.el.span({class:"tab-title"}, label),
@@ -874,14 +880,15 @@ tabbed.tabTypes.permalink = {
 
     profileValue: function(name, ext) {
       var url = config.http.locations.swish + "profile/" + name + "." + ext;
-      return $.ajax({ url: url,
-		      type: "GET",
-		      data: {format: "raw"},
-		      async: false,
-		      error: function(jqXHR) {
-			modal.ajaxError(jqXHR);
-		      }
-      }).responseText;
+      return backend.ajax(
+	{ url: url,
+	  type: "GET",
+	  data: {format: "raw"},
+	  async: false,
+	  error: function(jqXHR) {
+	    modal.ajaxError(jqXHR);
+	  }
+	}).responseText;
     },
 
     /**
@@ -963,6 +970,7 @@ tabbed.tabTypes.permalink = {
       $.error('Method ' + method + ' does not exist on jQuery.' + pluginName);
     }
   };
+  $.fn.tabbed.methods = methods;
 }(jQuery));
 
   return tabbed;

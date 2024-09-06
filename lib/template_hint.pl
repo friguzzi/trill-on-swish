@@ -127,7 +127,7 @@ visible_predicate(PI, Module, Options) :-
 visible_predicate(PI, Module, Options) :-
 	PI = Name/Arity,
 	predicate_property(Module:Head, visible),
-	autoload(Module:Head, Options),
+	do_autoload(Module:Head, Options),
 	safe(Module:Head, Options),
 	functor(Head, Name, Arity),
 	\+ no_template(PI).
@@ -158,7 +158,7 @@ visible_from(Spec, Name/Arity, _Module, _Options) :-
 	member(Name/Arity, Exports).
 
 
-autoload(Pred, Options) :-
+do_autoload(Pred, Options) :-
 	option(autoload(false), Options, false), !,
 	Pred = M:Head,
 	functor(Head, Name, Arity),
@@ -170,7 +170,7 @@ autoload(Pred, Options) :-
 	    \+ no_autocomplete_module(LoadModule),
 	    current_predicate(LoadModule:Name/Arity)
 	).
-autoload(_, _).
+do_autoload(_, _).
 
 no_autocomplete_module(pce).
 no_autocomplete_module(pce_principal).

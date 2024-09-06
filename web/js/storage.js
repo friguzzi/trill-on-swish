@@ -3,8 +3,9 @@
     Author:        Jan Wielemaker
     E-mail:        J.Wielemaker@cs.vu.nl
     WWW:           http://www.swi-prolog.org
-    Copyright (C): 2014-2018, VU University Amsterdam
+    Copyright (C): 2014-2023, VU University Amsterdam
 			      CWI Amsterdam
+			      SWI-Prolog Solutions b.v.
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -44,10 +45,10 @@
  */
 
 define([ "jquery", "config", "modal", "form", "gitty",
-	 "history", "tabbed", "utils",
+	 "history", "tabbed", "utils", "backend",
 	 "laconic", "diff"
        ],
-       function($, config, modal, form, gitty, history, tabbed, utils) {
+       function($, config, modal, form, gitty, history, tabbed, utils, backend) {
 
 (function($) {
   var pluginName = 'storage';
@@ -99,6 +100,10 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	  ev.stopPropagation();
 	}
 
+	elem.on("storage", function(ev, action, ...args) {
+	  args.unshift(ev, action);
+	  onStorage.apply(this, args);
+	});
 	elem.on("save", function(ev, data) {
 	  onStorage(ev, 'save', data);
 	});
@@ -256,7 +261,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	    title = filebase(utils.basename(file));
 	    if ( data.meta &&
 		 data.meta.symbolic != "HEAD" &&
-	         data.meta.commit ) {
+		 data.meta.commit ) {
 	      title += "@" + data.meta.commit.substring(0,7);
 	    }
 	  } else {
@@ -280,19 +285,20 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	var that = this;
 	var options = this.data(pluginName);
 
-	$.ajax({ url: config.http.locations.web_storage + file,
-		 dataType: "text",
-		 success: function(data) {
-		   that.storage('setSource',
-				{ data: data,
-				  meta: { name:file
-				        }
-				});
-		 },
-		 error: function(jqXHDR) {
-		   modal.ajaxError(jqXHR);
-		 }
-	       });
+	backend.ajax(
+	  { url: config.http.locations.web_storage + file,
+	    dataType: "text",
+	    success: function(data) {
+	      that.storage('setSource',
+			   { data: data,
+			     meta: { name:file
+				   }
+			   });
+	    },
+	    error: function(jqXHDR) {
+	      modal.ajaxError(jqXHR);
+	    }
+	  });
       }
       return this;
     },
@@ -321,24 +327,25 @@ define([ "jquery", "config", "modal", "form", "gitty",
       var url  = config.http.locations.web_storage +
 		 encodeURI(file);
 
-      $.ajax({ url: url,
-	       type: "GET",
-	       data: { format: "json" },
-	       success: function(reply) {
-		 reply.url = url;
-		 reply.st_type = "gitty";
-		 reply.noHistory = true;
-		 elem.storage('setSource', reply);
-		 $("#chat").trigger('send',
-				    { type:'reloaded',
-				      file:file,
-				      commit:reply.meta.commit
-				    });
-	       },
-	       error: function(jqXHR) {
-		 modal.ajaxError(jqXHR);
-	       }
-	     });
+      backend.ajax(
+	{ url: url,
+	  type: "GET",
+	  data: { format: "json" },
+	  success: function(reply) {
+	    reply.url = url;
+	    reply.st_type = "gitty";
+	    reply.noHistory = true;
+	    elem.storage('setSource', reply);
+	    $("#chat").trigger('send',
+			       { type:'reloaded',
+				 file:file,
+				 commit:reply.meta.commit
+			       });
+	  },
+	  error: function(jqXHR) {
+	    modal.ajaxError(jqXHR);
+	  }
+	});
 
       return this;
     },
@@ -414,54 +421,55 @@ define([ "jquery", "config", "modal", "form", "gitty",
       if ( data.meta )
 	post.previous = data.meta.commit;
 
-      $.ajax({ url: url,
-               dataType: "json",
-	       contentType: "application/json",
-	       type: method,
-	       data: JSON.stringify(post),
-	       success: function(reply) {
-		 if ( reply.error ) {
-		   modal.alert(errorString("Could not save", reply));
-		 } else {
-		   if ( data.meta &&
-			data.meta.example != reply.meta.example ) {
-		     elem.closest(".swish").trigger('examples-changed');
-		   }
-		   data.file = reply.file;
-		   data.meta = reply.meta;
-		   data.st_type = "gitty";
-		   data.cleanGeneration = data.changeGen();
-		   data.cleanData       = data.getValue();
-		   data.cleanCheckpoint = "save";
-		   data.markClean(true);
-		   modal.feedback({ html: "Saved",
-				    owner: elem
-		                  });
+      backend.ajax(
+	{ url: url,
+          dataType: "json",
+	  contentType: "application/json",
+	  type: method,
+	  data: JSON.stringify(post),
+	  success: function(reply) {
+	    if ( reply.error ) {
+	      modal.alert(errorString("Could not save", reply));
+	    } else {
+	      if ( data.meta &&
+		   data.meta.example != reply.meta.example ) {
+		elem.closest(".swish").trigger('examples-changed');
+	      }
+	      data.file = reply.file;
+	      data.meta = reply.meta;
+	      data.st_type = "gitty";
+	      data.cleanGeneration = data.changeGen();
+	      data.cleanData       = data.getValue();
+	      data.cleanCheckpoint = "save";
+	      data.markClean(true);
+	      modal.feedback({ html: "Saved",
+			       owner: elem
+			     });
 
-		   if ( method == "POST" )
-		     data.chats = {		/* forked file has no chats */
-		       docid: elem.storage('docid'),
-		       total: 0
-		     };
-		   elem.storage('update_tab_title');
-		   elem.storage('chat', (data.meta||{}).chat||'update');
-		   elem.storage('load_messages', reply.messages||[]);
-		   $(".storage").storage('chat_status', true);
-		   history.push({url: reply.url, reason: "save"});
-		 }
-	       },
-	       error: function(jqXHR, textStatus, errorThrown) {
-		 if ( jqXHR.status == 409 ) {
-		   elem.storage('resolveEditConflict',
-				JSON.parse(jqXHR.responseText));
-		 } else if ( jqXHR.status == 403 ) {
-		   modal.alert("Permission denied.  Please try a different name");
-		 } else {
-		   alert('Save failed; click "ok" to try again');
-		   elem.storage('saveAs');
-		 }
-	       }
-	     });
+	      if ( method == "POST" )
+		data.chats = {		/* forked file has no chats */
+		  docid: elem.storage('docid'),
+		  total: 0
+		};
+	      elem.storage('update_tab_title');
+	      elem.storage('chat', (data.meta||{}).chat||'update');
+	      elem.storage('load_messages', reply.messages||[]);
+	      $(".storage").storage('chat_status', true);
+	      history.push({url: reply.url, reason: "save"});
+	    }
+	  },
+	  error: function(jqXHR, textStatus, errorThrown) {
+	    if ( jqXHR.status == 409 ) {
+	      elem.storage('resolveEditConflict',
+			   JSON.parse(jqXHR.responseText));
+	    } else if ( jqXHR.status == 403 ) {
+	      modal.alert("Permission denied.  Please try a different name");
+	    } else {
+	      alert('Save failed; click "ok" to try again');
+	      elem.storage('saveAs');
+	    }
+	  }
+	});
 
       return this;
     },
@@ -533,7 +541,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
       form.showDialog({ title: options.title ? options.title :
 			       fork   ? "Fork from "+meta.commit.substring(0,7) :
 			       update ? "Save new version" :
-			                "Save "+type.label+" as",
+					"Save "+type.label+" as",
 			body:  saveAsBody
 		      });
 
@@ -555,39 +563,40 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	return this;
       }
 
-      $.ajax({ url: options.url,
-               dataType: "json",
-	       contentType: type.contentType||"text/plain",
-	       type: "PUT",
-	       data: data,
-	       success: function(reply) {
-		 if ( reply.error ) {
-		   modal.alert(errorString("Could not save", reply));
-		 } else {
-		   options.cleanGeneration = options.changeGen();
-		   options.cleanData       = options.getValue();
-		   options.cleanCheckpoint = "save";
-		   options.markClean(true);
-		   modal.feedback({ html: "Saved",
-				    owner: elem
-		                  });
-		 }
-	       },
-	       error: function(jqXHR) {
-		 if ( jqXHR.status == 403 ) {
-		   var url = options.url;
-		   delete(options.meta);
-		   delete(options.st_type);
-		   delete(options.url);
-		   elem.storage('saveAs', {
-		     title: "<div class='warning'>Could not save to "+url+
-			    "</div> Save a copy as"
-		   });
-		 } else
-		 { modal.ajaxError(jqXHR);
-		 }
-	       }
-	     });
+      backend.ajax(
+	{ url: options.url,
+          dataType: "json",
+	  contentType: type.contentType||"text/plain",
+	  type: "PUT",
+	  data: data,
+	  success: function(reply) {
+	    if ( reply.error ) {
+	      modal.alert(errorString("Could not save", reply));
+	    } else {
+	      options.cleanGeneration = options.changeGen();
+	      options.cleanData       = options.getValue();
+	      options.cleanCheckpoint = "save";
+	      options.markClean(true);
+	      modal.feedback({ html: "Saved",
+			       owner: elem
+			     });
+	    }
+	  },
+	  error: function(jqXHR) {
+	    if ( jqXHR.status == 403 ) {
+	      var url = options.url;
+	      delete(options.meta);
+	      delete(options.st_type);
+	      delete(options.url);
+	      elem.storage('saveAs', {
+		title: "<div class='warning'>Could not save to "+url+
+		  "</div> Save a copy as"
+	      });
+	    } else
+	    { modal.ajaxError(jqXHR);
+	    }
+	  }
+	});
 
       return this;
     },
@@ -805,7 +814,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
       var type    = tabbed.tabTypes[options.typeName];
       var data    = options.getValue();
       var href    = "data:text/plain;charset=UTF-8,"
-	          + encodeURIComponent(data);
+		  + encodeURIComponent(data);
 
       var a = $.el.a({ href:href,
 		       download:options.file||("swish."+type.dataType)
@@ -901,12 +910,29 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	tabbed.tabbed('show', tab.attr('id'));
 	if ( reason )
 	  modal.feedback({ html: reason,
-	                   owner: this
-	                 });
+			   owner: this
+			 });
 
 	return this;
       }
     },
+
+    /**
+     * Kill the storage object and close the associated tab
+     * @param {Boolean} force If `true`, to not check the content
+     * for being modified.
+     */
+
+     kill: function(force) {
+       return this.each(function() {
+	 var elem = $(this);
+	 var tab = elem.closest(".tab-pane");
+	 if ( tab.length == 1 ) {
+	   var tabbed = tab.closest(".tabbed");
+	   tabbed.tabbed('removeTab', tab.attr('id'), force);
+	 }
+       });
+     },
 
     /**
      * Provide information about the current source in a modal
@@ -971,16 +997,16 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	} else {
 	  var rb;
 	  var buttons = $.el.div({ class:"btn-group diff",
-			           role:"group"
+				   role:"group"
 				 },
 				 $.el.button({ name:"close",
 					       'data-dismiss':"modal",
-				               class:"btn btn-primary"
+					       class:"btn btn-primary"
 					     },
 					     "Close"),
 				 rb=
 				 $.el.button({ name:"revert",
-				               class:"btn btn-danger",
+					       class:"btn btn-danger",
 					       'data-dismiss':"modal"
 					     },
 					     "Revert changes"));
@@ -1283,7 +1309,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	   data.cleanData != data.getValue() ) {
 	if ( why == "beforeunload" ) {
 	  var message = "The source editor has unsaved changes.\n"+
-	                "These will be lost if you leave the page";
+			"These will be lost if you leave the page";
 
 	  ev = ev||window.event;
 	  if ( ev )
@@ -1292,7 +1318,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
 	  return message;
 	} else {
 	  var message = "The source editor has unsaved changes.\n"+
-	                "These will be lost"+
+			"These will be lost"+
 			( why == "setSource" ? " if you load a new program" :
 			  why == "closetab"  ? " close this tab" : ""
 			);
@@ -1399,6 +1425,7 @@ define([ "jquery", "config", "modal", "form", "gitty",
       $.error('Method ' + method + ' does not exist on jQuery.' + pluginName);
     }
   };
+  $.fn.storage.methods = methods;
 }(jQuery));
 
   function filebase(file) {
