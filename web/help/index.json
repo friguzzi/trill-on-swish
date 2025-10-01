@@ -2,6 +2,7 @@
   "--",
   { "file":"help.html",	      "title":"Help" },
   { "file":"help-trill.html", "title":"Help on TRILL" },
+  { "url":"http://www.swi-prolog.org/pack/list?p=trill", "title":"Pack page on TRILL"},
   { "file":"runner.html",     "title":"Runner" },
   { "file":"debug.html",      "title":"Debugging" },
   { "file":"notebook.html",   "title":"Notebook" },

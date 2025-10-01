@@ -389,6 +389,7 @@ swish_navbar(Options) -->
 ])
        ])])]))
         ,
+
 	html(nav([ class([navbar, 'navbar-default']),
 		   role(navigation)
 		 ],
