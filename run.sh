@@ -75,7 +75,7 @@ startd()
     {
         (
             cd "$pkg_dir"
-            ./daemon.pl --port=3020 --pidfile="$pid_file" --output="$output_file"
+            swipl --no-pce daemon.pl --port=3020 --pidfile="$pid_file" --output="$output_file"
         )  
     }
 }
