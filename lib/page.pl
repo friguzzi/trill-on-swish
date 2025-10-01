@@ -369,31 +369,26 @@ swish_page(Options) -->
 
 swish_navbar(Options) -->
 	swish_resources,
-	html(div([id('navbarhelp'),style('height:40px;margin: 10px 5px;text-align:center;')],
+	html(div([id('navbarhelp'),style('height:40px;margin: 10px 5px;text-align:center')], %;line-height: 40px')],
 	[div([class('container'),style('display: flex; height: 100px;')],[
-		div([style('width: 5%;')],[
-		  a([href('https://ml.unife.it'),target('_blank')],
-			[img([src('/icons/logo-unife.png'),height(40)])])]),
-			div([style('flex-grow 1;')],[span([],[span([style('color:darkblue')],['TRILL']),
-	span([style('color:maroon')],[' on ']),
-	span([style('color:darkblue')],['SWI']),
-	span([style('color:maroon')],['SH']),
-	' is a web application',
-	' which embeds the tableau reasoners TRILL, TRILL',
-	span([style('vertical-align:super;font-size:smaller')],['P']),
-	' and TORNADO.',
-	&(nbsp), &(nbsp),
-	a([href('/help/about.html'),target('_blank')],['About']),
-	&(nbsp), &(nbsp),
-	a([href('/help/help-trill.html'),target('_blank')],['Help']),
-	&(nbsp), &(nbsp),
-	a([id('dismisslink'),href('')],['Dismiss'])
-	])]),
-	div([style('width: 5%;')],[
-	a([href('https://ml.unife.it'),target('_blank')],
-	  [img([src('/icons/logo-mlunife.png'),height(40)])])])
-	])])
-	),
+	  div([style('width: 5%;')],[
+	    a([href('https://ml.unife.it'),target('_blank')],
+	    [img([src('/icons/logo-unife.png'),height(40)])])]),
+	  div([style('flex-grow 1;')],[span([],[span([style('color:darkblue')],['TRILL']),span([style('color:maroon')],[' on ']),
+        span([style('color:darkblue')],['SWI']),
+        span([style('color:maroon')],['SH']),
+        ' is a web application which embeds the tableau reasoners TRILL, TRILL',
+	 	span([style('vertical-align:super;font-size:smaller')],['P']),
+		' and TORNADO.',
+        &(nbsp), &(nbsp),
+        a([id('about')],['About']),
+        &(nbsp), &(nbsp),
+        a([href('/help/help-trill.html'),target('_blank')],['Help']),
+		&(nbsp), &(nbsp),
+        a([id('dismisslink'),href('')],['Dismiss'])
+])
+       ])])]))
+        ,
 	html(nav([ class([navbar, 'navbar-default']),
 		   role(navigation)
 		 ],
@@ -811,7 +806,7 @@ include_swish_js -->
 
         ga(''create'', ''UA-16202613-11'', ''auto'');
         ga(''send'', ''pageview'');'])),
-		html(\['<!-- Google tag (gtag.js) -->
+		html(\['<!-- Global site tag (gtag.js) - Google Analytics -->
 			<script async src="https://www.googletagmanager.com/gtag/js?id=G-E8LLF8XRNH"></script>
 			<script>
 			  window.dataLayer = window.dataLayer || [];

@@ -8,7 +8,8 @@
 <html>
   <head>
   <title>About TRILL on SWISH</title>
-  <style>
+<link rel="stylesheet" href="/css/swish.css">
+<style>
   div.github {
     padding-top: 2ex;
     text-align: center;
@@ -16,6 +17,10 @@
   }
   div.github iframe {
     border: 0px;
+  }
+  body {
+    overflow: scroll;
+    margin: 10px;
   }
   div.acknowledgement { width: 90%;
 			margin-top: 5px; margin-left: auto; margin-right: auto;
@@ -42,6 +47,16 @@
   img.synerscope { width: 12% }
   </style>  </head>
   <body>
+<div itemscope itemtype="http://schema.org/SoftwareSourceCode">
+<span itemprop="targetProduct" itemscope itemtype="http://schema.org/WebApplication">
+<p>
+<span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span style="color:maroon">SH</span> 
+is a web application for trying
+<span itemprop="applicationCategory">Probabilistic Semantic Web reasoning</span>. It was written by <span itemprop="author">
+<a href="https://ml.unife.it">AI@UniFE&nbsp;<img src="../icons/logo-mlunife.png" height="40" /></a>, the Artificia Intelligence group at the 
+<a href="https://unife.it">University of Ferrara&nbsp;<img src="../icons/logo-unife.png" height="40" /></a></span>.
+</p></span>
+<p>Please use this <a href="https://groups.google.com/forum/#!forum/trill-system" target="_blank">forum</a> for questions or send an email to <a href="mailto:trill-system@googlegroups.com">trill-system@googlegroups.com</a>.</p>
 
 <div class="sponsors authors">
 <span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
@@ -53,39 +68,14 @@ The avatar graphics have been made available by <span class="author">Anne Ogborn
 </div>
 
 <p>
-<span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span style="color:maroon">SH</span> is a web application for trying <span itemprop="applicationCategory">probabilistic semantic web reasoning</span>. It was written by <span itemprop="author">
-<a href="https://ml.unife.it">ML@UniFE&nbsp;<img src="../icons/logo-mlunife.png" height="40" /></a>, the Machine Learning group at the 
-<a href="https://unife.it">University of Ferrara&nbsp;<img src="../icons/logo-unife.png" height="40" />
-</p>
-<p>Please use this <a href="https://groups.google.com/forum/#!forum/trill-system" target="_blank">forum</a> for questions or send an email to <a href="mailto:trill-system@googlegroups.com">trill-system@googlegroups.com</a>.</p>
-<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
-is a versatile tool.  It can be used privately as <b>IDE</b>, by a
-team of <b>data scientists</b> to explore a data loaded into Prolog or
-from one or more external databases connected to it.  Prolog can
-access relational as graph databases.  It provides support
-for <a href="https://www.rdfhdt.org/">HTDs</a> to access huge RDF
-graphs.  Through
-its <a href="https://github.com/SWI-Prolog/swish/tree/master/client">API</a>,
-<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
-can also used as a shared <b>reasoning service</b>.  It is most widely
-known as an <b>educational service</b>.
-</p>
-
-<p>
-<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
-is a great tool for teaching Prolog.  We provide
-a <a href="http://lpn.swi-prolog.org">prototype of Learn Prolog
-Now!</a>
-where <span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
-is embedded to run examples and solve exercises from within your
-browser.  Peter Flach created an online version of his book
-<a href="http://book.simply-logical.space/">Simply Logical</a> to embed
-<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>.
-</p>
-
-<p>
-The <span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span style="color:maroon">SH</span> source is available from <a itemprop="codeRepository" href="https://github.com/friguzzi/trill-on-swish.git">Github</a>. 
-It requires SWI-Prolog installed from the latest <a href="http://github.com/SWI-Prolog/swipl-devel.git">GIT</a>.
+The <span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span>
+<span style="color:darkblue">SWI</span><span
+style="color:maroon">SH</span> source is available from
+<a itemprop="codeRepository" href="https://github.com/friguzzi/trill-on-swish.git">
+Github</a>. It
+requires SWI-Prolog 7 installed from the
+latest <a href="http://github.com/SWI-Prolog/swipl-devel.git">GIT</a>.
+We also provide a <a href="https://hub.docker.com/r/swipl/swish/">Docker image</a>.
 </p>
 <div class="github">
 <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=friguzzi&amp;repo=trill-on-swish&amp;type=watch&amp;count=true" width="100" height="20" title="Star on GitHub"></iframe>
@@ -99,78 +89,10 @@ source is available from
 Github</a>.
 </p>
 <div class="github">
-<iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=rzese&amp;repo=trill&amp;type=watch&amp;count=true" width="100" height="20" title="Star on GitHub"></iframe>
-<iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=rzese&amp;repo=trill&amp;type=fork&amp;count=true" width="102" height="20" title="Fork on GitHub"></iframe>
+<iframe class="github-btn" src="https://ghbtns.com/github-btn.html?user=rzese&amp;repo=trill&amp;type=watch&amp;count=true" width="100" height="20" title="Star on GitHub"></iframe>
+<iframe class="github-btn" src="https://ghbtns.com/github-btn.html?user=rzese&amp;repo=trill&amp;type=fork&amp;count=true" width="102" height="20" title="Fork on GitHub"></iframe>
 </div>
 
-<p>
-The <span style="color:darkblue">SWI</span><span
-style="color:maroon">SH</span> source is available from <a
-href="http://github.com/SWI-Prolog/swish.git">Github</a>. It is under
-heavy development and often requires SWI-Prolog 7 installed from the
-latest <a href="http://github.com/SWI-Prolog/swipl-devel.git">GIT</a>.
-We also provide a <a href="https://hub.docker.com/r/swipl/swish/">Docker image</a>.
-</p>
-
-<p>
-Avatar graphics created by <a href="http://www.noblemaster.com">Noble
-Master Games</a>, designed by
-<a href="http://liea.deviantart.com">Mei-Li Nieuwland</a>.
-<p class="sponsor-request">
-  Running the public <a href="https://trill/sw.eu">TRILL-on-SWISH</a> and <a href="https://swish.swi-prolog.org">SWISH</a>
-  instances involves hiring (currently) three servers in the cloud as
-  well as significant maintenance work.
-  Institutes that use <span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span style="color:maroon">SH</span> and/or <span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
-  for teaching OWL language and/or Prolog are kindly requested to consider <b>sponsoring</b> SWI-Prolog
-  using the Github sponsor button below to help us maintaining and improving
-  <span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>.
-</p>
-
-<div style="text-align: center;">
-<span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
-</div>
-<div class="github">
-  <a class="github-button" href="https://github.com/friguzzi/trill-on-swish"
-     data-color-scheme="no-preference: light; light: light; dark: dark;"
-     data-icon="octicon-star" data-size="large"
-     aria-label="Star TRILL-on-SWISH/swish on GitHub">Star</a>
-  <a class="github-button" href="https://github.com/friguzzi/trill-on-swish/fork"
-     data-color-scheme="no-preference: light; light: light; dark: dark;"
-     data-icon="octicon-repo-forked" data-size="large"
-     aria-label="Fork TRILL-on-SWISH/swish on GitHub">Fork</a>
-</div>
-<div style="text-align: center;">
-<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
-</div>
-<div class="github">
-  <a class="github-button" href="https://github.com/SWI-Prolog/swish"
-     data-color-scheme="no-preference: light; light: light; dark: dark;"
-     data-icon="octicon-star" data-size="large"
-     aria-label="Star SWI-Prolog/swish on GitHub">Star</a>
-  <a class="github-button" href="https://github.com/SWI-Prolog/swish/fork"
-     data-color-scheme="no-preference: light; light: light; dark: dark;"
-     data-icon="octicon-repo-forked" data-size="large"
-     aria-label="Fork SWI-Prolog/swish on GitHub">Fork</a>
-  <a class="github-button" href="https://github.com/sponsors/SWI-Prolog"
-     data-color-scheme="no-preference: light; light: light; dark: dark;"
-     data-icon="octicon-heart" data-size="large"
-     aria-label="Sponsor @SWI-Prolog on GitHub">Sponsor</a>
-</div>
-
-
-<p><span style="color:darkblue">SWI</span><span
-style="color:maroon">SH</span> is described in
-<ul>
-<li>
-Jan Wielemaker, Torbj&ouml;rn Lager, and Fabrizio Riguzzi.
- SWISH: SWI-Prolog for sharing.
- In Stefan Ellmauthaler and Claudia Schulz, editors, <em>
-  International Workshop on User-Oriented Logic Programming (IULP 2015)</em>,
-  &copy; by the authors, 2015.<br/>
-[&nbsp;<a href="http://ds.ing.unife.it/~friguzzi/latest_bib.html#WieTorRig15-IULP-IW">bib</a>&nbsp;| 
-<a href="http://arxiv.org/abs/1511.00915">http</a>&nbsp;]
-</li>
-</ul>
 
 
 <p>The algorithm for probabilistic inference (TRILL) is described in:</p>
@@ -247,19 +169,84 @@ Riccardo Zese, Elena Bellodi, Evelina Lamma, Fabrizio Riguzzi, and Fabiano
 
 
 </ul>
+<div class="swish-versions v-compact"></div>
+
+<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
+is a versatile tool.  It can be used privately as <b>IDE</b>, by a
+team of <b>data scientists</b> to explore a data loaded into Prolog or
+from one or more external databases connected to it.  Prolog can
+access relational as graph databases.  It provides support
+for <a href="https://www.rdfhdt.org/">HTDs</a> to access huge RDF
+graphs.  Through
+its <a href="https://github.com/SWI-Prolog/swish/tree/master/client">API</a>,
+<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
+can also used as a shared <b>reasoning service</b>.  It is most widely
+known as an <b>educational service</b>.
+</p>
 
 <p>
-<span style="color:darkblue">TRILL</span><span style="color:maroon"> on </span><span style="color:darkblue">SWI</span><span style="color:maroon">SH</span> is 
-available also as a cpack for Cliopatria.
-ClioPatria is available <a href="http://cliopatria.swi-prolog.org/home">here</a> and from <a itemprop="codeRepository"
-href="https://github.com/ClioPatria/ClioPatria.git">Github</a>. 
+<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
+is a great tool for teaching Prolog.  We provide
+a <a href="http://lpn.swi-prolog.org">prototype of Learn Prolog
+Now!</a>
+where <span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>
+is embedded to run examples and solve exercises from within your
+browser.  Peter Flach created an online version of his book
+<a href="http://book.simply-logical.space/">Simply Logical</a> to embed
+<span style="color:darkblue">SWI</span><span style="color:maroon">SH</span>.
+</p>
+
+
+<p>
+The <span style="color:darkblue">SWI</span><span
+style="color:maroon">SH</span> source is available from <a
+href="http://github.com/SWI-Prolog/swish.git">GitHub</a>. It is under
+heavy development and often requires SWI-Prolog 7 installed from the
+latest <a href="http://github.com/SWI-Prolog/swipl-devel.git">GIT</a>.
+We also provide a <a href="https://hub.docker.com/r/swipl/swish/">Docker image</a>.
+</p>
+
+<p>
+Avatar graphics created by <a href="http://www.noblemaster.com">Noble
+Master Games</a>, designed by
+<a href="http://liea.deviantart.com">Mei-Li Nieuwland</a>.
+</p>
+<p>
+The <span style="color:darkblue">SWI</span><span
+style="color:maroon">SH</span> source is available from <a
+itemprop="codeRepository" href="http://github.com/SWI-Prolog/swish.git">Github</a>.
+</p>
+</div>
 <p>
 <div class="github">
-<iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=ClioPatria&amp;repo=ClioPatria&amp;type=watch&amp;count=true" width="100" height="20" title="Star on GitHub"></iframe>
-<iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=ClioPatria&amp;repo=ClioPatria&amp;type=fork&amp;count=true" width="102" height="20" title="Fork on GitHub"></iframe>
+  <a class="github-button" href="https://github.com/SWI-Prolog/swish"
+     data-color-scheme="no-preference: light; light: light; dark: dark;"
+     data-icon="octicon-star" data-size="large"
+     aria-label="Star SWI-Prolog/swish on GitHub">Star</a>
+  <a class="github-button" href="https://github.com/SWI-Prolog/swish/fork"
+     data-color-scheme="no-preference: light; light: light; dark: dark;"
+     data-icon="octicon-repo-forked" data-size="large"
+     aria-label="Fork SWI-Prolog/swish on GitHub">Fork</a>
+  <a class="github-button" href="https://github.com/sponsors/SWI-Prolog"
+     data-color-scheme="no-preference: light; light: light; dark: dark;"
+     data-icon="octicon-heart" data-size="large"
+     aria-label="Sponsor @SWI-Prolog on GitHub">Sponsor</a>
 </div>
 
-<div class="swish-versions v-compact"></div>
+<p><span style="color:darkblue">SWI</span><span style="color:maroon">SH</span> is described in:</p>
+<ul>
+<li>
+Jan Wielemaker, Torbj&ouml;rn Lager, and Fabrizio Riguzzi.
+ SWISH: SWI-Prolog for sharing.
+ In Stefan Ellmauthaler and Claudia Schulz, editors, <em>
+  International Workshop on User-Oriented Logic Programming (IULP 2015)</em>,
+  &copy; by the authors, 2015.
+[&nbsp;<a href="http://ds.ing.unife.it/~friguzzi/latest_bib.html#WieTorRig15-IULP-IW">bib</a>&nbsp;|
+<a href="http://arxiv.org/abs/1511.00915">http</a>&nbsp;]
+</li>
+</ul>
+
+</div>
 
 <div class=acknowledgement>
 <a href="http://vu.nl" target="_blank">
@@ -283,6 +270,3 @@ the <a href="http://www.commit-nl.nl">COMMIT/ consortium</a> and
 <script src="https://buttons.github.io/buttons.js" defer async></script>
 </body>
 </html>
-
-
-

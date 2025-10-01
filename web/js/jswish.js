@@ -202,6 +202,7 @@ preferences.setInform("preserve-state", ".unloadable");
       setupPanes();
       setupResize();
       setupUnload();
+      aboutLink();
       $("#search").search();
 
       options = options||{};
@@ -379,7 +380,7 @@ preferences.setInform("preserve-state", ".unloadable");
       if ( typeof(options) == "string" )
 	options = {file:options};
 
-      var existing = this.find(".storage").storage('match', options);
+      /*var existing = this.find(".storage").storage('match', options);
       if ( existing && existing.storage('expose', "Already open") )
 	return this;				/* FIXME: go to line */
 
@@ -573,7 +574,12 @@ preferences.setInform("preserve-state", ".unloadable");
 
       function openHelpFunction(help) {
 	return function() {
-	  menuBroadcast("help", {file:help.file});
+		if(help.url !== undefined) {
+            var win = window.open(help.url, '_blank');
+            win.focus();
+				}
+		else
+ 	    menuBroadcast("help", {file:help.file});
 	};
       }
 
@@ -835,6 +841,10 @@ preferences.setInform("preserve-state", ".unloadable");
       $("body").append($.el.div({id:"modal"}));
       $("#modal").swishModal();
     }
+  }
+  function aboutLink() {
+var el = document.getElementById('about');
+el.addEventListener('click',function(){$(el).swishModal('showHelp', {file:'about.html'});});
   }
 
   /**

@@ -1,13 +1,8 @@
 <!DOCTYPE HTML>
-<!-- 
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2018, University of Ferrara
--->
 
 <html>
   <head>
-  <title>Caveats of the web version of TRILL and SWI-Prolog</title>
+  <title>Caveats of the web version of SWI-Prolog</title>
   </head>
   <body>
 <h2>Table of Contents</h2>
@@ -18,7 +13,7 @@
 
 <h2 id="sandboxing">Sandboxing</h2>
 <p>
-TRILL on SWISH cannot provide unrestricted access to Prolog because Prolog gives
+SWISH cannot provide unrestricted access to Prolog because Prolog gives
 unrestricted access to the operating system.  Therefore, SWISH examines
 each goal on safety before execution.  This process unfolds the call-tree
 and verifies all called predicates against a whitelist.  It fails on three

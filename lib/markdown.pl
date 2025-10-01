@@ -126,6 +126,10 @@ wiki_html(_:HTML) -->
 prolog:doc_autolink_extension(swinb, notebook).
 prolog:doc_autolink_extension(lnk,   permalink).
 
+/* TO REMOVE
+prolog:doc_autolink_extension(cpl, program).
+*/
+
 :- public
 	file//2.
 

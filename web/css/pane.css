@@ -1,18 +1,3 @@
-/* 
-
-    Changes by:    Riccardo Zese
-    E-mail:        riccardo.zese@unife.it
-    Copyright:	   2014-2016, University of Ferrara
-*/
-
-html, body {
-  width:100%;
-  height: 100%;
-  padding: 0px;
-  margin: 0px;
-  overflow: hidden;
-}
-
 @media screen {
   html, body {
     width:100%;

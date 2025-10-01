@@ -172,6 +172,10 @@ but that is rather expensive.
 
 .render-C3 { display: inline-block; }
 
+/* latex renderer */
+
+.render-latex { display: inline-block; }
+
 /* Graphviz */
 
 .answer svg { vertical-align: top; }

@@ -89,7 +89,6 @@ define([ "jquery", "config", "utils", "backend", "laconic" ],
 		console.log(data);
 		return;
 	      }
-
 		var swishversion;
 		var trillversion;
 
@@ -137,7 +136,7 @@ define([ "jquery", "config", "utils", "backend", "laconic" ],
 		      return false;
 		    }
 		  });
-	      }
+		}
 	    },
 	    error: function(jqXHR) {
 	      modal.ajaxError(jqXHR);

@@ -1,4 +1,4 @@
-# SWISH: A web based SWI-Prolog environment
+# SWISH: A web based SWI-Prolog environment integrated with examples from the TRILL Framework
 
 There are three ways to use SWISH, which we list in increasing order of
 complexity:
@@ -72,7 +72,7 @@ get the dependencies:
     yarn
     make src
 
-#### Download as zip
+##### Download as zip
 
 As installing node and yarn is not a pleasure on all operating systems,
 you can also download  the  dependencies  as   a  single  zip  file from
@@ -85,7 +85,7 @@ root directory to create the directory web/node_modules. If you have
 
 Last updated: Dec 16, 2019: upgraded dependencies, new archive name
 
-### Get the latest SWI-Prolog
+#### Get the latest SWI-Prolog
 
 Install the latest  [SWI-Prolog](http://www.swi-prolog.org) _development
 version_. As SWISH is very  much  in   flux  and  depends  on the recent
@@ -147,7 +147,7 @@ config-available](https://github.com/SWI-Prolog/swish/tree/master/config-availab
 for details.
 
 
-### Running SWISH without sandbox limitations
+#### Running SWISH without sandbox limitations
 
 By default, SWISH does not require the user   to  login but lets you run
 only _safe_ commands.  If  you  want   to  use  SWISH  for  unrestricted
